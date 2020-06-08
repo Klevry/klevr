@@ -5,4 +5,4 @@
 
 
 ## Architecture
- * Agent(./agent/klevr_agent) - API(Consul) - Web Server(./webconsole/klevr_webconsole)
+ * Agent([./agent/klevr_agent](agent/)) - API(Consul) - Web Server([./webconsole/klevr_webconsole](./webconsole/))
