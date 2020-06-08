@@ -5,4 +5,4 @@
 
 
 ## Architecture
- * Agent([./agent/klevr_agent](agent/)) - API(Consul) - Web Server([./webconsole/klevr_webconsole](./webconsole/))
+ * Agent([./agent/klevr_agent](agent/)) - API([Consul](https://github.com/hashicorp/consul)) - Web Server([./webconsole/klevr_webconsole](./webconsole/))
