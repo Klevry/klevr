@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"log"
 	"bytes"
@@ -10,6 +11,8 @@ import (
 	"io/ioutil"
 	"strings"
 	"flag"
+	_"regexp"
+	"encoding/json"
 	"github.com/gorilla/mux"
 )
 
@@ -18,8 +21,11 @@ import (
 //var api_url="http://192.168.2.100:8500"
 var api_url="http://localhost"
 //var api_provision_script = api_url+"/ui/dc1/kv/klevr/"
-var agent_download = "https://bit.ly/startdocker"
+var agent_download = "https://bit.ly/go_inst"
 var api_provision_script string
+var Hostlist string
+var master_info string
+var http_body_buffer string
 var service_port = "8080" 
 
 var api_key_string = "TEMPORARY"
@@ -41,13 +47,13 @@ func Init_script_api(uri, data string){
 
 
 
-func Put_request(uri string) {
+func Put_http(uri, data string) {
 //	data, err := os.Open("text.txt")
 //	println(uri,":",data)
-	data := "bash -c 'hello world'"
-	req, err := http.NewRequest("PUT", uri, strings.NewReader(string(data)))
+	url := api_url+uri
+	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("HTTP Put Request error: ",err)
 	}
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Add("nexcloud-auth-token",api_key_string)
@@ -61,8 +67,8 @@ func Put_request(uri string) {
 }
 
 
-func Get_provision_script() string{
-	uri := api_url+"/v1/kv/klevr/form?raw=1"
+func Get_http(dir string) string{
+	uri := api_url+dir
 	req, _ := http.NewRequest("GET", uri, nil)
 	req.Header.Add("nexcloud-auth-token",api_key_string)
 	req.Header.Add("cache-control", "no-cache")
@@ -70,13 +76,28 @@ func Get_provision_script() string{
 	if err == nil {
 		defer res.Body.Close()
 		body, _ := ioutil.ReadAll(res.Body)
-		api_provision_script = string(body)
-		if len(string(body)) == 0 {
-//			data := "Ralf Test!"
-			uri := api_url+"/v1/kv/klevr/form"
-			Put_request(uri)
-		}
+		http_body_buffer = string(body)
+	}else{
+		log.Printf("API Server connection error: ",err)
+	}
+	return http_body_buffer
+}
 
+
+
+func Get_provision_script() string{
+	Get_http("/v1/kv/klevr/form?raw=1")
+	if len(string(http_body_buffer)) == 0 {
+		/// Set Script for instruction
+		uri := "/v1/kv/klevr/form"
+		data := "bash -s 'echo \"hello world\"'" /// Temporary use
+		Put_http(uri, data)
+		/// Read again
+		Get_http("/v1/kv/klevr/form?raw=1")
+		api_provision_script = http_body_buffer
+	}else {
+		Get_http("/v1/kv/klevr/form?raw=1")
+		api_provision_script = http_body_buffer
 	}
 	return api_provision_script
 }
@@ -93,7 +114,7 @@ func LandingPage(w http.ResponseWriter, r *http.Request){
 }
 
 
-func set_param() string{
+func Set_param() string{
 	//Parsing by Flag
 	port := flag.String("port",service_port,"Set port number for Service")
 	api_server := flag.String("apiserver",api_url,"Set API Server URI for comunication")
@@ -103,21 +124,68 @@ func set_param() string{
 	return service_port
 }
 
+func Get_master(user string) string{
+	Get_http("/v1/kv/klevr/"+user+"/masters?raw=1")
+	master_info = http_body_buffer
+		if len(http_body_buffer) == 0{
+			master_info = "Not yet"
+		}
+	return master_info
+}
 
+func Get_host(user string) string{
+	Get_http("/v1/kv/klevr/"+user+"/hosts/?keys")
+	dataJson := http_body_buffer
+	var arr []string
+	_ = json.Unmarshal([]byte(dataJson), &arr)
+	Get_master(user)
+		if master_info == "Not yet"{
+			Get_http("/v1/kv/"+arr[0]+"?raw=1")
+			strr1 := strings.Split(http_body_buffer, "&")
+			strr2 := strings.Split(strr1[1], "=")
+			master_info = "master="+strr2[1]
+
+			uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
+			Put_http(uri, master_info)
+
+//			curl -sL -H 'nexcloud-auth-token:testfordev' Cache-Control: no-cache --request PUT -d'master=192.168.2.100' klevr_account_api+"/"+account_name+"/masters"
+
+
+		}
+
+	var quee = master_info+"\n"
+	for i := 0; i < len(arr); i++ {
+		get_data := arr[i]
+//		println("/v1/kv/"+get_data+"?raw=1")  // Test output
+		//Get_http("/v1/kv/"+get_data)
+		Get_http("/v1/kv/"+get_data+"?raw=1")
+		quee = quee+http_body_buffer+"\n"
+	}
+	Hostlist = quee
+	return Hostlist
+
+}
 
 func main() {
-	set_param()
+	Set_param()
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
+        r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
+        /// Export result to web
+                vars := mux.Vars(r)
+                user := vars["U"]
+                /// Test out to the Browser
+                Get_host(user)
+                fmt.Fprintf(w, "User: %s\n", user)
+                fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
+        })
+
 	// Bind to a port and pass our router in
 	println("Service port:",service_port)
 	println("Target API Server:",api_url)
-	log.Fatal(http.ListenAndServe(":"+service_port, r))
+	log.Printf("Web-console operation error: ",http.ListenAndServe(":"+service_port, r))
 }
-
-
-
 
 
 
