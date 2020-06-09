@@ -8,13 +8,13 @@ import (
 	_ "os/exec"
 	_"os"
 	_ "io"
-	"io/ioutil"
+	_"io/ioutil"
 	"strings"
 	"flag"
 	_"regexp"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/ralfyang/klevr/package/communicator"
+	"github.com/ralfyang/klevr/communicator"
 )
 
 
@@ -68,37 +68,17 @@ func Put_http(uri, data string) {
 }
 
 
-func Get_http(dir string) string{
-	uri := api_url+dir
-	req, _ := http.NewRequest("GET", uri, nil)
-	req.Header.Add("nexcloud-auth-token",api_key_string)
-	req.Header.Add("cache-control", "no-cache")
-	res, err := http.DefaultClient.Do(req)
-	if err == nil {
-		defer res.Body.Close()
-		body, _ := ioutil.ReadAll(res.Body)
-		http_body_buffer = string(body)
-	}else{
-		log.Printf("API Server connection error: ",err)
-	}
-	return http_body_buffer
-}
-
-
-
 func Get_provision_script() string{
-	communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string )
+	http_body_buffer = communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string )
 	if len(string(http_body_buffer)) == 0 {
 		/// Set Script for instruction
 		uri := "/v1/kv/klevr/form"
 		data := "bash -s 'echo \"hello world\"'" /// Temporary use
 		Put_http(uri, data)
 		/// Read again
-		Get_http("/v1/kv/klevr/form?raw=1")
-		api_provision_script = http_body_buffer
+		api_provision_script = communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string)
 	}else {
-		Get_http("/v1/kv/klevr/form?raw=1")
-		api_provision_script = http_body_buffer
+		api_provision_script = communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string)
 	}
 	return api_provision_script
 }
@@ -129,22 +109,20 @@ func Set_param() string{
 }
 
 func Get_master(user string) string{
-	Get_http("/v1/kv/klevr/"+user+"/masters?raw=1")
-	master_info = http_body_buffer
-		if len(http_body_buffer) == 0{
+	master_info = communicator.Get_http(api_url+"/v1/kv/klevr/"+user+"/masters?raw=1", api_key_string)
+		if len(master_info) == 0{
 			master_info = "Not yet"
 		}
 	return master_info
 }
 
 func Get_host(user string) string{
-	Get_http("/v1/kv/klevr/"+user+"/hosts/?keys")
-	dataJson := http_body_buffer
+	dataJson := communicator.Get_http(api_url+"/v1/kv/klevr/"+user+"/hosts/?keys", api_key_string)
 	var arr []string
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 	Get_master(user)
 		if master_info == "Not yet"{
-			Get_http("/v1/kv/"+arr[0]+"?raw=1")
+			http_body_buffer = communicator.Get_http(api_url+"/v1/kv/"+arr[0]+"?raw=1", api_key_string)
 			strr1 := strings.Split(http_body_buffer, "&")
 			strr2 := strings.Split(strr1[1], "=")
 			master_info = "master="+strr2[1]
@@ -159,7 +137,7 @@ func Get_host(user string) string{
 		get_data := arr[i]
 //		println("/v1/kv/"+get_data+"?raw=1")  // Test output
 		//Get_http("/v1/kv/"+get_data)
-		Get_http("/v1/kv/"+get_data+"?raw=1")
+		http_body_buffer = communicator.Get_http(api_url+"/v1/kv/"+get_data+"?raw=1", api_key_string)
 		quee = quee+http_body_buffer+"\n"
 	}
 	Hostlist = quee
