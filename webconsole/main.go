@@ -106,13 +106,16 @@ func Get_provision_script() string{
 //println("Body :", api_provision_script)
 
 
-
+func API_Server_info(w http.ResponseWriter, r *http.Request){
+	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
+	Get_provision_script()
+	w.Write([]byte(api_url))
+}
 func LandingPage(w http.ResponseWriter, r *http.Request){
 	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
 	Get_provision_script()
 	w.Write([]byte("curl -sL "+agent_download+" | "+api_provision_script))
 }
-
 
 func Set_param() string{
 	//Parsing by Flag
@@ -171,6 +174,7 @@ func main() {
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
+	r.HandleFunc("/apiserver", API_Server_info)
         r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
         /// Export result to web
                 vars := mux.Vars(r)
