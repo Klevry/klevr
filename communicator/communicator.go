@@ -5,8 +5,10 @@ import (
         "io/ioutil"
         "strings"
         _"encoding/json"
+	"log"
 )
 
+var http_body_buffer string
 
 func Put_http(url, data, api_key_string string) {
 //	data, err := os.Open("text.txt")

@@ -14,6 +14,7 @@ import (
 	_"regexp"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/ralfyang/klevr/package/communicator"
 )
 
 
@@ -86,7 +87,7 @@ func Get_http(dir string) string{
 
 
 func Get_provision_script() string{
-	Get_http("/v1/kv/klevr/form?raw=1")
+	communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string )
 	if len(string(http_body_buffer)) == 0 {
 		/// Set Script for instruction
 		uri := "/v1/kv/klevr/form"
@@ -150,10 +151,7 @@ func Get_host(user string) string{
 
 			uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
 			Put_http(uri, master_info)
-
 //			curl -sL -H 'nexcloud-auth-token:testfordev' Cache-Control: no-cache --request PUT -d'master=192.168.2.100' klevr_account_api+"/"+account_name+"/masters"
-
-
 		}
 
 	var quee = master_info+"\n"
