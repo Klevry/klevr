@@ -17,7 +17,7 @@
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Vagrant
    * Metric data aggregate & delivery
  * API([Consul](https://github.com/hashicorp/consul))
- * Web Server([./webconsole/klevr_webconsole](./webconsole/))
+ * Web console([./webconsole/klevr_webconsole](./webconsole/))
    * Host pool management
    * Resource management
    * Master node management 
