@@ -28,7 +28,6 @@ var Hostlist string
 var master_info string
 var http_body_buffer string
 var service_port = "8080" 
-
 var api_key_string = "TEMPORARY"
 
 
@@ -47,34 +46,13 @@ func Init_script_api(uri, data string){
 // Init_script_api(api_url+"/v1/kv/klevr/form", data)
 
 
-
-func Put_http(uri, data string) {
-//	data, err := os.Open("text.txt")
-//	println(uri,":",data)
-	url := api_url+uri
-	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
-	if err != nil {
-		log.Printf("HTTP Put Request error: ",err)
-	}
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Add("nexcloud-auth-token",api_key_string)
-	req.Header.Add("cache-control", "no-cache")
-    client := &http.Client{}
-    res, err := client.Do(req)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer res.Body.Close()
-}
-
-
 func Get_provision_script() string{
 	http_body_buffer = communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string )
 	if len(string(http_body_buffer)) == 0 {
 		/// Set Script for instruction
 		uri := "/v1/kv/klevr/form"
 		data := "bash -s 'echo \"hello world\"'" /// Temporary use
-		Put_http(uri, data)
+		communicator.Put_http(api_url+uri, data, api_key_string)
 		/// Read again
 		api_provision_script = communicator.Get_http(api_url+"/v1/kv/klevr/form?raw=1", api_key_string)
 	}else {
@@ -92,6 +70,15 @@ func API_Server_info(w http.ResponseWriter, r *http.Request){
 	Get_provision_script()
 	w.Write([]byte(api_url))
 }
+
+
+func API_key(w http.ResponseWriter, r *http.Request){
+	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
+	Get_provision_script()
+	w.Write([]byte(api_key_string))
+}
+
+
 func LandingPage(w http.ResponseWriter, r *http.Request){
 	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
 	Get_provision_script()
@@ -128,7 +115,7 @@ func Get_host(user string) string{
 			master_info = "master="+strr2[1]
 
 			uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
-			Put_http(uri, master_info)
+			communicator.Put_http(api_url+uri, master_info, api_key_string)
 //			curl -sL -H 'nexcloud-auth-token:testfordev' Cache-Control: no-cache --request PUT -d'master=192.168.2.100' klevr_account_api+"/"+account_name+"/masters"
 		}
 
@@ -151,6 +138,7 @@ func main() {
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
 	r.HandleFunc("/apiserver", API_Server_info)
+	r.HandleFunc("/apikey", API_key)
         r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
         /// Export result to web
                 vars := mux.Vars(r)

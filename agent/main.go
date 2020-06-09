@@ -1,58 +1,34 @@
 package main
 
 import (
-        "fmt"
-        "net/http"
-        "log"
-        "bytes"
-        _ "os/exec"
-        _"os"
-        _ "io"
-        "io/ioutil"
         "strings"
         "flag"
         _"regexp"
         "encoding/json"
         "github.com/gorilla/mux"
+	"github.com/ralfyang/klevr/communicator"
 ) 
 
 
-func Put_http(uri, data string) {
-//	data, err := os.Open("text.txt")
-//	println(uri,":",data)
-	url := api_url+uri
-	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
-	if err != nil {
-		log.Printf("HTTP Put Request error: ",err)
-	}
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Add("nexcloud-auth-token",api_key_string)
-	req.Header.Add("cache-control", "no-cache")
-    client := &http.Client{}
-    res, err := client.Do(req)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer res.Body.Close()
+var api_server string
+var klevr_server = "http://192.168.10.11:8080"
+var api_key_string string
+
+func Get_apiserver_info() string{
+	api_key_string = communicator.Get_http(klevr_server+"/apikey", _ )
+	return api_key_string
+}
+
+func Get_apiserver_info() string{
+	api_server = communicator.Get_http(klevr_server+"/apiserver", api_key_string )
+	return api_server
 }
 
 
-func Get_http(dir string) string{
-	uri := api_url+dir
-	req, _ := http.NewRequest("GET", uri, nil)
-	req.Header.Add("nexcloud-auth-token",api_key_string)
-	req.Header.Add("cache-control", "no-cache")
-	res, err := http.DefaultClient.Do(req)
-	if err == nil {
-		defer res.Body.Close()
-		body, _ := ioutil.ReadAll(res.Body)
-		http_body_buffer = string(body)
-	}else{
-		log.Printf("API Server connection error: ",err)
-	}
-	return http_body_buffer
+func main(){
+	println("apiserver :", api_server)
+	println("apikey :", api_key_string)
+
 }
-
-
 
 
