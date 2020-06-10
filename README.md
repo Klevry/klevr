@@ -14,7 +14,7 @@
 ## Features
  * Agent([./agent/klevr_agent](agent/))
    * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
-   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus
+   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
  * API([Consul](https://github.com/hashicorp/consul))
  * Web console([./webconsole/klevr_webconsole](./webconsole/))
