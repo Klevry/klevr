@@ -24,6 +24,12 @@
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
+ * Docker images
+   * Beacon(master health checker)
+   * Libvirt(Hypervisor)
+   * Prometheus(Container monitoring)
+   * Metric crawler
+   * Task manager
    
 
 ## Requirement for use
