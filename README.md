@@ -1,4 +1,4 @@
-# klevr: Cloudnative Everywhere
+# Klevr: K(C)loud-native everywhere cleverly
  * Asynchronous distributed infrastructure management console and agent for separated network.
  * Supports for:
    * Baremetal server in the On-premise datacenter
@@ -27,13 +27,16 @@
    
 
 ## Requirement for use
- * Docker/Docker-registry
- * Terraform 
- * libvirt container
- * Micro K8s
- * Consul
- * Prometheus 
- * Vagrant
- * Halm
- * Vault(maybe)
- * Packer(maybe)
+ * [ ] Docker/Docker-registry
+   * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
+   * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
+   * [ ] Task manager: 
+ * [ ] Terraform 
+ * [x] KVM(libvirt)
+ * [ ] Micro K8s
+ * [x] Consul
+ * [ ] Prometheus 
+ * [ ] Vagrant
+ * [ ] Halm
+ * [ ] Vault(maybe)
+ * [ ] Packer(maybe)
