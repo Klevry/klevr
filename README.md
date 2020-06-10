@@ -12,19 +12,19 @@
 
 
 ## Features
- * Agent([./agent/klevr_agent](agent/))
+ * **Agent([./agent/klevr_agent](agent/))**
    * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
- * API([Consul](https://github.com/hashicorp/consul))
- * Web console([./webconsole/klevr_webconsole](./webconsole/))
+ * **API([Consul](https://github.com/hashicorp/consul))**
+ * **Web console([./webconsole/klevr_webconsole](./webconsole/))**
    * Host pool management
    * Resource management
    * Master node management 
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
- * Docker images
+ * **Docker images**
    * Beacon(master health checker)
    * Libvirt(Hypervisor)
    * Prometheus(Container monitoring)
