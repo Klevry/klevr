@@ -1,5 +1,5 @@
 # Klevr: K(C)loud-native everywhere cleverly
- * Asynchronous distributed infrastructure management console and agent for separated network.
+ * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
    * Baremetal server in the On-premise datacenter
    * PC/Workstation in the Office/intranet
