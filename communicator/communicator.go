@@ -42,3 +42,18 @@ func Get_http(uri, api_key_string string) string{
 	}
 	return http_body_buffer
 }
+
+func Delete_http(uri, api_key_string string) string{
+	req, _ := http.NewRequest("DELETE", uri, nil)
+	req.Header.Add("nexcloud-auth-token",api_key_string)
+	req.Header.Add("cache-control", "no-cache")
+	res, err := http.DefaultClient.Do(req)
+	if err == nil {
+		defer res.Body.Close()
+		body, _ := ioutil.ReadAll(res.Body)
+		http_body_buffer = string(body)
+	}else{
+		log.Printf("API Server connection error: ",err)
+	}
+	return http_body_buffer
+}
