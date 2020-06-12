@@ -1,3 +1,5 @@
+
+![klevr_logo.png](klevr_logo.png)
 # Klevr: K(C)loud-native everywhere cleverly
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
