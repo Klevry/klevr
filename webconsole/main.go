@@ -197,6 +197,6 @@ func main() {
 	// Bind to a port and pass our router in
 	println("Service port:",Service_port)
 	println("Target API Server:",API_url)
-	log.Printf("Web-console operation error: ",http.ListenAndServe(":"+Service_port, r))
+	log.Printf("Web-console operation error: ",http.ListenAndServe("0.0.0.0:"+Service_port, r))
 }
 
