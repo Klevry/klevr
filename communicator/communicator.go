@@ -23,7 +23,7 @@ func Put_http(url, data, api_key_string string) {
     client := &http.Client{}
     res, err := client.Do(req)
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
     }
     defer res.Body.Close()
 }

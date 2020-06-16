@@ -20,9 +20,9 @@ var klevr_task_dir = "/tmp/klevr_tasks"
 var klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 
 
-
 var api_server string
-var klevr_server = "http://192.168.10.11:8080"
+var klevr_server_addr = "localhost:8080"
+var klevr_console = "http://"+klevr_server_addr
 var api_key_string string
 var local_ip_add string
 var account_n string
@@ -38,12 +38,12 @@ func check(e error) {
 
 
 func Get_apikey() string{
-	api_key_string = communicator.Get_http(klevr_server+"/apikey", "" )
+	api_key_string = communicator.Get_http(klevr_console+"/apikey", "" )
 	return api_key_string
 }
 
 func Get_apiserver_info() string{
-	api_server = communicator.Get_http(klevr_server+"/apiserver", api_key_string )
+	api_server = communicator.Get_http(klevr_console+"/apiserver", api_key_string )
 	return api_server
 }
 
@@ -83,6 +83,9 @@ func Check_variable() string{
 	userid := flag.String("user", "", "Account key from Klevr service")
 	provider := flag.String("provider", "", "[baremetal|aws] - Service Provider for Host build up")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
+	klevr_addr := flag.String("webconsole", klevr_server_addr, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
+
+	//var klevr_server_addr = "localhost:8080"
 
 	flag.Parse() // Important for parsing
 
@@ -101,6 +104,12 @@ func Check_variable() string{
 	if len(*local_ip) == 0 {
 		local_ip_add = default_ip.String()
 	}
+	if len(*klevr_addr) > 0 {
+		klevr_server_addr = *klevr_addr
+	}// else if len(*klevr_addr) == 0 {
+	//	klevr_server_addr = klevr_server_addr
+//	}
+
 	// Check for the Print
 	account_n = *userid
 	fmt.Println("Account:",account_n)
@@ -116,19 +125,19 @@ func Check_variable() string{
 	return svc_provider
 	return local_ip_add
 	return account_n
+	return klevr_server_addr
 	return api_key_string
 }
 
 func main(){
+	Check_variable()
 	Get_apikey()
 	Get_apiserver_info()
-	Check_variable()
 	println("apiserver :", api_server)
 	println("apikey :", api_key_string)
 	println("provider: ", svc_provider)
 	println("local_ip_add", local_ip_add)
 	println("account", account_n)
-
 }
 
 

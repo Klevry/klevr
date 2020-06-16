@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"log"
-	"bytes"
+	_"bytes"
 	_ "os/exec"
 	_"os"
 	_ "io"
@@ -22,7 +22,7 @@ import (
 
 
 /// Default API URL set
-var API_url="http://localhost"
+var API_url="http://localhost:8500"
 
 /// Klevr Download URL
 var Agent_download = "https://bit.ly/go_inst"
@@ -145,7 +145,7 @@ func Hostpool_mgt(user string) string{
 
 			/// Get value of each hosts
 			target_key = API_url+"/v1/kv/"+get_data
-
+			println("target_key=", target_key)
 			/// Parsing the Key/value of host_info
 			target_txt = strings.Split(string(queue), "&")
 			time_arry = strings.Split(target_txt[0], "=")
@@ -154,7 +154,7 @@ func Hostpool_mgt(user string) string{
 			time_string = string(time_arry[1])
 			time_parsing, err := strconv.ParseInt(time_string, 10, 64)
 				if err != nil {
-					panic(err)
+					log.Println(err)
 				}
 			/// Duration check 
 			tm := time.Unix(time_parsing, 0)
