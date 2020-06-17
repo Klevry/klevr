@@ -11,14 +11,15 @@ import (
 	"encoding/hex"
 	"bytes"
 	"github.com/ralfyang/klevr/communicator"
+	"strings"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 ) 
 
 
 var klevr_agent_id_file = "/tmp/klevr_agent.id"
-var klevr_task_dir = "/tmp/klevr_tasks"
+var klevr_task_dir = "/tmp/klevr_task"
 var klevr_agent_conf_file = "/tmp/klevr_agent.conf"
-
+var klevr_agent_id_string string
 
 var api_server string
 var klevr_server_addr = "localhost:8080"
@@ -129,10 +130,22 @@ func Check_variable() string{
 	return api_key_string
 }
 
+func klevr_agent_id_get() string{
+	klevr_agent_id, _ := ioutil.ReadFile(klevr_agent_id_file)
+	string_parse := strings.Split(string(klevr_agent_id),"\n")
+	klevr_agent_id_string = string_parse[0] 
+	return klevr_agent_id_string
+}
+
+func basement(){
+	os.MkdirAll(klevr_task_dir, 600)
+}
+
 func main(){
 	Check_variable()
 	Get_apikey()
 	Get_apiserver_info()
+	basement()
 	println("apiserver :", api_server)
 	println("apikey :", api_key_string)
 	println("provider: ", svc_provider)
