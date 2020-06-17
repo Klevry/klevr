@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"fmt"
         "flag"
 	"net"
@@ -28,7 +29,7 @@ var api_key_string string
 var local_ip_add string
 var account_n string
 var svc_provider string
-
+var installer string
 
 func check(e error) {
 	if e != nil {
@@ -130,23 +131,90 @@ func Check_variable() string{
 	return api_key_string
 }
 
-func klevr_agent_id_get() string{
+func Klevr_agent_id_get() string{
 	klevr_agent_id, _ := ioutil.ReadFile(klevr_agent_id_file)
 	string_parse := strings.Split(string(klevr_agent_id),"\n")
 	klevr_agent_id_string = string_parse[0] 
 	return klevr_agent_id_string
 }
 
-func basement(){
+func Basement(){
 	os.MkdirAll(klevr_task_dir, 600)
 }
+
+func Chk_inst() string{
+        //var installer string
+        cmm := exec.Command("which","apt-get")
+        err := cmm.Run()
+        if err != nil {
+                installer = "yum"
+        } else {
+                installer = "apt-get"
+        }
+        return installer
+}
+
+
+func Chk_pkg(pkg string){
+	Chk_inst()
+	cmm := exec.Command("which", pkg)
+	cmm.Env = append(os.Environ())
+	if err := cmm.Run(); err != nil {
+		if pkg == "docker" {
+			log.Printf("- Package install for %s", pkg)
+			Manual_inst("https://bit.ly/startdocker", "docker")
+		}else{
+			Install_pkg(pkg)
+		}
+	}
+}
+
+func Manual_inst(uri, target string){
+        exec_file := "/tmp/temporary_file_for_install.sh"
+        m_down := exec.Command("curl","-sL",uri,"-o",exec_file)
+        m_down.Run()
+        if err := os.Chmod(exec_file, 0755); err != nil {
+                check(err)
+        }
+        m_inst := exec.Command("bash",exec_file)
+        m_inst.Stdout = os.Stdout
+        m_inst.Run()
+
+        check_command := exec.Command("which", target)
+        if err := check_command.Run(); err != nil {
+		log.Printf("- %s package has not been installed: Please install the package manually: %s", target, target)
+                os.Exit(1)
+        }else{
+                log.Printf("- %s package has been installed", target)
+        }
+}
+
+
+func Install_pkg(packs string){
+        if installer == "apt-get" {
+                log.Printf("- Please wait for the %s update",installer)
+                update := exec.Command("sudo",installer,"update")
+                update.Run()
+        }
+        log.Printf("- Please wait for Installing the %s Package....", packs)
+        cmd := exec.Command("sudo",installer,"install","-y",packs)
+        err := cmd.Run()
+        if err != nil{
+                log.Printf("- Command finished with error for %s: %v", packs, err)
+        }else {
+                log.Printf("- \"%s\" package has been installed",packs)
+        }
+}
+
 
 func main(){
 	Check_variable()
 	Get_apikey()
 	Get_apiserver_info()
-	basement()
-	klevr_agent_id_get()
+	Basement()
+	Klevr_agent_id_get()
+	Chk_pkg("docker")
+	//Chk_pkg("asciinema") /// for test
 	println("apiserver :", api_server)
 	println("apikey :", api_key_string)
 	println("provider: ", svc_provider)
