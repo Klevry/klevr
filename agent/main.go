@@ -7,6 +7,7 @@ import (
         "flag"
 	"net"
 	"log"
+	"time"
 	"io/ioutil"
 	"crypto/sha1"
 	"encoding/hex"
@@ -143,15 +144,14 @@ func Basement(){
 }
 
 func Chk_inst() string{
-        //var installer string
-        cmm := exec.Command("which","apt-get")
-        err := cmm.Run()
-        if err != nil {
-                installer = "yum"
-        } else {
-                installer = "apt-get"
-        }
-        return installer
+	cmm := exec.Command("which","apt-get")
+	err := cmm.Run()
+	if err != nil {
+		installer = "yum"
+	} else {
+		installer = "apt-get"
+	}
+	return installer
 }
 
 
@@ -170,23 +170,23 @@ func Chk_pkg(pkg string){
 }
 
 func Manual_inst(uri, target string){
-        exec_file := "/tmp/temporary_file_for_install.sh"
-        m_down := exec.Command("curl","-sL",uri,"-o",exec_file)
-        m_down.Run()
-        if err := os.Chmod(exec_file, 0755); err != nil {
-                check(err)
-        }
-        m_inst := exec.Command("bash",exec_file)
-        m_inst.Stdout = os.Stdout
-        m_inst.Run()
+	exec_file := "/tmp/temporary_file_for_install.sh"
+	m_down := exec.Command("curl","-sL",uri,"-o",exec_file)
+	m_down.Run()
+	if err := os.Chmod(exec_file, 0755); err != nil {
+		check(err)
+	}
+	m_inst := exec.Command("bash",exec_file)
+	m_inst.Stdout = os.Stdout
+	m_inst.Run()
 
-        check_command := exec.Command("which", target)
-        if err := check_command.Run(); err != nil {
+	check_command := exec.Command("which", target)
+	if err := check_command.Run(); err != nil {
 		log.Printf("- %s package has not been installed: Please install the package manually: %s", target, target)
-                os.Exit(1)
-        }else{
-                log.Printf("- %s package has been installed", target)
-        }
+		os.Exit(1)
+	}else{
+		log.Printf("- %s package has been installed", target)
+	}
 }
 
 
@@ -206,6 +206,15 @@ func Install_pkg(packs string){
         }
 }
 
+func Alive_chk_to_api(fail_chk string) {
+	tm := time.Now()
+	now_time := tm.Unix()
+	put_uri := api_server+"/v1/kv/klevr/"+account_n+"/hosts/"+klevr_agent_id_string+"/health"
+	health_data := fmt.Sprintf("last_check=%d&ip=%s&clientType=%s&masterConnection=%s",now_time, local_ip_add, svc_provider, fail_chk)
+	communicator.Put_http(put_uri, health_data, api_key_string)
+//	println(put_uri, health_data, api_key_string) ///test output
+}
+
 
 func main(){
 	Check_variable()
@@ -214,6 +223,7 @@ func main(){
 	Basement()
 	Klevr_agent_id_get()
 	Chk_pkg("docker")
+	Alive_chk_to_api("ok")
 	//Chk_pkg("asciinema") /// for test
 	println("apiserver :", api_server)
 	println("apikey :", api_key_string)
