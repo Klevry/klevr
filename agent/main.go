@@ -146,11 +146,12 @@ func main(){
 	Get_apikey()
 	Get_apiserver_info()
 	basement()
+	klevr_agent_id_get()
 	println("apiserver :", api_server)
 	println("apikey :", api_key_string)
 	println("provider: ", svc_provider)
-	println("local_ip_add", local_ip_add)
-	println("account", account_n)
+	println("local_ip_add:", local_ip_add)
+	println("Agent UniqID:", klevr_agent_id_string)
 }
 
 
