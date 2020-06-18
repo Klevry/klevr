@@ -8,6 +8,13 @@
    * Laptop at everywhere
    * Public-cloud
 
+## Kickstart for webconsole & KVstore
+* docker-compose command
+```
+git clone https://github.com/ralfyang/klevr.git
+docker-compose up -d
+```
+
 ## Diagram Overview
  * Image click to Youtube:
  * [![Diagram Overview](/Klevr_diagram_overview.png)](https://www.youtube.com/watch?v=3dhf-Pzc13Y)
@@ -50,9 +57,3 @@
  * [ ] Packer(maybe)
 
 
-## Kickstart for webconsole & KVstore
-* docker-compose command
-```
-git clone https://github.com/ralfyang/klevr.git
-docker-compose up -d
-```
