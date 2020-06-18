@@ -35,7 +35,7 @@
    
 
 ## Requirement for use
- * [ ] Docker/Docker-registry
+ * [ ] Docker/Docker-compose/Docker-registry
    * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
    * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
    * [ ] Task manager: 
@@ -48,3 +48,11 @@
  * [ ] Halm
  * [ ] Vault(maybe)
  * [ ] Packer(maybe)
+
+
+## Kickstart for webconsole & KVstore
+* docker-compose command
+```
+git clone https://github.com/ralfyang/klevr.git
+docker-compose up -d
+```
