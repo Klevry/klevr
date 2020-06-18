@@ -197,11 +197,8 @@ func Install_pkg(packs string){
 
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	/// http://192.168.2.100:8080/user/ralf/hostname/hg7ahjg2bf7subv26867f672/192.168.0.1/type/baremetal/7869172893/ok
 	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/"+local_ip_add+"/type/"+svc_provider+"/"+now_time+"/"+fail_chk)
-	//health_data := fmt.Sprintf("last_check=%d&ip=%s&clientType=%s&masterConnection=%s",now_time, local_ip_add, svc_provider, fail_chk)
 	communicator.Get_http(uri, api_key_string)
-//	println(put_uri, health_data, api_key_string) ///test output
 }
 
 
