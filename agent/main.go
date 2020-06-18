@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"github.com/ralfyang/klevr/communicator"
 	"strings"
+	"strconv"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 ) 
 
@@ -23,7 +24,6 @@ var klevr_task_dir = "/tmp/klevr_task"
 var klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var klevr_agent_id_string string
 
-var api_server string
 var klevr_server_addr = "localhost:8080"
 var klevr_console = "http://"+klevr_server_addr
 var api_key_string string
@@ -37,17 +37,6 @@ func check(e error) {
 		panic(e)
 //		log.Printf(" - unknown error")
 	}
-}
-
-
-func Get_apikey() string{
-	api_key_string = communicator.Get_http(klevr_console+"/apikey", "" )
-	return api_key_string
-}
-
-func Get_apiserver_info() string{
-	api_server = communicator.Get_http(klevr_console+"/apiserver", api_key_string )
-	return api_server
 }
 
 
@@ -206,27 +195,23 @@ func Install_pkg(packs string){
         }
 }
 
-func Alive_chk_to_api(fail_chk string) {
-	tm := time.Now()
-	now_time := tm.Unix()
-	put_uri := api_server+"/v1/kv/klevr/"+account_n+"/hosts/"+klevr_agent_id_string+"/health"
-	health_data := fmt.Sprintf("last_check=%d&ip=%s&clientType=%s&masterConnection=%s",now_time, local_ip_add, svc_provider, fail_chk)
-	communicator.Put_http(put_uri, health_data, api_key_string)
+func Alive_chk_to_mgm(fail_chk string) {
+	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	/// http://192.168.2.100:8080/user/ralf/hostname/hg7ahjg2bf7subv26867f672/192.168.0.1/type/baremetal/7869172893/ok
+	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/"+local_ip_add+"/type/"+svc_provider+"/"+now_time+"/"+fail_chk)
+	//health_data := fmt.Sprintf("last_check=%d&ip=%s&clientType=%s&masterConnection=%s",now_time, local_ip_add, svc_provider, fail_chk)
+	communicator.Get_http(uri, api_key_string)
 //	println(put_uri, health_data, api_key_string) ///test output
 }
 
 
 func main(){
 	Check_variable()
-	Get_apikey()
-	Get_apiserver_info()
 	Basement()
 	Klevr_agent_id_get()
 	Chk_pkg("docker")
-	Alive_chk_to_api("ok")
+	Alive_chk_to_mgm("ok")
 	//Chk_pkg("asciinema") /// for test
-	println("apiserver :", api_server)
-	println("apikey :", api_key_string)
 	println("provider: ", svc_provider)
 	println("local_ip_add:", local_ip_add)
 	println("Agent UniqID:", klevr_agent_id_string)
