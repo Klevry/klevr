@@ -8,4 +8,4 @@
 * Link for Agent Download: `[Web-console URL]/`
 * Show API server info.: `[Web-console URL]/apiserver`
 * Show hosts info.: `[Web-console URL]/user/[USERID]/hostsinfo` with Master of agent
-* Purge old host: `[Web-console URL]/user/[USERID]/hostmgmt`
+* Purge old host: `[Web-console URL]/user/[USERID]/hostmgt`
