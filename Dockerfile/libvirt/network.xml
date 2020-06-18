@@ -1,0 +1,16 @@
+<network>
+  <name>klevr</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='br-klevr' stp='on' delay='0'/>
+  <domain name='default'/>
+  <ip address='192.167.200.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.167.200.128' end='192.167.200.254'/>
+    </dhcp>
+  </ip>
+</network>
+
