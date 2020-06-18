@@ -34,6 +34,7 @@ var API_key_string = "TEMPORARY"
 /// Global variable 
 var API_provision_script string
 var Hostlist string
+var Buffer_result string
 var Host_purge_result string
 var Master_info string
 var Http_body_buffer string
@@ -170,6 +171,16 @@ func Hostpool_mgt(user string) string{
 }
 
 
+
+func Host_receiver(user, hostname, host_ip, host_type, host_alive, master_alive string)string{
+	uri := "/v1/kv/klevr/"+user+"/hosts/"+hostname+"/health"
+	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+host_type+"&masterConnection="+master_alive
+	///last_check=1592385021&ip=192.168.2.100&clientType=baremetal&masterConnection=ok
+	communicator.Put_http(API_url+uri, data, API_key_string)
+	Buffer_result = data
+	return Buffer_result
+}
+
 func main() {
 	Set_param()
 	r := mux.NewRouter()
@@ -193,6 +204,24 @@ func main() {
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\nHostresult: \n%s\n", Host_purge_result)
         })
+
+
+        r.HandleFunc("/user/{U}/hostname/{HH}/{II}/type/{TP}/{TTL}/{MLO}", func(w http.ResponseWriter, r *http.Request) {
+		// ralf, c3349a6b4c40908ec07fa4667b661362b76fba7d, 192.168.2.100, baremetal, 1592385021, ok
+                vars := mux.Vars(r)
+                user := vars["U"]
+                hostname := vars["HH"]
+                host_ip := vars["II"]
+                host_type := vars["TP"]
+                host_alive := string(vars["TTL"])
+                master_alive := vars["MLO"]
+		Host_receiver(user, hostname, host_ip, host_type, host_alive, master_alive)
+	        /// Export result to web
+                fmt.Fprintf(w, "User: %s\n", user)
+                fmt.Fprintf(w, "\nResult: \n%s\n", Buffer_result)
+        })
+
+
 
 	// Bind to a port and pass our router in
 	println("Service port:",Service_port)
