@@ -31,6 +31,7 @@ var local_ip_add string
 var account_n string
 var svc_provider string
 var installer string
+var Master_ip string
 
 func check(e error) {
 	if e != nil {
@@ -201,6 +202,12 @@ func Alive_chk_to_mgm(fail_chk string) {
 	communicator.Get_http(uri, api_key_string)
 }
 
+func Conf_manager() string{
+	Master_ip = communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string)
+	return Master_ip
+}
+
+
 
 func main(){
 	Check_variable()
@@ -208,10 +215,12 @@ func main(){
 	Klevr_agent_id_get()
 	Chk_pkg("docker")
 	Alive_chk_to_mgm("ok")
+	Conf_manager()
 	//Chk_pkg("asciinema") /// for test
 	println("provider: ", svc_provider)
 	println("local_ip_add:", local_ip_add)
 	println("Agent UniqID:", klevr_agent_id_string)
+	println("Master:", Master_ip)
 }
 
 

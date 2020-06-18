@@ -127,6 +127,14 @@ func Get_host(user string) string{
 
 }
 
+
+
+func Get_masterinfo(user string){
+	/// initial master info
+	Get_host(user)
+	Get_master(user)
+}
+
 /// Old hostlist purge
 func Hostpool_mgt(user string) string{
 	/// Define variables
@@ -195,6 +203,13 @@ func main() {
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
+        })
+        r.HandleFunc("/user/{U}/masterinfo", func(w http.ResponseWriter, r *http.Request) {
+                vars := mux.Vars(r)
+                user := vars["U"]
+                Get_masterinfo(user)
+	        /// Export result to web
+                fmt.Fprintf(w, "%s", Master_info)
         })
         r.HandleFunc("/user/{U}/hostsmgt", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
