@@ -6,6 +6,6 @@
 
 ## APIs
 * Link for Agent Download: `[Web-console URL]/`
-* Show API server info.: `[Web-console URL]/apiserver`
 * Show hosts info.: `[Web-console URL]/user/[USERID]/hostsinfo` with Master of agent
-* Purge old host: `[Web-console URL]/user/[USERID]/hostmgt`
+* Purge old host: `[Web-console URL]/user/[USERID]/hostsmgt`
+* Client info. receiver: `[Web-console URL]/user/[USERID]/hostname/{HOSTNAME}/[IP]/type/[baremetal/aws]/[TTL]/[MASTER_STATUS]`
