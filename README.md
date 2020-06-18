@@ -25,15 +25,16 @@ docker-compose up -d
    * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
- * **API([Consul](https://github.com/hashicorp/consul))**
- * **Web console([./webconsole/klevr_webconsole](./webconsole/))**
+  * **Web console([./webconsole/klevr_webconsole](./webconsole/))**
    * Host pool management
    * Resource management
    * Master node management 
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
+ * **KV store([Consul](https://github.com/hashicorp/consul))**
  * **Docker images**
+   * Klever_console(Webserver)
    * Beacon(master health checker)
    * Libvirt(Hypervisor)
    * Prometheus(Container monitoring)
