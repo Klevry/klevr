@@ -15,6 +15,7 @@ import (
 	"github.com/ralfyang/klevr/communicator"
 	"strings"
 	"strconv"
+	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 ) 
 
@@ -33,13 +34,24 @@ var svc_provider string
 var installer string
 var Master_ip string
 
+/// debug_mode = dev or not
+var debug_mode string = "dev" 
+
+
+/// Function for Debuging
+func Debug(output string){
+	if debug_mode == "dev"{
+		log.Println("DEBUG:",output)
+	}
+}
+
+
 func check(e error) {
 	if e != nil {
 		panic(e)
 //		log.Printf(" - unknown error")
 	}
 }
-
 
 func Get_mac() (mac_add string) {
 	interfaces, err := net.Interfaces()
@@ -199,14 +211,20 @@ func Install_pkg(packs string){
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
 	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/"+local_ip_add+"/type/"+svc_provider+"/"+now_time+"/"+fail_chk)
+	Debug(uri) /// log output
 	communicator.Get_http(uri, api_key_string)
 }
 
 func Conf_manager() string{
 	Master_ip = communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string)
+	Debug(Master_ip) /// log output
 	return Master_ip
 }
 
+
+//func Turn_on (){
+//	Alive_chk_to_mgm("ok")
+//}
 
 
 func main(){
@@ -214,13 +232,16 @@ func main(){
 	Basement()
 	Klevr_agent_id_get()
 	Chk_pkg("docker")
-	Alive_chk_to_mgm("ok")
 	Conf_manager()
 	//Chk_pkg("asciinema") /// for test
 	println("provider: ", svc_provider)
 	println("local_ip_add:", local_ip_add)
 	println("Agent UniqID:", klevr_agent_id_string)
 	println("Master:", Master_ip)
+	s := gocron.NewScheduler()
+	s.Every(1).Seconds().Do(Conf_manager)
+//	s.Every(1).Seconds().Do(Turn_on)
+	<- s.Start()
 }
 
 
