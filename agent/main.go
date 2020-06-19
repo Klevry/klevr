@@ -33,6 +33,7 @@ var account_n string
 var svc_provider string
 var installer string
 var Master_ip string
+var AM_I_MASTER string
 
 /// debug_mode = dev or not
 var debug_mode string = "dev" 
@@ -216,9 +217,59 @@ func Alive_chk_to_mgm(fail_chk string) {
 }
 
 func Conf_manager() string{
-	Master_ip = communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string)
+	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string), "=")
+	Master_ip = uri_result[1]
 	Debug(Master_ip) /// log output
 	return Master_ip
+}
+
+
+func Check_master() string{
+        if Master_ip == "" {
+                log.Printf("- Klevr task manager has not defined. Please wait for vote from webconsole")
+        }else if Master_ip == local_ip_add {
+                AM_I_MASTER = "MASTER"
+                log.Printf("--------------------------------  Master_ip=%s, local_ip_add=%s",Master_ip,local_ip_add)
+        }else if Master_ip != local_ip_add  {
+                AM_I_MASTER = "0"
+                log.Printf("--------------------------------  Master_ip=%s, local_ip_add=%s",Master_ip,local_ip_add)
+        }
+        return AM_I_MASTER
+}
+
+
+
+func RnR(){
+	Check_master()
+	if AM_I_MASTER == "MASTER" {
+		Alive_chk_to_mgm("ok")
+		if svc_provider == "baremetal" {
+			println ("docker_image_run here - klevr_beacon_img")
+			println ("docker_image_run here - klevr_taskmanager_img")
+			println ("Get_task_from_here for baremetal")
+		} else if svc_provider == "aws" {
+			println ("Get_task_from_here for AWS")
+		}
+		println ("Get_task_excution_from_here")
+		Debug("I am Master")
+	}else{
+		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", api_key_string)
+		Debug(result_uri)
+//		if err == nil {
+//			if err != nil{
+//				log.Printf("- Master server has been gone!")
+//				Alive_chk_to_mgm("fail")
+//			}else{
+//				Alive_chk_to_mgm("ok")
+//			}
+//			if len(string(Master_ip)) == 0{
+//				log.Printf("- Master server has not attended yet.")
+//			}
+//		}else if err != nil {
+//			log.Printf("- Master server connection fail: %s",Master_ip)
+//			Alive_chk_to_mgm("fail")
+//		}
+	}
 }
 
 
@@ -241,6 +292,7 @@ func main(){
 	s := gocron.NewScheduler()
 	s.Every(1).Seconds().Do(Conf_manager)
 //	s.Every(1).Seconds().Do(Turn_on)
+	s.Every(2).Seconds().Do(RnR)
 	<- s.Start()
 }
 
