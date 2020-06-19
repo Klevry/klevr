@@ -32,7 +32,6 @@ docker-compose up -d
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
- * **KV store([Consul](https://github.com/hashicorp/consul))**
  * **Docker images**
    * Klever_console(Webserver)
    * Beacon(master health checker)
@@ -40,13 +39,14 @@ docker-compose up -d
    * Prometheus(Container monitoring)
    * Metric crawler
    * Task manager
+ * **KV store([Consul](https://github.com/hashicorp/consul))**
    
 
 ## Requirement for use
  * [ ] Docker/Docker-compose/Docker-registry
    * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
    * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
-   * [ ] Task manager: 
+   * [ ] Task manager
  * [ ] Terraform 
  * [x] KVM(libvirt)
  * [ ] Micro K8s
