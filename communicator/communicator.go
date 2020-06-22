@@ -15,7 +15,7 @@ func Put_http(url, data, api_key_string string) {
 //	println(uri,":",data)
 	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
 	if err != nil {
-		log.Printf("HTTP Put Request error: ",err)
+		log.Printf("HTTP PUT Request error: ",err)
 	}
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Add("nexcloud-auth-token",api_key_string)
@@ -50,3 +50,20 @@ func Delete_http(uri, api_key_string string){
 	res, _ := http.DefaultClient.Do(req)
 	defer res.Body.Close()
 }
+
+func Post_http(url, data, api_key_string string) {
+	req, err := http.NewRequest("POST", url, strings.NewReader(string(data)))
+	if err != nil {
+		log.Printf("HTTP POST Request error: ",err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("nexcloud-auth-token",api_key_string)
+	req.Header.Add("cache-control", "no-cache")
+    client := &http.Client{}
+    res, err := client.Do(req)
+    if err != nil {
+        log.Println(err)
+    }
+    defer res.Body.Close()
+}
+
