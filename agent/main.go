@@ -17,7 +17,9 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
-	"github.com/mackerelio/go-osstat/memory"
+	"github.com/zcalusic/sysinfo"
+	"encoding/json"
+	//"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
 ) 
@@ -247,12 +249,16 @@ func Check_master() string{
 
 
 func Resource_info(){
-	memory, err := memory.Get()
+//	memory, _ := memory.Get()
+//	fmt.Printf("Memory : %d bytes / %d bytes + %d bytes = %d bytes\n", memory.Total, memory.Used, memory.Cached, memory.Free)
+
+	var si sysinfo.SysInfo
+	si.GetSysInfo()
+	data, err := json.MarshalIndent(&si, "", "  ")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		return
+	    log.Fatal(err)
 	}
-	fmt.Printf("Memory : %d bytes / %d bytes + %d bytes = %d bytes\n", memory.Total, memory.Used, memory.Cached, memory.Free)
+	fmt.Println(string(data))
 }
 
 

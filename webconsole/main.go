@@ -100,6 +100,17 @@ func Get_master(user string) string{
 	return Master_info
 }
 
+
+func LogRequest(h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("method: %s | url: %s", r.Method, r.URL.String())
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
+
+
 /// Get Hostlist
 func Get_host(user string) string{
 	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
@@ -235,6 +246,17 @@ func main() {
                 fmt.Fprintf(w, "\nResult: \n%s\n", Buffer_result)
         })
 
+	/// receive json data to KV store
+	r.StrictSlash(true)
+	r.Use(LogRequest)
+	r.HandleFunc("/user/{U}/hostname/{HH}/hostinfo", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		fmt.Fprintf(w, "body: %s\n", body)
+	})
 
 
 	// Bind to a port and pass our router in
