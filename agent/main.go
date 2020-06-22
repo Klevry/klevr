@@ -39,6 +39,7 @@ var svc_provider string
 var installer string
 var Master_ip string
 var AM_I_MASTER string
+var Sysinfo string
 
 /// debug_mode = dev or not
 var debug_mode string = "dev" 
@@ -220,12 +221,6 @@ func Alive_chk_to_mgm(fail_chk string) {
 	communicator.Get_http(uri, api_key_string)
 }
 
-func Resource_chk_to_mgm(cpu, mem, disk string) {
-	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/"+local_ip_add+"/resource/"+cpu+"/"+mem+"/"+disk)
-	Debug(uri) /// log output
-	communicator.Get_http(uri, api_key_string)
-}
-
 func Conf_manager() string{
 	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string), "=")
 	Master_ip = uri_result[1]
@@ -248,17 +243,23 @@ func Check_master() string{
 }
 
 
-func Resource_info(){
-//	memory, _ := memory.Get()
-//	fmt.Printf("Memory : %d bytes / %d bytes + %d bytes = %d bytes\n", memory.Total, memory.Used, memory.Cached, memory.Free)
+func Resource_chk_to_mgm() {
+	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/hostinfo")
+	Debug(uri) /// log output
+	Resource_info()
+	communicator.Put_http(uri, Sysinfo, api_key_string)
+	Debug("Sysinfo:"+Sysinfo) /// log output
+}
 
+func Resource_info()string{
 	var si sysinfo.SysInfo
 	si.GetSysInfo()
-	data, err := json.MarshalIndent(&si, "", "  ")
+	data, err := json.Marshal(&si)
 	if err != nil {
 	    log.Fatal(err)
 	}
-	fmt.Println(string(data))
+	Sysinfo = fmt.Sprintf("%s",data)
+	return Sysinfo
 }
 
 
@@ -276,12 +277,12 @@ func RnR(){
 		println ("Get_task_excution_from_here")
 		Debug("I am Master")
 		Resource_info() /// test
-		Resource_chk_to_mgm("CPU=16", "RAM=32GB", "Disk=500GB")
+		Resource_chk_to_mgm()
 	}else{
 		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", api_key_string)
 		Debug("I am Slave")
-		Resource_info() /// test
-		Resource_chk_to_mgm("CPU=16", "RAM=32GB", "Disk=500GB")
+//		Resource_info() /// test
+		Resource_chk_to_mgm()
 		Debug(result_uri)
 //		}
 	}
