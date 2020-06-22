@@ -138,8 +138,6 @@ func Get_host(user string) string{
 
 }
 
-
-
 func Get_masterinfo(user string){
 	/// initial master info
 	Get_host(user)
@@ -190,7 +188,6 @@ func Hostpool_mgt(user string) string{
 }
 
 
-
 func Client_receiver(user, hostname, host_ip, host_type, host_alive, master_alive string)string{
 	uri := "/v1/kv/klevr/"+user+"/hosts/"+hostname+"/health"
 	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+host_type+"&masterConnection="+master_alive
@@ -199,6 +196,15 @@ func Client_receiver(user, hostname, host_ip, host_type, host_alive, master_aliv
 	Buffer_result = data
 	return Buffer_result
 }
+
+func Put_hostinfo(user, hostname, body string)string{
+	uri := "/v1/kv/klevr/"+user+"/hosts/"+hostname+"/hostinfo"
+	data := body
+	communicator.Put_http(API_url+uri, data, API_key_string)
+	Buffer_result = data
+	return Buffer_result
+}
+
 
 func main() {
 	Set_param()
@@ -250,14 +256,19 @@ func main() {
 	r.StrictSlash(true)
 	r.Use(LogRequest)
 	r.HandleFunc("/user/{U}/hostname/{HH}/hostinfo", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		user := vars["U"]
+		hostname := vars["HH"]
 		var body map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, err.Error(), 400)
 			return
 		}
-		fmt.Fprintf(w, "body: %s\n", body)
+		jsondata := fmt.Sprintln(body)
+		Put_hostinfo(user, hostname, jsondata)
+		fmt.Fprintf(w, "Push result: %s \n", body)
+//		fmt.Fprintf(w, "body: %s\n", body)
 	})
-
 
 	// Bind to a port and pass our router in
 	println("Service port:",Service_port)
