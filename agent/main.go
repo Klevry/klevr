@@ -95,9 +95,6 @@ func Check_variable() string{
 
 	flag.Parse() // Important for parsing
 
-	// Need to switch for the slave-server list update to API
-	local_ip_add = *local_ip
-
 	// Check the null data from CLI
 	if len(*userid) == 0 {
 		fmt.Println("Please insert an AccountID")
@@ -109,6 +106,8 @@ func Check_variable() string{
 	}
 	if len(*local_ip) == 0 {
 		local_ip_add = default_ip.String()
+	}else{
+		local_ip_add = *local_ip
 	}
 	if len(*klevr_addr) > 0 {
 		klevr_server_addr = *klevr_addr
@@ -254,20 +253,8 @@ func RnR(){
 		Debug("I am Master")
 	}else{
 		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", api_key_string)
+		Debug("I am Slave")
 		Debug(result_uri)
-//		if err == nil {
-//			if err != nil{
-//				log.Printf("- Master server has been gone!")
-//				Alive_chk_to_mgm("fail")
-//			}else{
-//				Alive_chk_to_mgm("ok")
-//			}
-//			if len(string(Master_ip)) == 0{
-//				log.Printf("- Master server has not attended yet.")
-//			}
-//		}else if err != nil {
-//			log.Printf("- Master server connection fail: %s",Master_ip)
-//			Alive_chk_to_mgm("fail")
 //		}
 	}
 }
