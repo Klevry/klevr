@@ -17,6 +17,9 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
+	"github.com/mackerelio/go-osstat/memory"
+	//"github.com/mackerelio/go-osstat/cpu"
+	//"github.com/mackerelio/go-osstat/disk"
 ) 
 
 
@@ -215,6 +218,12 @@ func Alive_chk_to_mgm(fail_chk string) {
 	communicator.Get_http(uri, api_key_string)
 }
 
+func Resource_chk_to_mgm(cpu, mem, disk string) {
+	uri := fmt.Sprint(klevr_console+"/user/"+account_n+"/hostname/"+klevr_agent_id_string+"/"+local_ip_add+"/resource/"+cpu+"/"+mem+"/"+disk)
+	Debug(uri) /// log output
+	communicator.Get_http(uri, api_key_string)
+}
+
 func Conf_manager() string{
 	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+account_n+"/masterinfo", api_key_string), "=")
 	Master_ip = uri_result[1]
@@ -237,6 +246,15 @@ func Check_master() string{
 }
 
 
+func Resource_info(){
+	memory, err := memory.Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return
+	}
+	fmt.Printf("Memory : %d bytes / %d bytes + %d bytes = %d bytes\n", memory.Total, memory.Used, memory.Cached, memory.Free)
+}
+
 
 func RnR(){
 	Check_master()
@@ -251,9 +269,13 @@ func RnR(){
 		}
 		println ("Get_task_excution_from_here")
 		Debug("I am Master")
+		Resource_info() /// test
+		Resource_chk_to_mgm("CPU=16", "RAM=32GB", "Disk=500GB")
 	}else{
 		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", api_key_string)
 		Debug("I am Slave")
+		Resource_info() /// test
+		Resource_chk_to_mgm("CPU=16", "RAM=32GB", "Disk=500GB")
 		Debug(result_uri)
 //		}
 	}
