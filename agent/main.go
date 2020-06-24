@@ -30,8 +30,7 @@ var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var klevr_agent_id_string string
 
-var Klevr_server_addr = "localhost:8080"
-var klevr_console = "http://"+Klevr_server_addr
+var klevr_console string
 var Api_key_string string
 var Local_ip_add string
 var User_account_id string
@@ -113,6 +112,7 @@ func hash_create(s string){
 func Check_variable() string{
 	// get Local IP address automatically
 	default_ip,err := netutil.ChooseHostInterface()
+	klevr_tmp_server := "localhost:8080"
         if err != nil {
                 log.Fatalf("Failed to get IP address: %v", err)
         }
@@ -121,9 +121,8 @@ func Check_variable() string{
 	userid := flag.String("id", "", "Account ID from Klevr service")
 	provider := flag.String("provider", "", "[baremetal|aws] - Service Provider for Host build up")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
-	klevr_addr := flag.String("webconsole", Klevr_server_addr, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
+	klevr_addr := flag.String("webconsole", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
 
-	//var Klevr_server_addr = "localhost:8080"
 
 	flag.Parse() // Important for parsing
 
@@ -141,11 +140,15 @@ func Check_variable() string{
 	}else{
 		Local_ip_add = *local_ip
 	}
-	if len(*klevr_addr) > 0 {
-		Klevr_server_addr = *klevr_addr
-	}// else if len(*klevr_addr) == 0 {
-	//	Klevr_server_addr = Klevr_server_addr
-//	}
+
+
+	if len(*klevr_addr) == 0 {
+		klevr_tmp_server = klevr_tmp_server
+	}else{
+		klevr_tmp_server = *klevr_addr
+	}
+
+	klevr_console = "http://"+klevr_tmp_server
 
 	// Check for the Print
 	User_account_id = *userid
@@ -162,7 +165,9 @@ func Check_variable() string{
 	return Provider_type
 	return Local_ip_add
 	return User_account_id
-	return Klevr_server_addr
+	return klevr_console
+
+
 	return Api_key_string
 }
 
