@@ -213,6 +213,8 @@ func main() {
 	r.HandleFunc("/", LandingPage)
 	r.HandleFunc("/apiserver", API_Server_info)
 	r.HandleFunc("/apikey", API_key)
+
+	/// Hostinfo receiver
         r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
@@ -221,6 +223,8 @@ func main() {
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
         })
+
+	/// Master status receiver
         r.HandleFunc("/user/{U}/masterinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
@@ -228,6 +232,8 @@ func main() {
 	        /// Export result to web
                 fmt.Fprintf(w, "%s", Master_info)
         })
+
+	/// Check hostpool & purge
         r.HandleFunc("/user/{U}/hostsmgt", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
@@ -237,6 +243,22 @@ func main() {
                 fmt.Fprintf(w, "\nHostresult: \n%s\n", Host_purge_result)
         })
 
+	/// Callback receiver
+        r.HandleFunc("/user/{U}/job/{JOB}/ticket/{TICKET}/{MSG}", func(w http.ResponseWriter, r *http.Request) {
+                vars := mux.Vars(r)
+                user := vars["U"]
+                job := vars["JOB"]
+                ticket := vars["TICKET"]
+                callback_msg := vars["MSG"]
+	        /// Export result to web
+                fmt.Fprintf(w, "User: %s\n", user)
+                fmt.Fprintf(w, "Job: %s\n", job)
+                fmt.Fprintf(w, "Ticket number: %s\n", ticket)
+                fmt.Fprintf(w, "Callback message: %s\n", callback_msg)
+
+        })
+
+	/// Host alive time & info receiver
         r.HandleFunc("/user/{U}/hostname/{HH}/{II}/type/{TP}/{TTL}/{MLO}", func(w http.ResponseWriter, r *http.Request) {
 		// ralf, c3349a6b4c40908ec07fa4667b661362b76fba7d, 192.168.2.100, baremetal, 1592385021, ok
                 vars := mux.Vars(r)
