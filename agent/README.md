@@ -1,4 +1,9 @@
 # klevr-agent
+## Kickstart
+```
+curl -sL https://bit.ly/klevry |bash
+```
+
 ## How to use
 * Help
 ```
