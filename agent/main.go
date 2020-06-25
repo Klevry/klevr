@@ -16,13 +16,14 @@ import (
 	"strings"
 	"strconv"
 	"github.com/jasonlvhit/gocron"
+	"net/http"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
 	//"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
-) 
+)
 
 
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
@@ -310,13 +311,18 @@ func RnR(){
 		Resource_info() /// test
 		Resource_chk_to_mgm()
 	}else{
-		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", Api_key_string)
-
+		url := "http://"+Master_ip+":18800/status"
+	        req, _ := http.NewRequest("GET", url, nil)
+	        req.Header.Add("cache-control", "no-cache")
+	        _, err := http.DefaultClient.Do(req)
+		if err != nil {
+			Alive_chk_to_mgm("failed")
+		}
 		// Master error checker here - 2020/6/25 
 		Debug("I am Slave")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
-		Debug(result_uri)
+//		Debug(aaa)
 	}
 }
 

@@ -113,9 +113,9 @@ func LogRequest(h http.Handler) http.Handler {
 
 /// Get Hostlist
 func Get_host(user string) string{
-	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
 	var arr []string
-	var arr_stop int
+	var arr_stop, fail_count, array_count int
+	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 	Get_master(user)
 		if Master_info == "Not yet"{
@@ -127,10 +127,38 @@ func Get_host(user string) string{
 					strr2 := strings.Split(strr1[1], "=")
 					Master_info = "master="+strr2[1]
 					arr_stop = i
-//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
 				}
 				uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
 				communicator.Put_http(API_url+uri, Master_info, API_key_string)
+			}
+		}else{
+			array_count = 0
+			fail_count = 0
+			for i := 0; i <len(arr); i++{
+				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
+					if endpoint == "health" {
+						Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+						strr1 := strings.Split(Http_body_buffer, "&")
+						strr2 := strings.Split(strr1[1], "=")
+						marr1 := strings.Split(Http_body_buffer, "&")
+						for mm := 0 ; mm < len(marr1) ; mm++{
+							marr2 := marr1[mm][strings.LastIndex(marr1[mm], "=")+1:]
+							if marr2 == "failed"{
+								fail_count = fail_count + 1
+							}
+						}
+						Master_info = "master="+strr2[1]
+	//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
+						array_count = array_count + 1
+					}
+				uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
+				communicator.Put_http(API_url+uri, Master_info, API_key_string)
+			}
+			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
+			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
+			if array_count == fail_count+1{
+				println("Master is dead!!!!!!!!!!!!!!!!")
+
 			}
 		}
 

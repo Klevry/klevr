@@ -38,7 +38,7 @@ func Get_http(uri, api_key_string string) string{
 		body, _ := ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	}else{
-		log.Printf("API Server connection error: ",err)
+		log.Printf("Server connection error: ",err)
 	}
 	return http_body_buffer
 }
