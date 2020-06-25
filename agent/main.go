@@ -311,6 +311,8 @@ func RnR(){
 		Resource_chk_to_mgm()
 	}else{
 		result_uri := communicator.Get_http("http://"+Master_ip+":18800/status", Api_key_string)
+
+		// Master error checker here - 2020/6/25 
 		Debug("I am Slave")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
