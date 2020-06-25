@@ -118,19 +118,28 @@ func Get_host(user string) string{
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 	Get_master(user)
 		if Master_info == "Not yet"{
-			Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[0]+"?raw=1", API_key_string)
-			strr1 := strings.Split(Http_body_buffer, "&")
-			strr2 := strings.Split(strr1[1], "=")
-			Master_info = "master="+strr2[1]
+
+			endpoint := arr[1][strings.LastIndex(arr[1], "/")+1:]
+			if endpoint == "health" {
+				Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[1]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+				strr1 := strings.Split(Http_body_buffer, "&")
+				strr2 := strings.Split(strr1[1], "=")
+				Master_info = "master="+strr2[1]
+			}else{
+				log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
+			}
 
 			uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
 			communicator.Put_http(API_url+uri, Master_info, API_key_string)
 		}
 
 	var quee = Master_info+"\n"
-	for i := 0; i < len(arr); i++ {
+	/// for From range 1 to end. Due to the overlap
+	for i := 1; i < len(arr); i++ {
 		get_data := arr[i]
 		Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
+
+		println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
 		quee = quee+Http_body_buffer+"\n"
 	}
 	Hostlist = quee
