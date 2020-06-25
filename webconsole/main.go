@@ -115,39 +115,40 @@ func LogRequest(h http.Handler) http.Handler {
 func Get_host(user string) string{
 	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
 	var arr []string
+	var arr_stop int
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 	Get_master(user)
 		if Master_info == "Not yet"{
-
-			endpoint := arr[1][strings.LastIndex(arr[1], "/")+1:]
-			if endpoint == "health" {
-				Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[1]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
-				strr1 := strings.Split(Http_body_buffer, "&")
-				strr2 := strings.Split(strr1[1], "=")
-				Master_info = "master="+strr2[1]
-			}else{
-				log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
+			for i := 0; i <len(arr); i++{
+				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
+				if endpoint == "health" {
+					Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+					strr1 := strings.Split(Http_body_buffer, "&")
+					strr2 := strings.Split(strr1[1], "=")
+					Master_info = "master="+strr2[1]
+					arr_stop = i
+//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
+				}
+				uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
+				communicator.Put_http(API_url+uri, Master_info, API_key_string)
 			}
-
-			uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
-			communicator.Put_http(API_url+uri, Master_info, API_key_string)
 		}
 
 	var quee = Master_info+"\n"
 	/// for From range 1 to end. Due to the overlap
-	for i := 1; i < len(arr); i++ {
-		get_data := arr[i]
+//	for i := 1; i < len(arr); i++ {
+//		get_data := arr[i]
+		get_data := arr[arr_stop]
 		Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
-
-		println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
+//		println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
 		quee = quee+Http_body_buffer+"\n"
-	}
+//	}
 	Hostlist = quee
 	return Hostlist
 
 }
 
-func Get_masterinfo(user string){
+func Get_info_master(user string){
 	/// initial master info
 	Get_host(user)
 	Get_master(user)
@@ -237,7 +238,7 @@ func main() {
         r.HandleFunc("/user/{U}/masterinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
-                Get_masterinfo(user)
+                Get_info_master(user)
 	        /// Export result to web
                 fmt.Fprintf(w, "%s", Master_info)
         })
