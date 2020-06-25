@@ -376,6 +376,8 @@ func main(){
         }
 
 	/// Check for master info
+	Alive_chk_to_mgm("ok")
+	Resource_chk_to_mgm()
 	Get_masterinfo()
 
 	println("provider: ", Provider_type)
