@@ -1,4 +1,3 @@
-
 ![klevr_logo.png](klevr_logo.png)
 # Klevr: K(C)loud-native everywhere cleverly
  * Asynchronous distributed infrastructure management console and agent for separated networks.
@@ -18,7 +17,6 @@ docker-compose up -d
 ## Diagram Overview
  * Image click to Youtube:
  * [![Diagram Overview](/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
-
 
 ## Features
  * **Agent([./agent/klevr_agent](agent/))**
@@ -46,8 +44,8 @@ docker-compose up -d
  * [ ] Docker/Docker-compose/Docker-registry
    * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
    * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
-   * [ ] Task manager
- * [ ] Terraform 
+   * [ ] Task manager to terraform
+ * [ ] Terraform of container
  * [x] KVM(libvirt)
  * [ ] Micro K8s
  * [x] Consul
