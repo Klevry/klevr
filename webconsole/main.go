@@ -157,7 +157,7 @@ func Get_host(user string) string{
 			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
 			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
 			if array_count == fail_count+1{
-				println("Master is dead!!!!!!!!!!!!!!!!")
+				println("Master is dead!!!a!") // test output
 
 			}
 		}
