@@ -5,10 +5,13 @@ hello:
 	# You can use - build / run / docker / all
 	#
 
-requirement:
-	curl -sL bit.ly/go_req | bash
+init:
+	go mod init github.com/ralfyang
 
-build: requirement
+require:
+	go get -u
+#	curl -sL bit.ly/go_req | bash
+build: require
 	go build -o ./docker_img/klevr_webconsole ./main.go
 run:
 	go run ./main.go -port=8000

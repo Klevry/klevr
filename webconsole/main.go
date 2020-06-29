@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/ralfyang/klevr/communicator"
-	_"../communicator"
 )
 
 
