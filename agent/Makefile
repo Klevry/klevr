@@ -1,7 +1,10 @@
 hello:
 	# make run/build
-requirement:
-	curl -sL bit.ly/go_req | bash
+
+init:
+	go mod init
+require:
+	go get -u
 
 build: requirement
 	go build -o ./klevr ./main.go
