@@ -110,7 +110,6 @@ func LogRequest(h http.Handler) http.Handler {
 }
 
 
-
 /// Get Hostlist
 func Get_host(user string) string{
 	var arr []string
@@ -157,8 +156,9 @@ func Get_host(user string) string{
 			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
 			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
 			if array_count == fail_count+1{
-				println("Master is dead!!!a!") // test output
-
+				println("Master is dead!!!!") // test output
+			}else if array_count/2 <= fail_count+1 {
+				println("Master has something wrong!!!") // test output
 			}
 		}
 
