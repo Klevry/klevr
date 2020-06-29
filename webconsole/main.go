@@ -127,7 +127,7 @@ func Get_host(user string) string{
 					Master_info = "master="+strr2[1]
 					arr_stop = i
 				}
-				uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
+				uri := "/v1/kv/klevr/"+user+"/masters"
 				communicator.Put_http(API_url+uri, Master_info, API_key_string)
 			}
 		}else{
@@ -150,8 +150,8 @@ func Get_host(user string) string{
 	//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
 						array_count = array_count + 1
 					}
-				uri := "/v1/kv/klevr/"+user+"/masters?raw=1"
-				communicator.Put_http(API_url+uri, Master_info, API_key_string)
+//				uri := "/v1/kv/klevr/"+user+"/masters"
+//				communicator.Put_http(API_url+uri, Master_info, API_key_string)
 			}
 			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
 			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
@@ -181,6 +181,14 @@ func Get_info_master(user string){
 	Get_host(user)
 	Get_master(user)
 }
+
+
+
+func Put_master_ack(user, ack string){
+	uri := "/v1/kv/klevr/"+user+"/master_ack"
+	communicator.Put_http(API_url+uri, ack, API_key_string)
+}
+
 
 /// Old hostlist purge
 func Hostpool_mgt(user string) string{
@@ -229,7 +237,6 @@ func Hostpool_mgt(user string) string{
 func Client_receiver(user, hostname, host_ip, host_type, host_alive, master_alive string)string{
 	uri := "/v1/kv/klevr/"+user+"/hosts/"+hostname+"/health"
 	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+host_type+"&masterConnection="+master_alive
-	///last_check=1592385021&ip=192.168.2.100&clientType=baremetal&masterConnection=ok
 	communicator.Put_http(API_url+uri, data, API_key_string)
 	Buffer_result = data
 	return Buffer_result
@@ -251,6 +258,14 @@ func main() {
 	r.HandleFunc("/", LandingPage)
 	r.HandleFunc("/apiserver", API_Server_info)
 	r.HandleFunc("/apikey", API_key)
+
+	/// Master ack receiver
+        r.HandleFunc("/user/{U}/ackmaster", func(w http.ResponseWriter, r *http.Request) {
+                vars := mux.Vars(r)
+                user := vars["U"]
+		ack_time := fmt.Sprint(time.Now().Unix())
+		Put_master_ack(user, ack_time)
+        })
 
 	/// Hostinfo receiver
         r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {

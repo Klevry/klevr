@@ -298,6 +298,7 @@ func Resource_info()string{
 func RnR(){
 	Check_master()
 	if AM_I_MASTER == "MASTER" {
+		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackmaster", Api_key_string)
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
 			println ("Docker_runner here - klevr_beacon_img")
