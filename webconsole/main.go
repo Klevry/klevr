@@ -202,32 +202,34 @@ func Hostpool_mgt(user string) string{
 		for i := 0; i < len(arr); i++ {
 			var target_txt, time_arry []string
 			var time_string string
+			endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
+			if endpoint == "health" {
+				queue = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+				get_data := arr[i]
 
-			get_data := arr[i]
-			queue = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)   // klevr/ralf/hosts/0e25c6b9269944a543be0c82fb2fc8ce67e5b2c6/health
+				/// Get value of each hosts
+				target_key = API_url+"/v1/kv/"+get_data
+				println("target_key=", target_key) ///////////  Test output
+				/// Parsing the Key/value of host_info
+				target_txt = strings.Split(string(queue), "&")
+				time_arry = strings.Split(target_txt[0], "=")
 
-			/// Get value of each hosts
-			target_key = API_url+"/v1/kv/"+get_data
-			println("target_key=", target_key)
-			/// Parsing the Key/value of host_info
-			target_txt = strings.Split(string(queue), "&")
-			time_arry = strings.Split(target_txt[0], "=")
-
-			/// Parsing the Key/value for Unix Time
-			time_string = string(time_arry[1])
-			time_parsing, err := strconv.ParseInt(time_string, 10, 64)
+				/// Parsing the Key/value for Unix Time
+				time_string = string(time_arry[1])
+				time_parsing, err := strconv.ParseInt(time_string, 10, 64)
 				if err != nil {
 					log.Println(err)
 				}
-			/// Duration check 
-			tm := time.Unix(time_parsing, 0)
-				if time.Since(tm).Hours() > 24 {
+				/// Duration check 
+				tm := time.Unix(time_parsing, 0)
+				if time.Since(tm).Hours() > 1 {
 					/// Delete old host via API server
 					Host_purge_result = Host_purge_result+"Overtime: "+get_data+"\n"
 					communicator.Delete_http(API_url+"/v1/kv/"+get_data, API_key_string)
 				}else{
 					Host_purge_result = Host_purge_result+"It's ok: "+get_data+"\n"
 				}
+			}
 		}
 	return Host_purge_result
 }

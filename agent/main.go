@@ -301,7 +301,8 @@ func RnR(){
 		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackmaster", Api_key_string)
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
-			println ("Docker_runner here - klevr_beacon_img")
+//			println ("Docker_runner here - klevr_beacon_img")
+			Docker_runner("klevry/beacon", "master_beacon", "-p 18800:18800")
 			println ("Docker_runner here - klevr_taskmanager_img")
 			println ("Get_task_from_here for baremetal")
 		} else if Provider_type == "aws" {
