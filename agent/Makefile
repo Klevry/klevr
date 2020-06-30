@@ -9,5 +9,5 @@ require:
 build: requirement
 	go build -o ./klevr ./main.go
 run:
-	go run ./main.go -id=ralf -provider=aws -webconsole=localhost:8000
+	go run ./main.go -id=ralf -provider=baremetal -webconsole=192.168.2.100:8000
 all: build

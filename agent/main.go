@@ -71,7 +71,7 @@ func Command_checker(cmd, msg string) string{
 	err := chk_command.Run()
 	if err != nil {
 		log.Printf(msg)
-		panic(msg)
+//		panic(msg)
 	}
 	Result_buffer = out.String()
 	Error_buffer = msg
@@ -350,7 +350,6 @@ func Docker_runner(image_name, service_name, options string){
 	docker_ps_command := "docker ps | grep " + image_name + "|egrep -v CONTAINER | head -1"
 	Command_checker(docker_ps_command, "Error: Docker running process check failed")
 	if len(Result_buffer) != 0 {
-		log.Printf("- %s docker container is running this system already", image_name)
 		Debug(image_name+" docker container is running now.")
 	}else{
 		Docker_pull(image_name)
