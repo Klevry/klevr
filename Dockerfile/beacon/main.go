@@ -10,7 +10,7 @@ import (
 )
 
 var Status string
-var Master_status = "./info/master_status.info"
+var Master_status = "/info/master_status.info"
 
 func Check_master() string{
 	body, err := ioutil.ReadFile(Master_status)
@@ -18,14 +18,11 @@ func Check_master() string{
 		Status = "Master uptime check file open error."
 	}
 	line_break := strings.Split(string(body), "\n")
-	//master_time, _ := strconv.Atoi(line_break[0])
 	master_time := string(line_break[0])
-//	time_parsing, _ := strconv.Atoi(line_break[0])
-//fmt.Printf("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&:%d", master_time)
 	time_parsing, err := strconv.ParseInt(master_time, 10, 64)
 	tm := time.Unix(time_parsing, 0)
-	if time.Since(tm).Minutes() > 60{
-		println("Master agent is not working...")
+	if time.Since(tm).Minutes() > 10{
+		println("Error: Master agent is not working...")
 		os.Exit(1)
 	}else{
 		Status = "OK"
