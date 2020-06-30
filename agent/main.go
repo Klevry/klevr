@@ -319,6 +319,8 @@ func RnR(){
 	        _, err := http.DefaultClient.Do(req)
 		if err != nil {
 			Alive_chk_to_mgm("failed")
+		}else{
+			Alive_chk_to_mgm("ok")
 		}
 		// Master error checker here - 2020/6/25 
 		Debug("I am Slave")
