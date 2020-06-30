@@ -5,8 +5,8 @@ hello:
 	# You can use - build / run / docker / all
 	#
 require:
-#	go get -u
-	curl -sL bit.ly/go_req | bash
+	go get -u
+#	curl -sL bit.ly/go_req | bash
 build: require
 	go build -o ./beacon ./main.go
 run:
