@@ -394,11 +394,25 @@ func main(){
 	println("Local_ip_add:", Local_ip_add)
 	println("Agent UniqID:", klevr_agent_id_string)
 	println("Master:", Master_ip)
+
+
+	/// Scheduler
 	s := gocron.NewScheduler()
 	s.Every(1).Seconds().Do(Get_masterinfo)
 //	s.Every(1).Seconds().Do(Turn_on)
 	s.Every(2).Seconds().Do(RnR)
-	<- s.Start()
+
+	go func(){
+		<- s.Start()
+	}()
+
+	///Http listen
+	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("OK"))
+	})
+
+	http.ListenAndServe(":18800", nil)
+
 }
 
 
