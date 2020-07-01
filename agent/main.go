@@ -413,11 +413,10 @@ func main(){
 		<- s.Start()
 	}()
 
-	///Http listen
+	///Http listen for beacon
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("OK"))
 	})
-
 	http.ListenAndServe(":18800", nil)
 
 }
