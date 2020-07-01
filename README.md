@@ -19,11 +19,11 @@ docker-compose up -d
  * [![Diagram Overview](/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
 
 ## Features
- * **Agent([./agent/klevr_agent](agent/))**
+ * **[Agent](./agent/klevr_agent)**
    * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
-  * **Web console([./webconsole/klevr_webconsole](./webconsole/))**
+  * **[Web console](./webconsole/klevr_webconsole)**
    * Host pool management
    * Resource management
    * Master node management 
@@ -32,7 +32,7 @@ docker-compose up -d
    * Service delivery to Dev./Stg./Prod.
  * **Docker images**
    * Klever_console(Webserver)
-   * Beacon(master health checker)
+   * [Beacon](./Dockerfile/beacon)(Primary agent health checker)
    * Libvirt(Hypervisor)
    * Prometheus(Container monitoring)
    * Metric crawler
