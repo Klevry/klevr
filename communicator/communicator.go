@@ -11,8 +11,6 @@ import (
 var http_body_buffer string
 
 func Put_http(url, data, api_key_string string) {
-//	data, err := os.Open("text.txt")
-//	println(uri,":",data)
 	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
 	if err != nil {
 		log.Printf("HTTP PUT Request error: ",err)
@@ -20,12 +18,13 @@ func Put_http(url, data, api_key_string string) {
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Add("nexcloud-auth-token",api_key_string)
 	req.Header.Add("cache-control", "no-cache")
-    client := &http.Client{}
-    res, err := client.Do(req)
-    if err != nil {
-        log.Println(err)
-    }
-    defer res.Body.Close()
+//    client := &http.Client{}
+//	res, err := client.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	defer res.Body.Close()
 }
 
 func Get_http(uri, api_key_string string) string{
