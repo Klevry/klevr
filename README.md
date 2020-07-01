@@ -42,8 +42,8 @@ docker-compose up -d
 
 ## Requirement for use
  * [ ] Docker/Docker-compose/Docker-registry
-   * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
-   * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
+   * [x] Beacon
+   * [x] Libvirt
    * [ ] Task manager to terraform
  * [ ] Terraform of container
  * [x] KVM(libvirt)
