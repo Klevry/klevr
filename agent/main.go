@@ -29,8 +29,6 @@ import (
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
-var Master_status_mount = "/tmp/status"
-var Master_status_file = Master_status_mount+"/master_status.info"
 var klevr_agent_id_string string
 
 var klevr_console string
@@ -85,7 +83,6 @@ func Required_env_chk(){
 	Command_checker("egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine.")
 	Command_checker("echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command." )
 	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
-	os.Mkdir(Master_status_mount, 644)
 }
 
 
@@ -298,21 +295,20 @@ func Resource_info()string{
 }
 
 
-func Master_ack_stamping(){
-	master_ack_time := fmt.Sprint(time.Now().Unix())
-        err := ioutil.WriteFile(Master_status_file, []byte(master_ack_time), 0644)
-	println(err)
-}
+//func Master_ack_stamping(){
+//	master_ack_time := fmt.Sprint(time.Now().Unix())
+//        err := ioutil.WriteFile(Master_status_file, []byte(master_ack_time), 0644)
+//	println(err)
+//}
 
 func RnR(){
 	Check_master()
 	if AM_I_MASTER == "MASTER" {
 		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackmaster", Api_key_string)
-		Master_ack_stamping() 
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
 //			println ("Docker_runner here - klevr_beacon_img")
-			Docker_runner("klevry/beacon:latest", "master_beacon", "-p 18800:18800 -v /tmp/status:/info")
+			//Docker_runner("klevry/beacon:latest", "master_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
 			println ("Docker_runner here - klevr_taskmanager_img")
 			println ("Get_task_from_here for baremetal")
 		} else if Provider_type == "aws" {
