@@ -33,7 +33,7 @@ docker-compose up -d
  * **Docker images**
    * Webconsole(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
    * [Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)
-   * Libvirt(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
+   * [Libvirt](./Dockerfile/beacon)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
    * Prometheus(Container monitoring)
    * Metric crawler
    * Task manager
