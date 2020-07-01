@@ -2,11 +2,12 @@ docker_version="latest"
 
 hello:
 	#
-	# You can use - build / run / docker / all
+	# You can use - init / build / run / docker / all 
 	#
 
 init:
-	go mod init github.com/ralfyang
+	go mod init
+#	go mod init github.com/ralfyang
 
 require:
 	go get -u
