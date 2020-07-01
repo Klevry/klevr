@@ -50,7 +50,7 @@ docker-compose up -d
  * [ ] Micro K8s
  * [x] Consul
  * [ ] Prometheus 
- * [ ] Vagrant
+ * [ ] --Vagrant--
  * [ ] Halm
  * [ ] Vault(maybe)
  * [ ] Packer(maybe)
