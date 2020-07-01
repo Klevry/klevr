@@ -57,8 +57,8 @@ func Debug(output string){
 
 func check(e error) {
 	if e != nil {
-		panic(e)
-//		log.Printf(" - unknown error")
+//		panic(e)
+		log.Printf(" - unknown error")
 	}
 }
 
