@@ -1,4 +1,4 @@
-![klevr_logo.png](klevr_logo.png)
+![klevr_logo.png](./src/klevr_logo.png)
 # Klevr: K(C)loud-native everywhere cleverly
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
@@ -16,7 +16,7 @@ docker-compose up -d
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
+ * [![Diagram Overview](./src/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
 
 ## Features
  * **[Agent](./agent/)**
