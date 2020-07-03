@@ -1,5 +1,4 @@
-
-![klevr_logo.png](klevr_logo.png)
+![klevr_logo.png](./src/klevr_logo.png)
 # Klevr: K(C)loud-native everywhere cleverly
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
@@ -17,42 +16,41 @@ docker-compose up -d
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](/Klevr_diagram_overview.png)](https://www.youtube.com/watch?v=3dhf-Pzc13Y)
-
+ * [![Diagram Overview](./src/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
 
 ## Features
- * **Agent([./agent/klevr_agent](agent/))**
+ * **[Agent](./agent/)**
    * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
-  * **Web console([./webconsole/klevr_webconsole](./webconsole/))**
+  * **[Web console](./webconsole/)**
    * Host pool management
    * Resource management
    * Master node management 
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
- * **KV store([Consul](https://github.com/hashicorp/consul))**
  * **Docker images**
-   * Klever_console(Webserver)
-   * Beacon(master health checker)
-   * Libvirt(Hypervisor)
+   * [Webconsole](./Dockerfile/klevr_websonsole)(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
+   * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
+   * [Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
    * Prometheus(Container monitoring)
    * Metric crawler
    * Task manager
+ * **KV store([Consul](https://github.com/hashicorp/consul))**
    
 
 ## Requirement for use
  * [ ] Docker/Docker-compose/Docker-registry
-   * [x] Beacon: https://hub.docker.com/repository/docker/klevry/beacon
-   * [x] Libvirt: https://hub.docker.com/repository/docker/klevry/libvirt
-   * [ ] Task manager: 
- * [ ] Terraform 
+   * [x] ~~Beacon~~
+   * [x] Libvirt
+   * [ ] Task manager to terraform
+ * [ ] Terraform of container
  * [x] KVM(libvirt)
  * [ ] Micro K8s
  * [x] Consul
  * [ ] Prometheus 
- * [ ] Vagrant
+ * [x] ~~Vagrant~~
  * [ ] Halm
  * [ ] Vault(maybe)
  * [ ] Packer(maybe)

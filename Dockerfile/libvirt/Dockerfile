@@ -1,5 +1,4 @@
 FROM klevry/klevr-centosbase:latest
-MAINTAINER ralfyang <"https://github.com/ralfyang">
 
 LABEL version=0.1
 LABEL image_name=klevry/libvirt
