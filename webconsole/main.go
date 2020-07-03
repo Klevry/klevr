@@ -56,20 +56,6 @@ func Get_provision_script() string{
 }
 
 
-/// Get API server information
-func API_Server_info(w http.ResponseWriter, r *http.Request){
-	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
-	Get_provision_script()
-	w.Write([]byte(API_url))
-}
-
-
-/// Get API key to agent
-func API_key(w http.ResponseWriter, r *http.Request){
-	// w.Write([]byte("<a href='https://bit.ly/startdocker' target='blank'>Download Klever agent</a>"))
-	Get_provision_script()
-	w.Write([]byte(API_key_string))
-}
 
 
 /// Default Landing page for http
@@ -257,8 +243,6 @@ func main() {
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
-	r.HandleFunc("/apiserver", API_Server_info)
-	r.HandleFunc("/apikey", API_key)
 
 	/// Master ack receiver
         r.HandleFunc("/user/{U}/ackmaster", func(w http.ResponseWriter, r *http.Request) {
