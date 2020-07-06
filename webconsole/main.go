@@ -98,6 +98,7 @@ func LogRequest(h http.Handler) http.Handler {
 /// Get Hostlist
 func Get_host(user, priyes string) string{
 	var arr []string
+	var quee string
 	var arr_stop, fail_count, array_count int
 	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
@@ -114,6 +115,15 @@ func Get_host(user, priyes string) string{
 				}
 				uri := "/v1/kv/klevr/"+user+"/primarys"
 				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
+				if priyes == "yes" {
+					quee = quee+Primary_info
+				}else{
+					quee = quee
+				}
+				get_data := arr[arr_stop]
+				Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
+				println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
+				quee = quee+Http_body_buffer+"\n"
 			}
 		}else{
 			array_count = 0
@@ -125,21 +135,32 @@ func Get_host(user, priyes string) string{
 						strr1 := strings.Split(Http_body_buffer, "&")
 						strr2 := strings.Split(strr1[1], "=")
 						marr1 := strings.Split(Http_body_buffer, "&")
+						// Failed counting with host listing
 						for mm := 0 ; mm < len(marr1) ; mm++{
 							marr2 := marr1[mm][strings.LastIndex(marr1[mm], "=")+1:]
 							if marr2 == "failed"{
 								fail_count = fail_count + 1
 							}
 						}
+
+
 						Primary_info = "primary="+strr2[1]
 	//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
+						if priyes == "yes" {
+							quee = quee+Primary_info
+						}else{
+							quee = quee
+						}
 						array_count = array_count + 1
+						arr_stop = i
+						get_data := arr[i]
+						Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
+						quee = quee+Http_body_buffer+"\n"
+//						println("aaaaaaaaa--fail_countfail_countfail_countfail_countfail:",quee)
 					}
-//				uri := "/v1/kv/klevr/"+user+"/primarys"
-//				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
 			}
-			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
-			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
+//			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
+//			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
 			if array_count == fail_count+1{
 				println("Primary is dead!!!!") // test output
 			}else if array_count/2 <= fail_count+1 {
@@ -147,20 +168,6 @@ func Get_host(user, priyes string) string{
 			}
 		}
 
-	var quee string
-	if priyes == "yes" {
-		quee = Primary_info+"\n"
-	}else{
-		quee = "\n"
-	}
-	/// for From range 1 to end. Due to the overlap
-//	for i := 1; i < len(arr); i++ {
-//		get_data := arr[i]
-		get_data := arr[arr_stop]
-		Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
-//		println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
-		quee = quee+Http_body_buffer+"\n"
-//	}
 	Hostlist = quee
 	return Hostlist
 
@@ -255,8 +262,9 @@ func main() {
                 user := vars["U"]
 		ack_time := fmt.Sprint(time.Now().Unix())
 		Put_primary_ack(user, ack_time)
-		Get_host(user,"yes")
+		Get_host(user,"")
 	        /// Export result to web
+		fmt.Fprintf(w, "get_timestamp: %s\n", ack_time)
                 fmt.Fprintf(w, "%s\n", Hostlist)
         })
 
