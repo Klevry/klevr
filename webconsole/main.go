@@ -96,7 +96,7 @@ func LogRequest(h http.Handler) http.Handler {
 
 
 /// Get Hostlist
-func Get_host(user string) string{
+func Get_host(user, priyes string) string{
 	var arr []string
 	var arr_stop, fail_count, array_count int
 	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
@@ -147,7 +147,12 @@ func Get_host(user string) string{
 			}
 		}
 
-	var quee = Primary_info+"\n"
+	var quee string
+	if priyes == "yes" {
+		quee = Primary_info+"\n"
+	}else{
+		quee = "\n"
+	}
 	/// for From range 1 to end. Due to the overlap
 //	for i := 1; i < len(arr); i++ {
 //		get_data := arr[i]
@@ -163,7 +168,7 @@ func Get_host(user string) string{
 
 func Get_info_primary(user string){
 	/// initial primary info
-	Get_host(user)
+	Get_host(user, "")
 	Get_primary(user)
 }
 
@@ -244,19 +249,22 @@ func main() {
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
 
-	/// Primary ack receiver
+	/// Primary ack receiver 
         r.HandleFunc("/user/{U}/ackprimary", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		ack_time := fmt.Sprint(time.Now().Unix())
 		Put_primary_ack(user, ack_time)
+		Get_host(user,"yes")
+	        /// Export result to web
+                fmt.Fprintf(w, "%s\n", Hostlist)
         })
 
 	/// Hostinfo receiver
         r.HandleFunc("/user/{U}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
-                Get_host(user)
+                Get_host(user,"")
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
