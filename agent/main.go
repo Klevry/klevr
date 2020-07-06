@@ -29,6 +29,8 @@ import (
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
+var Primary_communication_result = "/tmp/communication_result.stmp"
+
 var klevr_agent_id_string string
 
 var klevr_console string
@@ -295,16 +297,52 @@ func Resource_info()string{
 }
 
 
+
+
 //func Primary_ack_stamping(){
 //	primary_ack_time := fmt.Sprint(time.Now().Unix())
 //        err := ioutil.WriteFile(Primary_status_file, []byte(primary_ack_time), 0644)
 //	println(err)
 //}
 
+
+
+func Secondary_scan(){
+	Secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
+	var quee_host string
+	for i := 1; i < len(raw_string_parse)-2; i++ {
+		target_raw := raw_string_parse[i]
+		strr1 := strings.Split(target_raw, "&")
+		raw_result_split := strings.Split(strr1[1], "=")
+
+		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
+//		println("9999999999999999999999 Secondary_raw_fileSecondary_raw_file: ", Target_secondary_hosts)  /// for test result
+		fin_res := communicator.Get_http(Target_secondary_hosts+"/status", "")
+		if i == len(raw_string_parse)-3{
+			quee_host = quee_host+Target_secondary_hosts+": "+fin_res
+		}else{
+			quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+		}
+	}
+	println("8888888888888888888888888888888888888888888888888888888888")
+	println(quee_host)
+	println("9999999999999999999999999999999999999999999999999999999999")
+}
+
+
+
 func RnR(){
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
-		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackprimary", Api_key_string)
+		// Put master alive time to stamp
+		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackprimary", Api_key_string)
+
+		// Write done the information about of Final result time & hostlists
+		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
+
+		Secondary_scan()
+
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
 //			println ("Docker_runner here - klevr_beacon_img")
