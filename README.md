@@ -26,7 +26,7 @@ docker-compose up -d
   * **[Web console](./webconsole/)**
    * Host pool management
    * Resource management
-   * Master node management 
+   * Primary host management 
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.
