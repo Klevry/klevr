@@ -35,7 +35,7 @@ var API_provision_script string
 var Hostlist string
 var Buffer_result string
 var Host_purge_result string
-var Master_info string
+var Primary_info string
 var Http_body_buffer string
 
 
@@ -76,13 +76,13 @@ func Set_param() string{
 	return Service_port
 }
 
-/// Get Master server infomation for slave agent control
-func Get_master(user string) string{
-	Master_info = communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/masters?raw=1", API_key_string)
-		if len(Master_info) == 0{
-			Master_info = "Not yet"
+/// Get Primary server infomation for secondary agent control
+func Get_primary(user string) string{
+	Primary_info = communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/primarys?raw=1", API_key_string)
+		if len(Primary_info) == 0{
+			Primary_info = "Not yet"
 		}
-	return Master_info
+	return Primary_info
 }
 
 
@@ -101,19 +101,19 @@ func Get_host(user string) string{
 	var arr_stop, fail_count, array_count int
 	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
-	Get_master(user)
-		if Master_info == "Not yet"{
+	Get_primary(user)
+		if Primary_info == "Not yet"{
 			for i := 0; i <len(arr); i++{
 				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
 				if endpoint == "health" {
 					Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
 					strr1 := strings.Split(Http_body_buffer, "&")
 					strr2 := strings.Split(strr1[1], "=")
-					Master_info = "master="+strr2[1]
+					Primary_info = "primary="+strr2[1]
 					arr_stop = i
 				}
-				uri := "/v1/kv/klevr/"+user+"/masters"
-				communicator.Put_http(API_url+uri, Master_info, API_key_string)
+				uri := "/v1/kv/klevr/"+user+"/primarys"
+				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
 			}
 		}else{
 			array_count = 0
@@ -131,23 +131,23 @@ func Get_host(user string) string{
 								fail_count = fail_count + 1
 							}
 						}
-						Master_info = "master="+strr2[1]
+						Primary_info = "primary="+strr2[1]
 	//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
 						array_count = array_count + 1
 					}
-//				uri := "/v1/kv/klevr/"+user+"/masters"
-//				communicator.Put_http(API_url+uri, Master_info, API_key_string)
+//				uri := "/v1/kv/klevr/"+user+"/primarys"
+//				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
 			}
 			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
 			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
 			if array_count == fail_count+1{
-				println("Master is dead!!!!") // test output
+				println("Primary is dead!!!!") // test output
 			}else if array_count/2 <= fail_count+1 {
-				println("Master has something wrong!!!") // test output
+				println("Primary has something wrong!!!") // test output
 			}
 		}
 
-	var quee = Master_info+"\n"
+	var quee = Primary_info+"\n"
 	/// for From range 1 to end. Due to the overlap
 //	for i := 1; i < len(arr); i++ {
 //		get_data := arr[i]
@@ -161,16 +161,16 @@ func Get_host(user string) string{
 
 }
 
-func Get_info_master(user string){
-	/// initial master info
+func Get_info_primary(user string){
+	/// initial primary info
 	Get_host(user)
-	Get_master(user)
+	Get_primary(user)
 }
 
 
 
-func Put_master_ack(user, ack string){
-	uri := "/v1/kv/klevr/"+user+"/master_ack"
+func Put_primary_ack(user, ack string){
+	uri := "/v1/kv/klevr/"+user+"/primary_ack"
 	communicator.Put_http(API_url+uri, ack, API_key_string)
 }
 
@@ -221,9 +221,9 @@ func Hostpool_mgt(user string) string{
 }
 
 
-func Client_receiver(user, hostname, host_ip, host_type, host_alive, master_alive string)string{
+func Client_receiver(user, hostname, host_ip, host_type, host_alive, primary_alive string)string{
 	uri := "/v1/kv/klevr/"+user+"/hosts/"+hostname+"/health"
-	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+host_type+"&masterConnection="+master_alive
+	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+host_type+"&primaryConnection="+primary_alive
 	communicator.Put_http(API_url+uri, data, API_key_string)
 	Buffer_result = data
 	return Buffer_result
@@ -244,12 +244,12 @@ func main() {
 	// Routes consist of a path and a handler function.
 	r.HandleFunc("/", LandingPage)
 
-	/// Master ack receiver
-        r.HandleFunc("/user/{U}/ackmaster", func(w http.ResponseWriter, r *http.Request) {
+	/// Primary ack receiver
+        r.HandleFunc("/user/{U}/ackprimary", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		ack_time := fmt.Sprint(time.Now().Unix())
-		Put_master_ack(user, ack_time)
+		Put_primary_ack(user, ack_time)
         })
 
 	/// Hostinfo receiver
@@ -262,13 +262,13 @@ func main() {
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
         })
 
-	/// Master status receiver
-        r.HandleFunc("/user/{U}/masterinfo", func(w http.ResponseWriter, r *http.Request) {
+	/// Primary status receiver
+        r.HandleFunc("/user/{U}/primaryinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
-                Get_info_master(user)
+                Get_info_primary(user)
 	        /// Export result to web
-                fmt.Fprintf(w, "%s", Master_info)
+                fmt.Fprintf(w, "%s", Primary_info)
         })
 
 	/// Check hostpool & purge
@@ -305,8 +305,8 @@ func main() {
                 host_ip := vars["II"]
                 host_type := vars["TP"]
                 host_alive := string(vars["TTL"])
-                master_alive := vars["MLO"]
-		Client_receiver(user, hostname, host_ip, host_type, host_alive, master_alive)
+                primary_alive := vars["MLO"]
+		Client_receiver(user, hostname, host_ip, host_type, host_alive, primary_alive)
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\nResult: \n%s\n", Buffer_result)
