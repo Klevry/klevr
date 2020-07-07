@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/jasonlvhit/gocron v0.0.0-20200423141508-ab84337f7963
-	github.com/ralfyang/klevr/communicator v0.0.0-20200706033238-3e0b2b29d2c4
+	github.com/ralfyang/klevr/communicator v0.0.0-20200706121907-b61b0dbd6ab8
 	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
 	golang.org/x/text v0.3.3 // indirect

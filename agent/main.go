@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	"net/http"
+	"regexp"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
@@ -307,7 +308,7 @@ func Resource_info()string{
 
 
 
-func Secondary_scan(){
+func Secondary_scanner(){
 	Secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
 	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
 	var quee_host string
@@ -317,16 +318,26 @@ func Secondary_scan(){
 		raw_result_split := strings.Split(strr1[1], "=")
 
 		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
-//		println("9999999999999999999999 Secondary_raw_fileSecondary_raw_file: ", Target_secondary_hosts)  /// for test result
 		fin_res := communicator.Get_http(Target_secondary_hosts+"/status", "")
+
+		matched, _ := regexp.MatchString(fin_res, "Server")
+		if matched ==  true {
+			fmt.Println("44444444444444444444444444444444444444444444444444:", fin_res)
+		}
+
+
+//		println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
 		if i == len(raw_string_parse)-3{
 			quee_host = quee_host+Target_secondary_hosts+": "+fin_res
 		}else{
 			quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
 		}
 	}
+//	regex, _ := regexp.Compile("\n\n")
+//	flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
+	flat_quee_host := strings.Replace(quee_host, "\n\n", "\n", -1)
 	println("8888888888888888888888888888888888888888888888888888888888")
-	println(quee_host)
+	println(flat_quee_host)
 	println("9999999999999999999999999999999999999999999999999999999999")
 }
 
@@ -341,7 +352,7 @@ func RnR(){
 		// Write done the information about of Final result time & hostlists
 		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
 
-		Secondary_scan()
+		Secondary_scanner()
 
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
