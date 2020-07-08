@@ -1,5 +1,5 @@
 ![klevr_logo.png](./src/klevr_logo.png)
-# Klevr: K(C)loud-native everywhere cleverly
+# Klevr: K(C)loud-native everywhere cleverly - Interconnector for every SaaS delivery.
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
    * Baremetal server in the On-premise datacenter
