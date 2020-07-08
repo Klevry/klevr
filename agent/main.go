@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	"net/http"
-	"regexp"
+	_"regexp"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
@@ -313,24 +313,20 @@ func Secondary_scanner(){
 	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
 	var quee_host string
 	for i := 1; i < len(raw_string_parse)-2; i++ {
+		var fin_res string = ""
 		target_raw := raw_string_parse[i]
 		strr1 := strings.Split(target_raw, "&")
 		raw_result_split := strings.Split(strr1[1], "=")
 
 		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
-		fin_res := communicator.Get_http(Target_secondary_hosts+"/status", "")
-
-		matched, _ := regexp.MatchString(fin_res, "Server")
-		if matched ==  true {
-			fmt.Println("44444444444444444444444444444444444444444444444444:", fin_res)
-		}
-
-
-//		println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
-		if i == len(raw_string_parse)-3{
-			quee_host = quee_host+Target_secondary_hosts+": "+fin_res
-		}else{
-			quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+		fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
+		if fin_res == "OK" {
+//			println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
+			if i == len(raw_string_parse)-3{
+				quee_host = quee_host+Target_secondary_hosts+": "+fin_res
+			}else{
+				quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+			}
 		}
 	}
 //	regex, _ := regexp.Compile("\n\n")
@@ -378,7 +374,7 @@ func RnR(){
 			Alive_chk_to_mgm("ok")
 		}
 		// Primary error checker here - 2020/6/25 
-		Debug("I am Slave")
+		Debug("I am Secondary")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
 //		Debug(aaa)
