@@ -75,10 +75,11 @@ func Set_param() string{
 	API_url = *api_server
 	return Service_port
 }
-
+//company user zone provider
+//%s/+group+"/"+user+"/"+zone+/+group+"\/"+group+"/"+user+"/"+zone+"\/"+zone+/g
 /// Get Primary server infomation for secondary agent control
-func Get_primary(user, provider string) string{
-	Primary_info = communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/"+provider+"/primarys?raw=1", API_key_string)
+func Get_primary(group, user, zone, provider string) string{
+	Primary_info = communicator.Get_http(API_url+"/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/primarys?raw=1", API_key_string)
 		if len(Primary_info) == 0{
 			Primary_info = "Not yet"
 		}
@@ -96,13 +97,13 @@ func LogRequest(h http.Handler) http.Handler {
 
 
 /// Get Hostlist
-func Get_host(user, provider, priyes string) string{
+func Get_host(group, user, zone, provider, priyes string) string{
 	var arr []string
 	var quee string
 	var arr_stop, fail_count, array_count int
-	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/"+provider+"/hosts/?keys", API_key_string)
+	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
-	Get_primary(user, provider)
+	Get_primary(group, user, zone, provider)
 		if Primary_info == "Not yet"{
 			for i := 0; i <len(arr); i++{
 				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
@@ -113,7 +114,7 @@ func Get_host(user, provider, priyes string) string{
 					Primary_info = "primary="+strr2[1]
 					arr_stop = i
 				}
-				uri := "/v1/kv/klevr/"+user+"/"+provider+"/primarys"
+				uri := "/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/primarys"
 				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
 				if priyes == "yes" {
 					quee = quee+Primary_info
@@ -173,29 +174,29 @@ func Get_host(user, provider, priyes string) string{
 
 }
 
-func Get_info_primary(user, provider string){
+func Get_info_primary(group, user, zone, provider string){
 	/// initial primary info
-	Get_host(user, provider,  "")
-	Get_primary(user, provider)
+	Get_host(group, user, zone, provider,  "")
+	Get_primary(group, user, zone, provider)
 }
 
 
 
-func Put_primary_ack(user, provider, ack string){
-	uri := "/v1/kv/klevr/"+user+"/"+provider+"/primary_ack"
+func Put_primary_ack(group, user, zone, provider, ack string){
+	uri := "/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/primary_ack"
 	communicator.Put_http(API_url+uri, ack, API_key_string)
 }
 
 
 /// Old hostlist purge
-func Hostpool_mgt(user, provider string) string{
+func Hostpool_mgt(group, user, zone, provider string) string{
 	/// Define variables
 	var arr  []string
 	var queue, target_key string
 	Host_purge_result = "\n"
 
 	/// Get Hostlist with Keys
-	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+user+"/"+provider+"/hosts/?keys", API_key_string)
+	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 		for i := 0; i < len(arr); i++ {
 			var target_txt, time_arry []string
@@ -233,16 +234,16 @@ func Hostpool_mgt(user, provider string) string{
 }
 
 
-func Client_receiver(user, hostname, host_ip, provider, host_alive, primary_alive string)string{
-	uri := "/v1/kv/klevr/"+user+"/"+provider+"/hosts/"+hostname+"/health"
+func Client_receiver(group, user, zone, hostname, host_ip, provider, host_alive, primary_alive string)string{
+	uri := "/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/hosts/"+hostname+"/health"
 	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+provider+"&primaryConnection="+primary_alive
 	communicator.Put_http(API_url+uri, data, API_key_string)
 	Buffer_result = data
 	return Buffer_result
 }
 
-func Put_hostinfo(user, provider, hostname, body string)string{
-	uri := "/v1/kv/klevr/"+user+"/"+provider+"/hosts/"+hostname+"/hostinfo"
+func Put_hostinfo(group, user, zone, provider, hostname, body string)string{
+	uri := "/v1/kv/klevr/"+group+"/"+user+"/"+zone+"/"+provider+"/hosts/"+hostname+"/hostinfo"
 	data := body
 	communicator.Put_http(API_url+uri, data, API_key_string)
 	Buffer_result = data
@@ -257,13 +258,15 @@ func main() {
 	r.HandleFunc("/", LandingPage)
 
 	/// Primary ack receiver 
-        r.HandleFunc("/user/{U}/provider/{P}/ackprimary", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/ackprimary", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		provider := vars["P"]
+		group := vars["G"]
+		zone := vars["Z"]
 		ack_time := fmt.Sprint(time.Now().Unix())
-		Put_primary_ack(user, provider, ack_time)
-		Get_host(user, provider, "")
+		Put_primary_ack(group, user, zone, provider, ack_time)
+		Get_host(group, user, zone, provider, "")
 	        /// Export result to web
 		fmt.Fprintf(w, "get_timestamp: %s\n", ack_time)
                 fmt.Fprintf(w, "%s\n", Hostlist)
@@ -271,47 +274,57 @@ func main() {
 
 
 	/// Hostinfo receiver
-        r.HandleFunc("/user/{U}/provider/{P}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/hostsinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		provider := vars["P"]
-                Get_host(user, provider, "")
+		group := vars["G"]
+		zone := vars["Z"]
+                Get_host(group, user, zone, provider, "")
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
         })
 
 	/// Primary status receiver
-        r.HandleFunc("/user/{U}/provider/{P}/primaryinfo", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/primaryinfo", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		provider := vars["P"]
-                Get_info_primary(user, provider)
+		group := vars["G"]
+		zone := vars["Z"]
+                Get_info_primary(group, user, zone, provider)
 	        /// Export result to web
                 fmt.Fprintf(w, "%s", Primary_info)
         })
 
 	/// Check hostpool & purge
-        r.HandleFunc("/user/{U}/provider/{P}/hostsmgt", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/hostsmgt", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		provider := vars["P"]
-		Hostpool_mgt(user, provider)
+		group := vars["G"]
+		zone := vars["Z"]
+		Hostpool_mgt(group, user, zone, provider)
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\nHostresult: \n%s\n", Host_purge_result)
         })
 
 	/// Callback receiver
-        r.HandleFunc("/user/{U}/provider/{P}/job/{JOB}/ticket/{TICKET}/{MSG}", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/job/{JOB}/ticket/{TICKET}/{MSG}", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
                 job := vars["JOB"]
                 ticket := vars["TICKET"]
                 callback_msg := vars["MSG"]
 		provider := vars["P"]
+		group := vars["G"]
+		zone := vars["Z"]
 	        /// Export result to web
+                fmt.Fprintf(w, "Group: %s\n", group)
                 fmt.Fprintf(w, "User: %s\n", user)
+                fmt.Fprintf(w, "Zone: %s\n", zone)
                 fmt.Fprintf(w, "Provider: %s\n", provider)
                 fmt.Fprintf(w, "Job: %s\n", job)
                 fmt.Fprintf(w, "Ticket number: %s\n", ticket)
@@ -320,7 +333,7 @@ func main() {
         })
 
 	/// Host alive time & info receiver
-        r.HandleFunc("/user/{U}/provider/{P}/hostname/{HH}/{II}/{TTL}/{MLO}", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/hostname/{HH}/{II}/{TTL}/{MLO}", func(w http.ResponseWriter, r *http.Request) {
 		// ralf, c3349a6b4c40908ec07fa4667b661362b76fba7d, 192.168.2.100, baremetal, 1592385021, ok
                 vars := mux.Vars(r)
                 user := vars["U"]
@@ -329,21 +342,27 @@ func main() {
                 host_alive := string(vars["TTL"])
                 primary_alive := vars["MLO"]
 		provider := vars["P"]
-		Client_receiver(user, hostname, host_ip, provider, host_alive, primary_alive)
+		group := vars["G"]
+		zone := vars["Z"]
+		Client_receiver(group, user, zone, hostname, host_ip, provider, host_alive, primary_alive)
 	        /// Export result to web
                 fmt.Fprintf(w, "User: %s\n", user)
                 fmt.Fprintf(w, "\nResult: \n%s\n", Buffer_result)
         })
 
 	/// Agent alive status receiver
-        r.HandleFunc("/user/{U}/provider/{P}/aliveagent", func(w http.ResponseWriter, r *http.Request) {
+        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/aliveagent", func(w http.ResponseWriter, r *http.Request) {
                 vars := mux.Vars(r)
                 user := vars["U"]
 		provider := vars["P"]
+		group := vars["G"]
+		zone := vars["Z"]
  //               Put_alive_agent(user, provider)
 //		Get_task_list(user, provider)
 	        /// Export result to web
+                fmt.Fprintf(w, "Group: %s\n", group)
                 fmt.Fprintf(w, "User: %s\n", user)
+                fmt.Fprintf(w, "Zone: %s\n", zone)
                 fmt.Fprintf(w, "Provider: %s\n", provider)
                 fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
         })
@@ -351,18 +370,20 @@ func main() {
 	/// receive json data to KV store
 	r.StrictSlash(true)
 	r.Use(LogRequest)
-	r.HandleFunc("/user/{U}/provider/{P}/hostname/{HH}/hostinfo", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/provider/{P}/hostname/{HH}/hostinfo", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		user := vars["U"]
 		hostname := vars["HH"]
 		provider := vars["P"]
+		group := vars["G"]
+		zone := vars["Z"]
 		var body map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, err.Error(), 400)
 			return
 		}
 		jsondata := fmt.Sprintln(body)
-		Put_hostinfo(user, provider, hostname, jsondata)
+		Put_hostinfo(group, user, zone, provider, hostname, jsondata)
 		fmt.Fprintf(w, "Push result: %s \n", body)
 //		fmt.Fprintf(w, "body: %s\n", body)
 	})
