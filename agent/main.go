@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	"net/http"
-	"regexp"
+	_"regexp"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
@@ -251,13 +251,13 @@ func Install_pkg(packs string){
 
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/"+Local_ip_add+"/type/"+Provider_type+"/"+now_time+"/"+fail_chk)
+	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/hostname/"+klevr_agent_id_string+"/"+Local_ip_add+"/"+now_time+"/"+fail_chk)
 	Debug(uri) /// log output
 	communicator.Get_http(uri, Api_key_string)
 }
 
 func Get_primaryinfo() string{
-	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/primaryinfo", Api_key_string), "=")
+	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/primaryinfo", Api_key_string), "=")
 	Primary_ip = uri_result[1]
 	Debug(Primary_ip) /// log output
 	return Primary_ip
@@ -279,7 +279,7 @@ func Check_primary() string{
 
 
 func Resource_chk_to_mgm() {
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/hostinfo")
+	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/hostname/"+klevr_agent_id_string+"/hostinfo")
 	Debug(uri) /// log output
 	Resource_info()
 	communicator.Put_http(uri, Sysinfo, Api_key_string)
@@ -313,24 +313,20 @@ func Secondary_scanner(){
 	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
 	var quee_host string
 	for i := 1; i < len(raw_string_parse)-2; i++ {
+		var fin_res string = ""
 		target_raw := raw_string_parse[i]
 		strr1 := strings.Split(target_raw, "&")
 		raw_result_split := strings.Split(strr1[1], "=")
 
 		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
-		fin_res := communicator.Get_http(Target_secondary_hosts+"/status", "")
-
-		matched, _ := regexp.MatchString(fin_res, "Server")
-		if matched ==  true {
-			fmt.Println("44444444444444444444444444444444444444444444444444:", fin_res)
-		}
-
-
-//		println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
-		if i == len(raw_string_parse)-3{
-			quee_host = quee_host+Target_secondary_hosts+": "+fin_res
-		}else{
-			quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+		fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
+		if fin_res == "OK" {
+//			println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
+			if i == len(raw_string_parse)-3{
+				quee_host = quee_host+Target_secondary_hosts+": "+fin_res
+			}else{
+				quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+			}
 		}
 	}
 //	regex, _ := regexp.Compile("\n\n")
@@ -347,7 +343,7 @@ func RnR(){
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
 		// Put master alive time to stamp
-		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackprimary", Api_key_string)
+		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/ackprimary", Api_key_string)
 
 		// Write done the information about of Final result time & hostlists
 		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
@@ -378,7 +374,7 @@ func RnR(){
 			Alive_chk_to_mgm("ok")
 		}
 		// Primary error checker here - 2020/6/25 
-		Debug("I am Slave")
+		Debug("I am Secondary")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
 //		Debug(aaa)

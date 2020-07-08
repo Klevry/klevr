@@ -21,10 +21,11 @@ func Put_http(url, data, api_key_string string) {
 //    client := &http.Client{}
 //	res, err := client.Do(req)
 	res, err := http.DefaultClient.Do(req)
-	if err != nil {
+	if err == nil {
+		defer res.Body.Close()
+	}else{
 		log.Println(err)
 	}
-	defer res.Body.Close()
 }
 
 func Get_http(uri, api_key_string string) string{
