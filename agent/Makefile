@@ -13,5 +13,5 @@ require:
 build: require
 	go build -o ./klevr ./main.go
 run:
-	go run ./main.go -id=ralf -provider=aws -webconsole=${WEBCONSOLE}
+	go run ./main.go -id=ralf -provider=baremetal -webconsole=${WEBCONSOLE}
 all: build

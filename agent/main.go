@@ -251,13 +251,13 @@ func Install_pkg(packs string){
 
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/"+Local_ip_add+"/type/"+Provider_type+"/"+now_time+"/"+fail_chk)
+	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/hostname/"+klevr_agent_id_string+"/"+Local_ip_add+"/"+now_time+"/"+fail_chk)
 	Debug(uri) /// log output
 	communicator.Get_http(uri, Api_key_string)
 }
 
 func Get_primaryinfo() string{
-	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/primaryinfo", Api_key_string), "=")
+	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/primaryinfo", Api_key_string), "=")
 	Primary_ip = uri_result[1]
 	Debug(Primary_ip) /// log output
 	return Primary_ip
@@ -279,7 +279,7 @@ func Check_primary() string{
 
 
 func Resource_chk_to_mgm() {
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/hostinfo")
+	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/hostname/"+klevr_agent_id_string+"/hostinfo")
 	Debug(uri) /// log output
 	Resource_info()
 	communicator.Put_http(uri, Sysinfo, Api_key_string)
@@ -343,7 +343,7 @@ func RnR(){
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
 		// Put master alive time to stamp
-		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackprimary", Api_key_string)
+		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/provider/"+Provider_type+"/ackprimary", Api_key_string)
 
 		// Write done the information about of Final result time & hostlists
 		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
