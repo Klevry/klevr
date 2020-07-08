@@ -56,6 +56,14 @@ github.com/ralfyang/klevr/communicator v0.0.0-20200629044427-a5dd2d1c3a83 h1:PUe
 github.com/ralfyang/klevr/communicator v0.0.0-20200629044427-a5dd2d1c3a83/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200630010237-8ebdb4cdbd46 h1:JcuiV4pv9OraflV3ONHbmYKXX7xvJEN4va2tE2vs0NU=
 github.com/ralfyang/klevr/communicator v0.0.0-20200630010237-8ebdb4cdbd46/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa h1:sVPoxJyob8KSlDF2z19Dq2l6Vf+HcwSWyY7qVA0lp2g=
+github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6 h1:6IUN8XG2eLeYBJnNN7sji5JdvD483CftU+9MZ3bE7GM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200706033238-3e0b2b29d2c4 h1:sf5yQfa7y8lctXQ+6hQKWe0sKpP0nEUgwYgkLbcpJWQ=
+github.com/ralfyang/klevr/communicator v0.0.0-20200706033238-3e0b2b29d2c4/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200706121907-b61b0dbd6ab8 h1:LJXos/tPKArcBVY8ZSm09zRteckMwxd19fC3jf8vcBg=
+github.com/ralfyang/klevr/communicator v0.0.0-20200706121907-b61b0dbd6ab8/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	"net/http"
+	"regexp"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
@@ -29,6 +30,8 @@ import (
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
+var Primary_communication_result = "/tmp/communication_result.stmp"
+
 var klevr_agent_id_string string
 
 var klevr_console string
@@ -37,8 +40,8 @@ var Local_ip_add string
 var User_account_id string
 var Provider_type string
 var Installer string
-var Master_ip string
-var AM_I_MASTER string
+var Primary_ip string
+var AM_I_PRIMARY string
 var Sysinfo string
 var Error_buffer string
 var Result_buffer string
@@ -253,25 +256,25 @@ func Alive_chk_to_mgm(fail_chk string) {
 	communicator.Get_http(uri, Api_key_string)
 }
 
-func Get_masterinfo() string{
-	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/masterinfo", Api_key_string), "=")
-	Master_ip = uri_result[1]
-	Debug(Master_ip) /// log output
-	return Master_ip
+func Get_primaryinfo() string{
+	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/primaryinfo", Api_key_string), "=")
+	Primary_ip = uri_result[1]
+	Debug(Primary_ip) /// log output
+	return Primary_ip
 }
 
 
-func Check_master() string{
-        if Master_ip == "" {
+func Check_primary() string{
+        if Primary_ip == "" {
                 log.Printf("- Klevr task manager has not defined. Please wait for vote from webconsole")
-        }else if Master_ip == Local_ip_add {
-                AM_I_MASTER = "MASTER"
-                log.Printf("--------------------------------  Master_ip=%s, Local_ip_add=%s",Master_ip,Local_ip_add)
-        }else if Master_ip != Local_ip_add  {
-                AM_I_MASTER = "0"
-                log.Printf("--------------------------------  Master_ip=%s, Local_ip_add=%s",Master_ip,Local_ip_add)
+        }else if Primary_ip == Local_ip_add {
+                AM_I_PRIMARY = "PRIMARY"
+                log.Printf("--------------------------------  Primary_ip=%s, Local_ip_add=%s",Primary_ip,Local_ip_add)
+        }else if Primary_ip != Local_ip_add  {
+                AM_I_PRIMARY = "0"
+                log.Printf("--------------------------------  Primary_ip=%s, Local_ip_add=%s",Primary_ip,Local_ip_add)
         }
-        return AM_I_MASTER
+        return AM_I_PRIMARY
 }
 
 
@@ -295,25 +298,77 @@ func Resource_info()string{
 }
 
 
+
+
+//func Primary_ack_stamping(){
+//	primary_ack_time := fmt.Sprint(time.Now().Unix())
+//        err := ioutil.WriteFile(Primary_status_file, []byte(primary_ack_time), 0644)
+//	println(err)
+//}
+
+
+
+func Secondary_scanner(){
+	Secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
+	var quee_host string
+	for i := 1; i < len(raw_string_parse)-2; i++ {
+		target_raw := raw_string_parse[i]
+		strr1 := strings.Split(target_raw, "&")
+		raw_result_split := strings.Split(strr1[1], "=")
+
+		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
+		fin_res := communicator.Get_http(Target_secondary_hosts+"/status", "")
+
+		matched, _ := regexp.MatchString(fin_res, "Server")
+		if matched ==  true {
+			fmt.Println("44444444444444444444444444444444444444444444444444:", fin_res)
+		}
+
+
+//		println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
+		if i == len(raw_string_parse)-3{
+			quee_host = quee_host+Target_secondary_hosts+": "+fin_res
+		}else{
+			quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+		}
+	}
+//	regex, _ := regexp.Compile("\n\n")
+//	flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
+	flat_quee_host := strings.Replace(quee_host, "\n\n", "\n", -1)
+	println("8888888888888888888888888888888888888888888888888888888888")
+	println(flat_quee_host)
+	println("9999999999999999999999999999999999999999999999999999999999")
+}
+
+
+
 func RnR(){
-	Check_master()
-	if AM_I_MASTER == "MASTER" {
-		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackmaster", Api_key_string)
+	Check_primary()
+	if AM_I_PRIMARY == "PRIMARY" {
+		// Put master alive time to stamp
+		ack_timecheck_from_api := communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackprimary", Api_key_string)
+
+		// Write done the information about of Final result time & hostlists
+		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
+
+		Secondary_scanner()
+
 		Alive_chk_to_mgm("ok")
 		if Provider_type == "baremetal" {
 //			println ("Docker_runner here - klevr_beacon_img")
-			Docker_runner("klevry/beacon", "master_beacon", "-p 18800:18800")
+			//Docker_runner("klevry/beacon:latest", "primary_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
 			println ("Docker_runner here - klevr_taskmanager_img")
 			println ("Get_task_from_here for baremetal")
 		} else if Provider_type == "aws" {
 			println ("Get_task_from_here for AWS")
 		}
 		println ("Get_task_excution_from_here")
-		Debug("I am Master")
+		Debug("I am Primary")
 		Resource_info() /// test
 		Resource_chk_to_mgm()
 	}else{
-		url := "http://"+Master_ip+":18800/status"
+		url := "http://"+Primary_ip+":18800/status"
 	        req, _ := http.NewRequest("GET", url, nil)
 	        req.Header.Add("cache-control", "no-cache")
 	        _, err := http.DefaultClient.Do(req)
@@ -322,7 +377,7 @@ func RnR(){
 		}else{
 			Alive_chk_to_mgm("ok")
 		}
-		// Master error checker here - 2020/6/25 
+		// Primary error checker here - 2020/6/25 
 		Debug("I am Slave")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
@@ -386,20 +441,33 @@ func main(){
 		Docker_runner(libvirtd, "nested_kvm", "--privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw")
         }
 
-	/// Check for master info
+	/// Check for primary info
 	Alive_chk_to_mgm("ok")
 	Resource_chk_to_mgm()
-	Get_masterinfo()
+	Get_primaryinfo()
 
 	println("provider: ", Provider_type)
 	println("Local_ip_add:", Local_ip_add)
 	println("Agent UniqID:", klevr_agent_id_string)
-	println("Master:", Master_ip)
+	println("Primary:", Primary_ip)
+
+
+	/// Scheduler
 	s := gocron.NewScheduler()
-	s.Every(1).Seconds().Do(Get_masterinfo)
+	s.Every(1).Seconds().Do(Get_primaryinfo)
 //	s.Every(1).Seconds().Do(Turn_on)
 	s.Every(2).Seconds().Do(RnR)
-	<- s.Start()
+
+	go func(){
+		<- s.Start()
+	}()
+
+	///Http listen for beacon
+	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("OK"))
+	})
+	http.ListenAndServe(":18800", nil)
+
 }
 
 
