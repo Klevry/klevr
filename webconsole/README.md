@@ -4,6 +4,14 @@
 * Set for custom: ```klevr_webconsole -port=8080 -apiserver="http://192.168.2.100:8500"```
  * apiserver is consul address
 
+## Platform type Example
+ * Baremetal
+ * Linux laptop(micro k8s)
+ * Kubernetes
+ * Prometheus
+ * AWS/Azure/GCP
+
+
 ## APIs
 * Link for Agent Download: `[Web-console URL]/`
 * Show hosts info.: `[Web-console URL]/user/[USERID]/hostsinfo` with Primary of agent

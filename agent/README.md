@@ -17,15 +17,15 @@ Usage of ./klevr:
   -id string
     	Account ID from Klevr service
   -ip string
-    	local IP address for networking (default "192.168.7.1")
-  -provider string
-    	[baremetal|aws] - Service Provider for Host build up
+    	local IP address for networking (default "192.168.15.50")
+  -platform string
+    	[baremetal|aws] - Service Platform for Host build up
   -webconsole string
     	Klevr webconsole(server) address (URL or IP, Optional: Port) for connect (default "localhost:8080")
   -zone string
     	zone will be a [Dev/Stg/Prod] (default "dev-zone")
 ```
 
- * Using localhost: `./klevr -provider=baremetal -id=ralf -group="[COMPANY/TEAM]"`
+ * Using localhost: `./klevr -platform=baremetal -id=ralf -group="[COMPANY/TEAM]"`
 
- * Using seperated host:  `./klevr -provider=baremetal -id=ralf -webconsole=[WEBCONSOL_ADDR] `
+ * Using seperated host:  `./klevr -platform=baremetal -id=ralf -webconsole=[WEBCONSOL_ADDR] `
