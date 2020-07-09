@@ -21,7 +21,7 @@ docker-compose up -d
 
 ## Features
  * **[Agent](./agent/)**
-   * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
+   * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
   * **[Web console](./webconsole/)**
