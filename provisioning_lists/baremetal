@@ -1,3 +1,3 @@
-egrep '(vmx|svm)' /proc/cpuinfo, "Error: Required VT-X. Please check the BIOS or check the other machine."
-echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel, "Error: Required apply of modprobe command."
-cat /sys/module/kvm_intel/parameters/nested, "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\""
+"egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine."
+"echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command."
+"cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\""
