@@ -38,7 +38,7 @@ var Klevr_console string
 var Api_key_string string
 var Local_ip_add string
 var User_account_id string
-var Provider_type string
+var Platform_type string
 var Klevr_zone string
 var Klevr_company string
 
@@ -46,7 +46,7 @@ var Klevr_company string
 var Installer string
 var Primary_ip string
 var AM_I_PRIMARY string
-var Sysinfo string
+var System_info string
 var Error_buffer string
 var Result_buffer string
 
@@ -127,7 +127,7 @@ func Check_variable() string{
 
 	// Flag options
 	userid := flag.String("id", "", "Account ID from Klevr service")
-	provider := flag.String("provider", "", "[baremetal|aws] - Service Provider for Host build up")
+	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
 	company := flag.String("group", "", "Group name will be a uniq company name or team name")
 	zone := flag.String("zone", "dev-zone", "zone will be a [Dev/Stg/Prod]")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
@@ -145,8 +145,8 @@ func Check_variable() string{
 		fmt.Println("Please make sure the group name")
 		os.Exit(0)
 	}
-	if len(*provider) == 0 {
-		fmt.Println("Please make sure the provider")
+	if len(*platform) == 0 {
+		fmt.Println("Please make sure the platform")
 		os.Exit(0)
 	}
 	if len(*local_ip) == 0 {
@@ -174,11 +174,11 @@ func Check_variable() string{
 	if err != nil{
 		hash_create(base_info)
 	}
-	Provider_type = string(*provider)
+	Platform_type = string(*platform)
 	Klevr_zone = string(*zone)
 	Klevr_company = string(*company)
 
-	return Provider_type
+	return Platform_type
 	return Local_ip_add
 	return User_account_id
 	return Klevr_console
@@ -264,13 +264,13 @@ func Install_pkg(packs string){
 //Klevr_company Klevr_zone
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/provider/"+Provider_type+"/hostname/"+Klevr_agent_id_string+"/"+Local_ip_add+"/"+now_time+"/"+fail_chk)
+	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/hostname/"+Klevr_agent_id_string+"/"+Local_ip_add+"/"+now_time+"/"+fail_chk)
 	Debug(uri) /// log output
 	communicator.Get_http(uri, Api_key_string)
 }
 
 func Get_primaryinfo() string{
-	uri_result := strings.Split(communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/provider/"+Provider_type+"/primaryinfo", Api_key_string), "=")
+	uri_result := strings.Split(communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/primaryinfo", Api_key_string), "=")
 	Primary_ip = uri_result[1]
 	Debug(Primary_ip) /// log output
 	return Primary_ip
@@ -292,11 +292,11 @@ func Check_primary() string{
 
 
 func Resource_chk_to_mgm() {
-	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/provider/"+Provider_type+"/hostname/"+Klevr_agent_id_string+"/hostinfo")
+	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/hostname/"+Klevr_agent_id_string+"/hostinfo")
 	Debug(uri) /// log output
 	Resource_info()
-	communicator.Put_http(uri, Sysinfo, Api_key_string)
-	Debug("Sysinfo:"+Sysinfo) /// log output
+	communicator.Put_http(uri, System_info, Api_key_string)
+	Debug("System_info:"+System_info) /// log output
 }
 
 func Resource_info()string{
@@ -306,8 +306,8 @@ func Resource_info()string{
 	if err != nil {
 	    log.Fatal(err)
 	}
-	Sysinfo = fmt.Sprintf("%s",data)
-	return Sysinfo
+	System_info = fmt.Sprintf("%s",data)
+	return System_info
 }
 
 
@@ -356,7 +356,7 @@ func RnR(){
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
 		// Put master alive time to stamp
-		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/provider/"+Provider_type+"/ackprimary", Api_key_string)
+		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
 
 		// Write done the information about of Final result time & hostlists
 		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
@@ -364,12 +364,12 @@ func RnR(){
 		Secondary_scanner()
 
 		Alive_chk_to_mgm("ok")
-		if Provider_type == "baremetal" {
+		if Platform_type == "baremetal" {
 //			println ("Docker_runner here - klevr_beacon_img")
 			//Docker_runner("klevry/beacon:latest", "primary_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
 			println ("Docker_runner here - klevr_taskmanager_img")
 			println ("Get_task_from_here for baremetal")
-		} else if Provider_type == "aws" {
+		} else if Platform_type == "aws" {
 			println ("Get_task_from_here for AWS")
 		}
 		println ("Get_task_excution_from_here")
@@ -432,7 +432,7 @@ func main(){
 	Check_variable()
 
 	/// Checks env. for baremetal to Hypervisor provisioning
-	if Provider_type == "baremetal" {
+	if Platform_type == "baremetal" {
 		Required_env_chk()
 	}
 
@@ -446,7 +446,7 @@ func main(){
 	Check_package("docker")
 	Check_package("curl")
 
-	if Provider_type == "baremetal" {
+	if Platform_type == "baremetal" {
 		Docker_runner(libvirtd, "nested_kvm", "--privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw")
         }
 
@@ -455,7 +455,7 @@ func main(){
 	Resource_chk_to_mgm()
 	Get_primaryinfo()
 
-	println("provider: ", Provider_type)
+	println("platform: ", Platform_type)
 	println("Local_ip_add:", Local_ip_add)
 	println("Agent UniqID:", Klevr_agent_id_string)
 	println("Primary:", Primary_ip)
@@ -470,6 +470,12 @@ func main(){
 	go func(){
 		<- s.Start()
 	}()
+
+	///Http listen for host info get
+	http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {
+		Resource_info()
+		w.Write([]byte(System_info))
+	})
 
 	///Http listen for beacon
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
