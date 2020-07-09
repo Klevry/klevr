@@ -31,7 +31,8 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
-var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+//var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 
 var Klevr_agent_id_string string
 
@@ -265,10 +266,24 @@ func Install_pkg(packs string){
 
 //Provisioning file download
 func Get_provisionig_script(){
-	uri := Prov_script+"/"+Platform_type
-	Debug(uri) /// log output
-	Get_script_arr := communicator.Get_http(uri, Api_key_string)
-	println("sdljfdslkfjdsklfsdklfjsdlkfjsdlkfjsdlkfjklsdfjklsdjkldsjflksd666666666666666666666666666666666666666666: :",Get_script_arr)
+	urli := Prov_script+"/"+Platform_type
+	Get_script := communicator.Get_http(urli, Api_key_string)
+//	println("sdljfdslkfjdsklfsdklfjsdlkfjsdlkfjsdlkfjklsdfjklsdjkldsjflksd666666666666666666666666666666666666666666: :",Get_script_arr)
+	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
+	Get_script_arr := strings.Split(strings.Replace(Get_script,"\n\n","\n", -1), "\n")
+	println("%%%%%%%%%%%%%%%%%%%: ",len(Get_script_arr))
+	for i := 0 ; i < len(Get_script_arr)-1; i++ {
+		fin_arr := strings.Split(Get_script_arr[i], ",")
+		//	Command_checker(fin_arr[0], fin_arr[1])
+		cmd := exec.Command("sh","-c", fin_arr[0])
+		err := cmd.Run()
+		if err != nil {
+			println("itda: ",fin_arr[1])
+		}else{
+			println("eupda: ",fin_arr[1])
+		}
+
+	}
 }
 
 //Klevr_company Klevr_zone
