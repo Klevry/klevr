@@ -31,6 +31,7 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
+var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
 
 var Klevr_agent_id_string string
 
@@ -261,6 +262,15 @@ func Install_pkg(packs string){
                 log.Printf("- \"%s\" package has been installed",packs)
         }
 }
+
+//Provisioning file download
+func Get_provisionig_script(){
+	uri := Prov_script+"/"+Platform_type
+	Debug(uri) /// log output
+	Get_script_arr := communicator.Get_http(uri, Api_key_string)
+	println("sdljfdslkfjdsklfsdklfjsdlkfjsdlkfjsdlkfjklsdfjklsdjkldsjflksd666666666666666666666666666666666666666666: :",Get_script_arr)
+}
+
 //Klevr_company Klevr_zone
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
@@ -432,9 +442,7 @@ func main(){
 	Check_variable()
 
 	/// Checks env. for baremetal to Hypervisor provisioning
-	if Platform_type == "baremetal" {
-		Required_env_chk()
-	}
+	Get_provisionig_script()
 
 	/// Set up the Task & configuration directory
 	Set_basement()
