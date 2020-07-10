@@ -32,6 +32,7 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
+var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 
 var Klevr_agent_id_string string
 
@@ -384,15 +385,39 @@ func RnR(){
 		Resource_info() /// test
 		Resource_chk_to_mgm()
 	}else{
-		url := "http://"+Primary_ip+":18800/status"
-	        req, _ := http.NewRequest("GET", url, nil)
-	        req.Header.Add("cache-control", "no-cache")
-	        _, err := http.DefaultClient.Do(req)
-		if err != nil {
-			Alive_chk_to_mgm("failed")
-		}else{
-			Alive_chk_to_mgm("ok")
+		/// http://192.168.1.22:18800/primaryworks
+		// url := "http://"+Primary_ip+":18800/status"
+		url := "http://"+Primary_ip+":18800/primaryworks"
+		primary_time_check := communicator.Get_http(url, Api_key_string)
+
+//		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %s ]]]\n", primary_time_check)
+		/// Duration check
+//		primary_time, _ := strconv.Atoi(primary_time_check)
+		primary_time, _ := strconv.ParseInt(primary_time_check, 10, 64)
+
+		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %d ]]]\n", primary_time)
+		var Host_purge_result string
+
+		/// Primary Last working time stamp
+		if primary_time != 0 {
+			ioutil.WriteFile(Timestamp_from_Primary, []byte(primary_time_check), 0644)
 		}
+
+		primary_time_result, _ := ioutil.ReadFile(Timestamp_from_Primary)
+		prim_string := string(primary_time_result)
+		primary_int,_ := strconv.ParseInt(prim_string, 10, 64)
+
+		tm := time.Unix(primary_int, 0)
+		if time.Since(tm).Minutes() > 1 {
+			/// Delete old host via API server
+			Host_purge_result = Primary_ip+": Primary agent is not working!!\n"
+		}else{
+			//Host_purge_result = Host_purge_result+"It's ok: "+get_data+"\n"
+			Host_purge_result = Primary_ip+": Primary agent is working hard :) \n"
+		}
+
+
+		println("Error check for Debug:",Host_purge_result)
 		// Primary error checker here - 2020/6/25 
 		Debug("I am Secondary")
 //		Resource_info() /// test
@@ -430,7 +455,8 @@ func Docker_runner(image_name, service_name, options string){
 	}
 }
 
-func Primary_works_check()string{
+/// Primary last working time checker
+func Primary_works_check() string{
 	var primary_latest_check string
 	primary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
 	raw_string_parse := strings.Split(string(primary_raw_file),"\n")
