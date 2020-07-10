@@ -1,6 +1,6 @@
 ![klevr_logo.png](./src/klevr_logo.png)
 # Kloud-native everywhere
-## Interconnector for Platform based SaaS delivery
+## Interconnector for the Platform based SaaS delivery
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
    * Baremetal server in the On-premise datacenter
