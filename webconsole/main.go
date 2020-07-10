@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"log"
-	_"bytes"
+	"bytes"
 	_ "os/exec"
 	_"os"
-	_ "io"
+	_"io"
 	_"io/ioutil"
 	"strings"
 	"strconv"
@@ -15,6 +15,7 @@ import (
 	"flag"
 	_"regexp"
 	"encoding/json"
+	"encoding/base64"
 	"github.com/gorilla/mux"
 	"github.com/ralfyang/klevr/communicator"
 )
@@ -354,22 +355,6 @@ func main() {
                 fmt.Fprintf(w, "\nResult: \n%s\n", Buffer_result)
         })
 
-	/// Agent alive status receiver
-        r.HandleFunc("/group/{G}/user/{U}/zone/{Z}/platform/{P}/aliveagent", func(w http.ResponseWriter, r *http.Request) {
-                vars := mux.Vars(r)
-                user := vars["U"]
-		platform := vars["P"]
-		group := vars["G"]
-		zone := vars["Z"]
- //               Put_alive_agent(user, platform)
-//		Get_task_list(user, platform)
-	        /// Export result to web
-                fmt.Fprintf(w, "Group: %s\n", group)
-                fmt.Fprintf(w, "User: %s\n", user)
-                fmt.Fprintf(w, "Zone: %s\n", zone)
-                fmt.Fprintf(w, "Platform: %s\n", platform)
-                fmt.Fprintf(w, "\n\nHost(s) info.: \n%s\n", Hostlist)
-        })
 
 	// http://10.10.33.2:8000/group/klevr-a-team/user/ralf/zone/dev/platform/baremetal/hostname/2db8c6cf4329e44bda97a72f7f9127125d991ba2/192.168.15.50/1594257516/ok
 	/// receive json data to KV store
@@ -408,6 +393,29 @@ func main() {
 //		Put_platform_init(platform, data)
 	        /// Export result to web
                 fmt.Fprintf(w, "%s", Primary_info)
+        })
+
+	/// Agent alive status receiver
+	/// http://192.168.2.100:8000/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts 
+        r.HandleFunc("/groups/{G}/users/{U}/zones/{Z}/platforms/{P}/aliveagent", func(w http.ResponseWriter, r *http.Request) {
+                vars := mux.Vars(r)
+                user := vars["U"]
+		platform := vars["P"]
+		group := vars["G"]
+		zone := vars["Z"]
+
+		data_buffer := new(bytes.Buffer)
+		data_buffer.ReadFrom(r.Body)
+		data_Str := data_buffer.String()
+
+		/// Get string from r.Body via bytes buffer
+//		data := base64.NewDecoder(base64.StdEncoding, r.Body)
+		data,_ := base64.StdEncoding.DecodeString(data_Str)
+		plan_data := fmt.Sprintf("%s",data)
+		println("datadatadatadatadata:", plan_data)
+		ure := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/aliveagent"
+		communicator.Put_http(API_url+ure, plan_data, API_key_string)
+                fmt.Fprintf(w, "%s", plan_data)
         })
 
 	// Bind to a port and pass our router in

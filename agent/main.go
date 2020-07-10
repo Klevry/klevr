@@ -21,6 +21,7 @@ import (
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
+	"encoding/base64"
 	//"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
@@ -347,40 +348,46 @@ func Resource_info()string{
 
 
 func Secondary_scanner(){
-	Secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
-	raw_string_parse := strings.Split(string(Secondary_raw_file),"\n")
+	secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+	raw_string_parse := strings.Split(string(secondary_raw_file),"\n")
 	var quee_host string
-	for i := 1; i < len(raw_string_parse)-2; i++ {
-		var fin_res string = ""
-		target_raw := raw_string_parse[i]
-		strr1 := strings.Split(target_raw, "&")
-		raw_result_split := strings.Split(strr1[1], "=")
+	for i := 1; i < len(raw_string_parse); i++ {
+		if strings.Contains(raw_string_parse[i], "last_check") == true {
+			var fin_res string = ""
+			target_raw := raw_string_parse[i]
+			strr1 := strings.Split(target_raw, "&")
+			raw_result_split := strings.Split(strr1[1], "=")
 
-		Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
-		fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
-		if fin_res == "OK" {
-//			println("77777777777777777777777777777777777777 Secondary_raw_fileSecondary_raw_file: ", fin_res)  /// for test result
-			if i == len(raw_string_parse)-3{
-				quee_host = quee_host+Target_secondary_hosts+": "+fin_res
-			}else{
-				quee_host = quee_host+Target_secondary_hosts+": "+fin_res+"\n"
+			Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
+			fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
+			if fin_res == "OK" {
+				// quee_host = quee_host+"{\"hostname\":\""+raw_result_split[1]+"\", \"status\":\""+fin_res+"\"}" //for sample 
+				quee_host = quee_host+raw_result_split[1]+":"+fin_res+"\n"
 			}
 		}
 	}
 //	regex, _ := regexp.Compile("\n\n")
 //	flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
-	flat_quee_host := strings.Replace(quee_host, "\n\n", "\n", -1)
-	println("8888888888888888888888888888888888888888888888888888888888")
-	println(flat_quee_host)
-	println("9999999999999999999999999999999999999999999999999999999999")
+	flat_quee_host := strings.ReplaceAll(quee_host, "\n\n", "")
+	flat_enc := base64.StdEncoding.EncodeToString([]byte(flat_quee_host))
+//	println("88888888888888888888888888888==",flat_enc)
+	Hosts_alive_list(flat_enc)
 }
 
+
+func Hosts_alive_list(alive_list string) {
+	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
+	uri := fmt.Sprint(Klevr_console+"/groups/"+Klevr_company+"/users/"+User_account_id+"/zones/"+Klevr_zone+"/platforms/"+Platform_type+"/aliveagent")
+        Debug(uri) /// log output
+	alive_conv := fmt.Sprintf("%s",alive_list)
+        communicator.Put_http(uri, alive_conv, Api_key_string)
+}
 
 
 func RnR(){
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
-		// Put master alive time to stamp
+		// Put primary alive time to stamp
 		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
 
 		// Write done the information about of Final result time & hostlists
@@ -448,6 +455,22 @@ func Docker_runner(image_name, service_name, options string){
 	}
 }
 
+func Primary_works_check()string{
+	var primary_latest_check string
+	primary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+	raw_string_parse := strings.Split(string(primary_raw_file),"\n")
+		if strings.Contains(raw_string_parse[0], "get_timestamp") == true {
+			strr1 := strings.Split(raw_string_parse[0], ": ")
+			primary_latest_check = strr1[1]
+		}else{
+			log.Println("Primary uptime is not recognized")
+			primary_latest_check = ""
+		}
+	return primary_latest_check
+}
+
+
+
 
 func main(){
 	// Docker image define
@@ -494,13 +517,19 @@ func main(){
 		<- s.Start()
 	}()
 
-	///Http listen for host info get
+	/// Http listen for host info get
 	http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {
 		Resource_info()
 		w.Write([]byte(System_info))
 	})
 
-	///Http listen for beacon
+	/// Http listen for primary latest working time
+	http.HandleFunc("/primaryworks", func(w http.ResponseWriter, req *http.Request) {
+		primary_uptime := Primary_works_check()
+		w.Write([]byte(primary_uptime))
+	})
+
+	/// Http listen for beacon
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("OK"))
 	})
