@@ -32,8 +32,8 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
-//var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
-var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
+var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+//var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 
 var Klevr_agent_id_string string
@@ -265,24 +265,23 @@ func Install_pkg(packs string){
                 log.Printf("- \"%s\" package has been installed",packs)
         }
 }
-
+//peter line
 //Provisioning file download
 func Get_provisionig_script(){
 	urli := Prov_script+"/"+Platform_type
 	Get_script := communicator.Get_http(urli, Api_key_string)
-//	println("sdljfdslkfjdsklfsdklfjsdlkfjsdlkfjsdlkfjklsdfjklsdjkldsjflksd666666666666666666666666666666666666666666: :",Get_script_arr)
 	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
 	Get_script_arr := strings.Split(strings.Replace(Get_script,"\n\n","\n", -1), "\n")
 	println("%%%%%%%%%%%%%%%%%%%: ",len(Get_script_arr))
-	for i := 0 ; i < len(Get_script_arr)-1; i++ {
-		fin_arr := strings.Split(Get_script_arr[i], ",")
-		//	Command_checker(fin_arr[0], fin_arr[1])
-		cmd := exec.Command("sh","-c", fin_arr[0])
-		err := cmd.Run()
-		if err != nil {
-			println("itda: ",fin_arr[1])
-		}else{
-			println("eupda: ",fin_arr[1])
+	for i := 0 ; i < len(Get_script_arr); i++ {
+		if len(Get_script_arr[i]) > 1 {
+			fin_arr := strings.Split(Get_script_arr[i], ",")
+			Command_checker("eval "+fin_arr[0], fin_arr[1])
+//			err := Command_checker.Run()
+//			if err != nil {
+//				log.Printf("- %s ", fin_arr[1])
+//				os.Exit(1)
+//			}
 		}
 
 	}
@@ -346,33 +345,31 @@ func Resource_info()string{
 //	println(err)
 //}
 
-
-
 func Secondary_scanner(){
-	secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
-	raw_string_parse := strings.Split(string(secondary_raw_file),"\n")
-	var quee_host string
-	for i := 1; i < len(raw_string_parse); i++ {
-		if strings.Contains(raw_string_parse[i], "last_check") == true {
-			var fin_res string = ""
-			target_raw := raw_string_parse[i]
-			strr1 := strings.Split(target_raw, "&")
-			raw_result_split := strings.Split(strr1[1], "=")
+        secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+        raw_string_parse := strings.Split(string(secondary_raw_file),"\n")
+        var quee_host string
+        for i := 1; i < len(raw_string_parse); i++ {
+                if strings.Contains(raw_string_parse[i], "last_check") == true {
+                        var fin_res string = ""
+                        target_raw := raw_string_parse[i]
+                        strr1 := strings.Split(target_raw, "&")
+                        raw_result_split := strings.Split(strr1[1], "=")
 
-			Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
-			fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
-			if fin_res == "OK" {
-				// quee_host = quee_host+"{\"hostname\":\""+raw_result_split[1]+"\", \"status\":\""+fin_res+"\"}" //for sample 
-				quee_host = quee_host+raw_result_split[1]+":"+fin_res+"\n"
-			}
-		}
-	}
-//	regex, _ := regexp.Compile("\n\n")
-//	flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
-	flat_quee_host := strings.ReplaceAll(quee_host, "\n\n", "")
-	flat_enc := base64.StdEncoding.EncodeToString([]byte(flat_quee_host))
-//	println("88888888888888888888888888888==",flat_enc)
-	Hosts_alive_list(flat_enc)
+                        Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
+                        fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
+                        if fin_res == "OK" {
+                                // quee_host = quee_host+"{\"hostname\":\""+raw_result_split[1]+"\", \"status\":\""+fin_res+"\"}" //for sample
+                                quee_host = quee_host+raw_result_split[1]+":"+fin_res+"\n"
+                        }
+                }
+        }
+//      regex, _ := regexp.Compile("\n\n")
+//      flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
+        flat_quee_host := strings.Replace(quee_host, "\n\n", "", -1)
+        flat_enc := base64.StdEncoding.EncodeToString([]byte(flat_quee_host))
+//      println("88888888888888888888888888888==",flat_enc)
+        Hosts_alive_list(flat_enc)
 }
 
 
