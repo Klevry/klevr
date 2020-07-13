@@ -32,9 +32,8 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
-//var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
-var Prov_script = "http://yumi.kr"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 
 var Klevr_agent_id_string string
