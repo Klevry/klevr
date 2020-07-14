@@ -278,7 +278,6 @@ func Get_provisionig_script(){
 			fin_arr := strings.Split(Get_script_arr[i], ",")
 			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
 			if err != nil {
-				log.Printf("- %s ", fin_arr[1])
 				os.Exit(1)
 			}
 		}
