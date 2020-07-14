@@ -3,7 +3,7 @@
 "## Disable as below for the Test run on non-VMX supported system", ""
 "#egrep '(vmx|svm)' /proc/cpuinfo", "Error: CPU is not supports for vmx in this system. Please check the BIOS for this issue."
 "#echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Nested VM mode setup has been failed."
-"#cat /sys/module/kvm_intel/parameters/nested", "Error: Nested VM configuratio check error"
+"#cat /sys/module/kvm_intel/parameters/nested", "Error: Nested VM configuration check error"
 
 "#sudo docker stop nested_kvm 2&>1 /dev/null","nested_kvm container initialze error - 1/2"
 "#sudo docker rm -f nested_kvm 2&>1 /dev/null","nested_kvm container initialze error - 2/2"
