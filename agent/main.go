@@ -73,7 +73,7 @@ func check(e error) {
 	}
 }
 
-func Command_checker(cmd, msg string) string{
+func Command_checker(cmd, msg string) (string, error){
 	chk_command := exec.Command("sh","-c",cmd)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -86,15 +86,15 @@ func Command_checker(cmd, msg string) string{
 	}
 	Result_buffer = out.String()
 	Error_buffer = msg
-	return Error_buffer
-	return Result_buffer
+	return Error_buffer, err
+	return Result_buffer, err
 }
 
-func Required_env_chk(){
-	Command_checker("egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine.")
-	Command_checker("echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command." )
-	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
-}
+//func Required_env_chk(){
+//	Command_checker("egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine.")
+//	Command_checker("echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command." )
+//	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
+//}
 
 
 func Get_mac() (mac_add string) {
@@ -265,7 +265,7 @@ func Install_pkg(packs string){
                 log.Printf("- \"%s\" package has been installed",packs)
         }
 }
-//peter line
+
 //Provisioning file download
 func Get_provisionig_script(){
 	urli := Prov_script+"/"+Platform_type
@@ -276,12 +276,11 @@ func Get_provisionig_script(){
 	for i := 0 ; i < len(Get_script_arr); i++ {
 		if len(Get_script_arr[i]) > 1 {
 			fin_arr := strings.Split(Get_script_arr[i], ",")
-			Command_checker("eval "+fin_arr[0], fin_arr[1])
-//			err := Command_checker.Run()
-//			if err != nil {
-//				log.Printf("- %s ", fin_arr[1])
-//				os.Exit(1)
-//			}
+			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
+			if err != nil {
+				log.Printf("- %s ", fin_arr[1])
+				os.Exit(1)
+			}
 		}
 
 	}
