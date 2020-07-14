@@ -3,6 +3,6 @@
 "egrep '(vmx|svm)' /proc/cpuinfo", "Error: vmx"
 "echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: cmd"
 "cat /sys/module/kvm_intel/parameters/nested", "Error: check"
-"$(if [[ $(sudo docker ps |grep nested_kvm) != \'\' ]];then sudo docker stop nested_kvm  > /dev/null ;fi)","nested_kvm container initialze error - 1/2"
-"sudo docker rm $(sudo docker ps -a |grep nested_kvm | awk '{print $1}') 2> /dev/null","nested_kvm container initialze error - 2/2"
+"`if [[ $(sudo docker ps |grep nested_kvm) != \'\' ]];then sudo docker stop nested_kvm > /dev/null ;fi`","nested_kvm container initialze error - 1/2"
+"`if [[ $(sudo docker ps -a |grep nested_kvm) != \'\' ]];then sudo docker rm nested_kvm > /dev/null ;fi`","nested_kvm container initialze error - 2/2"
 "sudo docker run --name nested_kvm --privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw klevry/libvirt:latest", "Libvirt container runnuing error. Please check existed libvirt container out"
