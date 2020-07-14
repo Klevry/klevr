@@ -5,4 +5,4 @@
 "cat /sys/module/kvm_intel/parameters/nested", "Error: check"
 "#sudo docker stop nested_kvm 2&>1 /dev/null","nested_kvm container initialze error - 1/2"
 "#sudo docker rm nested_kvm 2&>1 /dev/null","nested_kvm container initialze error - 2/2"
-"sudo docker run --name nested_kvm --privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw klevry/libvirt:latest", "Libvirt container runnuing error. Please check existed libvirt container out"
+"sudo docker run --name nested_kvm --privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw klevry/libvirt:latest", "Libvirt container runnuing error. Please check existed libvirt container out and remove that"
