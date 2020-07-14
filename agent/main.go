@@ -496,11 +496,14 @@ func Primary_works_check() string{
 
 
 func main(){
-	// Docker image define
-	var libvirtd = "klevry/libvirt:latest"
-
 	/// check the cli command with required options 
 	Check_variable()
+
+	/// Requirement package check
+	if Platform_type == "baremetal" {
+		Check_package("curl")
+		Check_package("docker")
+        }
 
 	/// Checks env. for baremetal to Hypervisor provisioning
 	Get_provisionig_script()
@@ -510,14 +513,6 @@ func main(){
 
 	/// Uniq ID create & get
 	Klevr_agent_id_get()
-
-	/// Requirement package check
-	Check_package("docker")
-	Check_package("curl")
-
-	if Platform_type == "baremetal" {
-		Docker_runner(libvirtd, "nested_kvm", "--privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw")
-        }
 
 	/// Check for primary info
 	Alive_chk_to_mgm("ok")
