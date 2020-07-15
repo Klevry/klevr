@@ -22,7 +22,7 @@ import (
 
 
 /// Default API URL set
-var API_url="http://localhost:8500"
+var Consul_url="http://localhost:8500"
 
 /// Klevr Download URL
 var Agent_download = "https://bit.ly/go_inst"
@@ -42,16 +42,16 @@ var Http_body_buffer string
 
 /// For custom scripts when the agent download & install
 func Get_provision_script() string{
-	Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/klevr/form?raw=1", API_key_string )
+	Http_body_buffer = communicator.Get_http(Consul_url+"/v1/kv/klevr/form?raw=1", API_key_string )
 	if len(string(Http_body_buffer)) == 0 {
 		/// Set Script for instruction
 		uri := "/v1/kv/klevr/form"
 		data := "bash -s 'echo \"hello world\"'" /// Temporary use
-		communicator.Put_http(API_url+uri, data, API_key_string)
+		communicator.Put_http(Consul_url+uri, data, API_key_string)
 		/// Read again
-		API_provision_script = communicator.Get_http(API_url+"/v1/kv/klevr/form?raw=1", API_key_string)
+		API_provision_script = communicator.Get_http(Consul_url+"/v1/kv/klevr/form?raw=1", API_key_string)
 	}else {
-		API_provision_script = communicator.Get_http(API_url+"/v1/kv/klevr/form?raw=1", API_key_string)
+		API_provision_script = communicator.Get_http(Consul_url+"/v1/kv/klevr/form?raw=1", API_key_string)
 	}
 	return API_provision_script
 }
@@ -70,17 +70,17 @@ func LandingPage(w http.ResponseWriter, r *http.Request){
 func Set_param() string{
 	//Parsing by Flag
 	port := flag.String("port",Service_port,"Set port number for Service")
-	api_server := flag.String("apiserver",API_url,"Set API Server URI for comunication")
+	api_server := flag.String("apiserver",Consul_url,"Set API Server URI for comunication")
 	flag.Parse()
 	Service_port = *port
-	API_url = *api_server
+	Consul_url = *api_server
 	return Service_port
 }
 //company user zone platform
 //%s/+group+"/users/"+user+"/zones/"+zone+/+group+"\/groups/"+group+"/users/"+user+"/zones/"+zone+"\/zones/"+zone+/g
 /// Get Primary server infomation for secondary agent control
 func Get_primary(group, user, zone, platform string) string{
-	Primary_info = communicator.Get_http(API_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primarys?raw=1", API_key_string)
+	Primary_info = communicator.Get_http(Consul_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primarys?raw=1", API_key_string)
 		if len(Primary_info) == 0{
 			Primary_info = "Not yet"
 		}
@@ -102,28 +102,28 @@ func Get_host(group, user, zone, platform, priyes string) string{
 	var arr []string
 	var quee string
 	var arr_stop, fail_count, array_count int
-	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/?keys", API_key_string)
+	dataJson := communicator.Get_http(Consul_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 	Get_primary(group, user, zone, platform)
 		if Primary_info == "Not yet"{
 			for i := 0; i <len(arr); i++{
 				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
 				if endpoint == "health" {
-					Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+					Http_body_buffer = communicator.Get_http(Consul_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
 					strr1 := strings.Split(Http_body_buffer, "&")
 					strr2 := strings.Split(strr1[1], "=")
 					Primary_info = "primary="+strr2[1]
 					arr_stop = i
 				}
 				uri := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primarys"
-				communicator.Put_http(API_url+uri, Primary_info, API_key_string)
+				communicator.Put_http(Consul_url+uri, Primary_info, API_key_string)
 				if priyes == "yes" {
 					quee = quee+Primary_info
 				}else{
 					quee = quee
 				}
 				get_data := arr[arr_stop]
-				Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
+				Http_body_buffer = communicator.Get_http(Consul_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
 				println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",Http_body_buffer)
 				quee = quee+Http_body_buffer+"\n"
 			}
@@ -133,7 +133,7 @@ func Get_host(group, user, zone, platform, priyes string) string{
 			for i := 0; i <len(arr); i++{
 				endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
 					if endpoint == "health" {
-						Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+						Http_body_buffer = communicator.Get_http(Consul_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
 						strr1 := strings.Split(Http_body_buffer, "&")
 						strr2 := strings.Split(strr1[1], "=")
 						marr1 := strings.Split(Http_body_buffer, "&")
@@ -156,7 +156,7 @@ func Get_host(group, user, zone, platform, priyes string) string{
 						array_count = array_count + 1
 						arr_stop = i
 						get_data := arr[i]
-						Http_body_buffer = communicator.Get_http(API_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
+						Http_body_buffer = communicator.Get_http(Consul_url+"/v1/kv/"+get_data+"?raw=1", API_key_string)
 						quee = quee+Http_body_buffer+"\n"
 //						println("aaaaaaaaa--fail_countfail_countfail_countfail_countfail:",quee)
 					}
@@ -184,13 +184,13 @@ func Get_info_primary(group, user, zone, platform string){
 
 func Put_platform_init(platform, data string){
 	uri := "/v1/kv/klevr/systems/platform_types/"+platform
-	communicator.Put_http(API_url+uri, data, API_key_string)
+	communicator.Put_http(Consul_url+uri, data, API_key_string)
 }
 
 
 func Put_primary_ack(group, user, zone, platform, ack string){
 	uri := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primary_ack"
-	communicator.Put_http(API_url+uri, ack, API_key_string)
+	communicator.Put_http(Consul_url+uri, ack, API_key_string)
 }
 
 
@@ -202,18 +202,18 @@ func Hostpool_mgt(group, user, zone, platform string) string{
 	Host_purge_result = "\n"
 
 	/// Get Hostlist with Keys
-	dataJson := communicator.Get_http(API_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/?keys", API_key_string)
+	dataJson := communicator.Get_http(Consul_url+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/?keys", API_key_string)
 	_ = json.Unmarshal([]byte(dataJson), &arr)
 		for i := 0; i < len(arr); i++ {
 			var target_txt, time_arry []string
 			var time_string string
 			endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
 			if endpoint == "health" {
-				queue = communicator.Get_http(API_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
+				queue = communicator.Get_http(Consul_url+"/v1/kv/"+arr[i]+"?raw=1", API_key_string)  /// Endpoing value will be "~/health" part of API
 				get_data := arr[i]
 
 				/// Get value of each hosts
-				target_key = API_url+"/v1/kv/"+get_data
+				target_key = Consul_url+"/v1/kv/"+get_data
 				println("target_key=", target_key) ///////////  Test output
 				/// Parsing the Key/value of host_info
 				target_txt = strings.Split(string(queue), "&")
@@ -230,7 +230,7 @@ func Hostpool_mgt(group, user, zone, platform string) string{
 				if time.Since(tm).Hours() > 1 {
 					/// Delete old host via API server
 					Host_purge_result = Host_purge_result+"Overtime: "+get_data+"\n"
-					communicator.Delete_http(API_url+"/v1/kv/"+get_data, API_key_string)
+					communicator.Delete_http(Consul_url+"/v1/kv/"+get_data, API_key_string)
 				}else{
 					Host_purge_result = Host_purge_result+"It's ok: "+get_data+"\n"
 				}
@@ -243,7 +243,7 @@ func Hostpool_mgt(group, user, zone, platform string) string{
 func Client_receiver(group, user, zone, hostname, host_ip, platform, host_alive, primary_alive string)string{
 	uri := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/"+hostname+"/health"
 	data := "last_check="+host_alive+"&ip="+host_ip+"&clientType="+platform+"&primaryConnection="+primary_alive
-	communicator.Put_http(API_url+uri, data, API_key_string)
+	communicator.Put_http(Consul_url+uri, data, API_key_string)
 	Buffer_result = data
 	return Buffer_result
 }
@@ -251,7 +251,7 @@ func Client_receiver(group, user, zone, hostname, host_ip, platform, host_alive,
 func Put_hostinfo(group, user, zone, platform, hostname, body string)string{
 	uri := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/"+hostname+"/hostinfo"
 	data := body
-	communicator.Put_http(API_url+uri, data, API_key_string)
+	communicator.Put_http(Consul_url+uri, data, API_key_string)
 	Buffer_result = data
 	return Buffer_result
 }
@@ -414,13 +414,13 @@ func main() {
 		plan_data := fmt.Sprintf("%s",data)
 		println("datadatadatadatadata:", plan_data)
 		ure := "/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/aliveagent"
-		communicator.Put_http(API_url+ure, plan_data, API_key_string)
+		communicator.Put_http(Consul_url+ure, plan_data, API_key_string)
                 fmt.Fprintf(w, "%s", plan_data)
         })
 
 	// Bind to a port and pass our router in
 	println("Service port:",Service_port)
-	println("Target API Server:",API_url)
+	println("Target API Server:",Consul_url)
 	log.Printf("Web-console operation error: ",http.ListenAndServe(":"+Service_port, r))
 }
 
