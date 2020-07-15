@@ -1,5 +1,6 @@
 ![klevr_logo.png](./src/klevr_logo.png)
-# Klevr: K(C)loud-native everywhere cleverly
+# Klevr: Kloud-native everywhere
+## Interconnector for the Platform based SaaS delivery
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
    * Baremetal server in the On-premise datacenter
@@ -20,13 +21,13 @@ docker-compose up -d
 
 ## Features
  * **[Agent](./agent/)**
-   * Provisioning: Docker, Micro K8s, Vagrant, VirtualBox
+   * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
    * Metric data aggregate & delivery
   * **[Web console](./webconsole/)**
    * Host pool management
    * Resource management
-   * Master node management 
+   * Primary host management 
    * Task management 
    * Service catalog management
    * Service delivery to Dev./Stg./Prod.

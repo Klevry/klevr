@@ -17,9 +17,11 @@ import (
 	"strconv"
 	"github.com/jasonlvhit/gocron"
 	"net/http"
+	_"regexp"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
+	"encoding/base64"
 	//"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
@@ -29,17 +31,26 @@ import (
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
-var klevr_agent_id_string string
+var Primary_communication_result = "/tmp/communication_result.stmp"
+var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+//var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
+var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 
-var klevr_console string
+var Klevr_agent_id_string string
+
+var Klevr_console string
 var Api_key_string string
 var Local_ip_add string
 var User_account_id string
-var Provider_type string
+var Platform_type string
+var Klevr_zone string
+var Klevr_company string
+
+
 var Installer string
-var Master_ip string
-var AM_I_MASTER string
-var Sysinfo string
+var Primary_ip string
+var AM_I_PRIMARY string
+var System_info string
 var Error_buffer string
 var Result_buffer string
 
@@ -62,7 +73,7 @@ func check(e error) {
 	}
 }
 
-func Command_checker(cmd, msg string) string{
+func Command_checker(cmd, msg string) (string, error){
 	chk_command := exec.Command("sh","-c",cmd)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -75,15 +86,15 @@ func Command_checker(cmd, msg string) string{
 	}
 	Result_buffer = out.String()
 	Error_buffer = msg
-	return Error_buffer
-	return Result_buffer
+	return Error_buffer, err
+	return Result_buffer, err
 }
 
-func Required_env_chk(){
-	Command_checker("egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine.")
-	Command_checker("echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command." )
-	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
-}
+//func Required_env_chk(){
+//	Command_checker("egrep '(vmx|svm)' /proc/cpuinfo", "Error: Required VT-X. Please check the BIOS or check the other machine.")
+//	Command_checker("echo 'options kvm_intel nested=1' >> /etc/modprobe.d/kvm-nested.conf;modprobe -r kvm_intel && modprobe kvm_intel", "Error: Required apply of modprobe command." )
+//	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
+//}
 
 
 func Get_mac() (mac_add string) {
@@ -120,7 +131,9 @@ func Check_variable() string{
 
 	// Flag options
 	userid := flag.String("id", "", "Account ID from Klevr service")
-	provider := flag.String("provider", "", "[baremetal|aws] - Service Provider for Host build up")
+	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
+	company := flag.String("group", "", "Group name will be a uniq company name or team name")
+	zone := flag.String("zone", "dev-zone", "zone will be a [Dev/Stg/Prod]")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
 	klevr_addr := flag.String("webconsole", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
 
@@ -132,8 +145,12 @@ func Check_variable() string{
 		fmt.Println("Please insert an AccountID")
 		os.Exit(0)
 	}
-	if len(*provider) == 0 {
-		fmt.Println("Please make sure the provider")
+	if len(*company) == 0 {
+		fmt.Println("Please make sure the group name")
+		os.Exit(0)
+	}
+	if len(*platform) == 0 {
+		fmt.Println("Please make sure the platform")
 		os.Exit(0)
 	}
 	if len(*local_ip) == 0 {
@@ -149,7 +166,7 @@ func Check_variable() string{
 		klevr_tmp_server = *klevr_addr
 	}
 
-	klevr_console = "http://"+klevr_tmp_server
+	Klevr_console = "http://"+klevr_tmp_server
 
 	// Check for the Print
 	User_account_id = *userid
@@ -161,13 +178,16 @@ func Check_variable() string{
 	if err != nil{
 		hash_create(base_info)
 	}
-	Provider_type = string(*provider)
+	Platform_type = string(*platform)
+	Klevr_zone = string(*zone)
+	Klevr_company = string(*company)
 
-	return Provider_type
+	return Platform_type
 	return Local_ip_add
 	return User_account_id
-	return klevr_console
-
+	return Klevr_console
+	return Klevr_zone
+	return Klevr_company
 
 	return Api_key_string
 }
@@ -175,8 +195,8 @@ func Check_variable() string{
 func Klevr_agent_id_get() string{
 	klevr_agent_id, _ := ioutil.ReadFile(Klevr_agent_id_file)
 	string_parse := strings.Split(string(klevr_agent_id),"\n")
-	klevr_agent_id_string = string_parse[0]
-	return klevr_agent_id_string
+	Klevr_agent_id_string = string_parse[0]
+	return Klevr_agent_id_string
 }
 
 func Set_basement(){
@@ -246,41 +266,62 @@ func Install_pkg(packs string){
         }
 }
 
+//Provisioning file download
+func Get_provisionig_script(){
+	urli := Prov_script+"/"+Platform_type
+	Get_script := communicator.Get_http(urli, Api_key_string)
+	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
+	Get_script_arr := strings.Split(strings.Replace(Get_script,"\n\n","\n", -1), "\n")
+	println("%%%%%%%%%%%%%%%%%%%: ",len(Get_script_arr))
+	for i := 0 ; i < len(Get_script_arr); i++ {
+		if len(Get_script_arr[i]) > 1 {
+			fin_arr := strings.Split(Get_script_arr[i], ",")
+//			println("eval "+fin_arr[0], fin_arr[1])
+			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
+			if err != nil {
+				os.Exit(1)
+			}
+		}
+
+	}
+}
+
+//Klevr_company Klevr_zone
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/"+Local_ip_add+"/type/"+Provider_type+"/"+now_time+"/"+fail_chk)
+	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/hostname/"+Klevr_agent_id_string+"/"+Local_ip_add+"/"+now_time+"/"+fail_chk)
 	Debug(uri) /// log output
 	communicator.Get_http(uri, Api_key_string)
 }
 
-func Get_masterinfo() string{
-	uri_result := strings.Split(communicator.Get_http(klevr_console+"/user/"+User_account_id+"/masterinfo", Api_key_string), "=")
-	Master_ip = uri_result[1]
-	Debug(Master_ip) /// log output
-	return Master_ip
+func Get_primaryinfo() string{
+	uri_result := strings.Split(communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/primaryinfo", Api_key_string), "=")
+	Primary_ip = uri_result[1]
+	Debug(Primary_ip) /// log output
+	return Primary_ip
 }
 
 
-func Check_master() string{
-        if Master_ip == "" {
+func Check_primary() string{
+        if Primary_ip == "" {
                 log.Printf("- Klevr task manager has not defined. Please wait for vote from webconsole")
-        }else if Master_ip == Local_ip_add {
-                AM_I_MASTER = "MASTER"
-                log.Printf("--------------------------------  Master_ip=%s, Local_ip_add=%s",Master_ip,Local_ip_add)
-        }else if Master_ip != Local_ip_add  {
-                AM_I_MASTER = "0"
-                log.Printf("--------------------------------  Master_ip=%s, Local_ip_add=%s",Master_ip,Local_ip_add)
+        }else if Primary_ip == Local_ip_add {
+                AM_I_PRIMARY = "PRIMARY"
+                log.Printf("--------------------------------  Primary_ip=%s, Local_ip_add=%s",Primary_ip,Local_ip_add)
+        }else if Primary_ip != Local_ip_add  {
+                AM_I_PRIMARY = "0"
+                log.Printf("--------------------------------  Primary_ip=%s, Local_ip_add=%s",Primary_ip,Local_ip_add)
         }
-        return AM_I_MASTER
+        return AM_I_PRIMARY
 }
 
 
 func Resource_chk_to_mgm() {
-	uri := fmt.Sprint(klevr_console+"/user/"+User_account_id+"/hostname/"+klevr_agent_id_string+"/hostinfo")
+	uri := fmt.Sprint(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/hostname/"+Klevr_agent_id_string+"/hostinfo")
 	Debug(uri) /// log output
 	Resource_info()
-	communicator.Put_http(uri, Sysinfo, Api_key_string)
-	Debug("Sysinfo:"+Sysinfo) /// log output
+	communicator.Put_http(uri, System_info, Api_key_string)
+	Debug("System_info:"+System_info) /// log output
 }
 
 func Resource_info()string{
@@ -290,46 +331,116 @@ func Resource_info()string{
 	if err != nil {
 	    log.Fatal(err)
 	}
-	Sysinfo = fmt.Sprintf("%s",data)
-	return Sysinfo
+	System_info = fmt.Sprintf("%s",data)
+	return System_info
 }
 
 
-//func Master_ack_stamping(){
-//	master_ack_time := fmt.Sprint(time.Now().Unix())
-//        err := ioutil.WriteFile(Master_status_file, []byte(master_ack_time), 0644)
+
+
+//func Primary_ack_stamping(){
+//	primary_ack_time := fmt.Sprint(time.Now().Unix())
+//        err := ioutil.WriteFile(Primary_status_file, []byte(primary_ack_time), 0644)
 //	println(err)
 //}
 
+func Secondary_scanner(){
+        secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+        raw_string_parse := strings.Split(string(secondary_raw_file),"\n")
+        var quee_host string
+        for i := 1; i < len(raw_string_parse); i++ {
+                if strings.Contains(raw_string_parse[i], "last_check") == true {
+                        var fin_res string = ""
+                        target_raw := raw_string_parse[i]
+                        strr1 := strings.Split(target_raw, "&")
+                        raw_result_split := strings.Split(strr1[1], "=")
+
+                        Target_secondary_hosts := "http://"+raw_result_split[1]+":18800"
+                        fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
+                        if fin_res == "OK" {
+                                // quee_host = quee_host+"{\"hostname\":\""+raw_result_split[1]+"\", \"status\":\""+fin_res+"\"}" //for sample
+                                quee_host = quee_host+raw_result_split[1]+":"+fin_res+"\n"
+                        }
+                }
+        }
+//      regex, _ := regexp.Compile("\n\n")
+//      flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
+        flat_quee_host := strings.Replace(quee_host, "\n\n", "", -1)
+        flat_enc := base64.StdEncoding.EncodeToString([]byte(flat_quee_host))
+//      println("88888888888888888888888888888==",flat_enc)
+        Hosts_alive_list(flat_enc)
+}
+
+
+func Hosts_alive_list(alive_list string) {
+	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
+	uri := fmt.Sprint(Klevr_console+"/groups/"+Klevr_company+"/users/"+User_account_id+"/zones/"+Klevr_zone+"/platforms/"+Platform_type+"/aliveagent")
+        Debug(uri) /// log output
+	alive_conv := fmt.Sprintf("%s",alive_list)
+        communicator.Put_http(uri, alive_conv, Api_key_string)
+}
+
+
 func RnR(){
-	Check_master()
-	if AM_I_MASTER == "MASTER" {
-		communicator.Get_http(klevr_console+"/user/"+User_account_id+"/ackmaster", Api_key_string)
+	Check_primary()
+	if AM_I_PRIMARY == "PRIMARY" {
+		// Put primary alive time to stamp
+		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
+
+		// Write done the information about of Final result time & hostlists
+		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
+
+		Secondary_scanner()
+
 		Alive_chk_to_mgm("ok")
-		if Provider_type == "baremetal" {
+		if Platform_type == "baremetal" {
 //			println ("Docker_runner here - klevr_beacon_img")
-			//Docker_runner("klevry/beacon:latest", "master_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
+			//Docker_runner("klevry/beacon:latest", "primary_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
 			println ("Docker_runner here - klevr_taskmanager_img")
 			println ("Get_task_from_here for baremetal")
-		} else if Provider_type == "aws" {
+		} else if Platform_type == "aws" {
 			println ("Get_task_from_here for AWS")
 		}
 		println ("Get_task_excution_from_here")
-		Debug("I am Master")
+		Debug("I am Primary")
 		Resource_info() /// test
 		Resource_chk_to_mgm()
 	}else{
-		url := "http://"+Master_ip+":18800/status"
-	        req, _ := http.NewRequest("GET", url, nil)
-	        req.Header.Add("cache-control", "no-cache")
-	        _, err := http.DefaultClient.Do(req)
-		if err != nil {
-			Alive_chk_to_mgm("failed")
-		}else{
-			Alive_chk_to_mgm("ok")
+		/// http://192.168.1.22:18800/primaryworks
+		// url := "http://"+Primary_ip+":18800/status"
+		url := "http://"+Primary_ip+":18800/primaryworks"
+		primary_time_check := communicator.Get_http(url, Api_key_string)
+
+//		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %s ]]]\n", primary_time_check)
+		/// Duration check
+//		primary_time, _ := strconv.Atoi(primary_time_check)
+		primary_time, _ := strconv.ParseInt(primary_time_check, 10, 64)
+
+		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %d ]]]\n", primary_time)
+		var Host_purge_result string
+
+		/// Primary Last working time stamp
+		if primary_time != 0 {
+			ioutil.WriteFile(Timestamp_from_Primary, []byte(primary_time_check), 0644)
 		}
-		// Master error checker here - 2020/6/25 
-		Debug("I am Slave")
+
+		primary_time_result, _ := ioutil.ReadFile(Timestamp_from_Primary)
+		prim_string := string(primary_time_result)
+		primary_int,_ := strconv.ParseInt(prim_string, 10, 64)
+
+		tm := time.Unix(primary_int, 0)
+		if time.Since(tm).Minutes() > 1 {
+			/// Delete old host via API server
+			Host_purge_result = Primary_ip+": Primary agent is not working!!\n"
+		}else{
+			//Host_purge_result = Host_purge_result+"It's ok: "+get_data+"\n"
+			Host_purge_result = Primary_ip+": Primary agent is working hard :) \n"
+		}
+
+
+		println("Error check for Debug:",Host_purge_result)
+		// Primary error checker here - 2020/6/25 
+		Debug("I am Secondary")
 //		Resource_info() /// test
 		Resource_chk_to_mgm()
 //		Debug(aaa)
@@ -365,18 +476,36 @@ func Docker_runner(image_name, service_name, options string){
 	}
 }
 
+/// Primary last working time checker
+func Primary_works_check() string{
+	var primary_latest_check string
+	primary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+	raw_string_parse := strings.Split(string(primary_raw_file),"\n")
+		if strings.Contains(raw_string_parse[0], "get_timestamp") == true {
+			strr1 := strings.Split(raw_string_parse[0], ": ")
+			primary_latest_check = strr1[1]
+		}else{
+			log.Println("Primary uptime is not recognized")
+			primary_latest_check = ""
+		}
+	return primary_latest_check
+}
+
+
+
 
 func main(){
-	// Docker image define
-	var libvirtd = "klevry/libvirt:latest"
-
 	/// check the cli command with required options 
 	Check_variable()
 
+	/// Requirement package check
+	if Platform_type == "baremetal" {
+		Check_package("curl")
+		Check_package("docker")
+        }
+
 	/// Checks env. for baremetal to Hypervisor provisioning
-	if Provider_type == "baremetal" {
-		Required_env_chk()
-	}
+	Get_provisionig_script()
 
 	/// Set up the Task & configuration directory
 	Set_basement()
@@ -384,28 +513,20 @@ func main(){
 	/// Uniq ID create & get
 	Klevr_agent_id_get()
 
-	/// Requirement package check
-	Check_package("docker")
-	Check_package("curl")
-
-	if Provider_type == "baremetal" {
-		Docker_runner(libvirtd, "nested_kvm", "--privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw")
-        }
-
-	/// Check for master info
+	/// Check for primary info
 	Alive_chk_to_mgm("ok")
 	Resource_chk_to_mgm()
-	Get_masterinfo()
+	Get_primaryinfo()
 
-	println("provider: ", Provider_type)
+	println("platform: ", Platform_type)
 	println("Local_ip_add:", Local_ip_add)
-	println("Agent UniqID:", klevr_agent_id_string)
-	println("Master:", Master_ip)
+	println("Agent UniqID:", Klevr_agent_id_string)
+	println("Primary:", Primary_ip)
 
 
 	/// Scheduler
 	s := gocron.NewScheduler()
-	s.Every(1).Seconds().Do(Get_masterinfo)
+	s.Every(1).Seconds().Do(Get_primaryinfo)
 //	s.Every(1).Seconds().Do(Turn_on)
 	s.Every(2).Seconds().Do(RnR)
 
@@ -413,7 +534,19 @@ func main(){
 		<- s.Start()
 	}()
 
-	///Http listen for beacon
+	/// Http listen for host info get
+	http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {
+		Resource_info()
+		w.Write([]byte(System_info))
+	})
+
+	/// Http listen for primary latest working time
+	http.HandleFunc("/primaryworks", func(w http.ResponseWriter, req *http.Request) {
+		primary_uptime := Primary_works_check()
+		w.Write([]byte(primary_uptime))
+	})
+
+	/// Http listen for beacon
 	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
 		w.Write([]byte("OK"))
 	})
