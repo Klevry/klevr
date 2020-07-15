@@ -20,9 +20,6 @@ import (
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"github.com/zcalusic/sysinfo"
 	"encoding/json"
-	//"github.com/mackerelio/go-osstat/memory"
-	//"github.com/mackerelio/go-osstat/cpu"
-	//"github.com/mackerelio/go-osstat/disk"
 )
 
 

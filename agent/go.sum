@@ -60,6 +60,8 @@ github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa h1:sVP
 github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6 h1:6IUN8XG2eLeYBJnNN7sji5JdvD483CftU+9MZ3bE7GM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+github.com/ralfyang/klevr/communicator v0.0.0-20200713001631-ed8a927b29f4 h1:X+u0Ni0Kbzoi6P7UGmgshg+EJjl5ZFukIkV+9Tki2gc=
+github.com/ralfyang/klevr/communicator v0.0.0-20200713001631-ed8a927b29f4/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -77,6 +79,8 @@ golang.org/x/net v0.0.0-20200226121028-0de0cce0169b h1:0mm1VjtFUOIlE1SbDlwjYaDxZ
 golang.org/x/net v0.0.0-20200226121028-0de0cce0169b/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20200625001655-4c5254603344 h1:vGXIOMxbNfDTk/aXCmfdLgkrSV+Z2tcbze+pEc3v5W4=
 golang.org/x/net v0.0.0-20200625001655-4c5254603344/go.mod h1:/O7V0waA8r7cgGh81Ro3o1hOxt32SMVPicZroKQ2sZA=
+golang.org/x/net v0.0.0-20200707034311-ab3426394381 h1:VXak5I6aEWmAXeQjA+QSZzlgNrpq9mjcfDemuexIKsU=
+golang.org/x/net v0.0.0-20200707034311-ab3426394381/go.mod h1:/O7V0waA8r7cgGh81Ro3o1hOxt32SMVPicZroKQ2sZA=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20170830134202-bb24a47a89ea/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
