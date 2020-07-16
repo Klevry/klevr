@@ -8,5 +8,5 @@
 "#sudo docker ps -a |grep nested_kvm && sudo docker rm -f nested_kvm","nested_kvm container initialze error" 
 "sudo docker rm -f nested_kvm &","nested_kvm container initialze error" 
 "sudo docker run --name nested_kvm --privileged -d -e 'container=docker' -p 18002:22 -p 18001:16509 -p 18003:5900  -v /sys/fs/cgroup:/sys/fs/cgroup:rw -v /root/.ssh/authorized_keys:/root/.ssh/authorized_keys klevry/libvirt:latest", "Libvirt container runnuing error. Please check existed libvirt('nested_kvm') 'container' or 'port-binding' and then remove as this command 'sudo docker rm -f nested_kvm' "
-"sudo docker run --name terraform_world --link nested_kvm:nested_kvm -d -v /tmp:/terraform_state folimy/libvirt-terraform:klevr-test2 tail -F anything"
-"sudo docker exec -it terraform_world terraform apply -auto-approve -var libvirtsv=nested_kvm -state=/terraform_state/zzz"
+"sudo docker run --name terraform_world --link nested_kvm:nested_kvm -d -v /tmp:/terraform_state folimy/libvirt-terraform:klevr-test2 tail -F anything","Terraform provider Libivrt container runnuing error. Please check existed"
+"sudo docker exec -it terraform_world terraform apply -auto-approve -var libvirtsv=nested_kvm -state=/terraform_state/zzz","VM Create Provisioning error"
