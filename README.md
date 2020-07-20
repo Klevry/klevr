@@ -17,7 +17,7 @@ docker-compose up -d
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](./src/Klevr_diagram_overview.png)](https://youtu.be/o_Ua3WhAPaU)
+ * [![Diagram Overview](./src/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## Features
  * **[Agent](./agent/)**
@@ -48,12 +48,12 @@ docker-compose up -d
    * [ ] Task manager to terraform
  * [ ] Terraform of container
  * [x] KVM(libvirt)
- * [ ] Micro K8s
- * [x] Consul
+ * [ ] ~~Micro K8s~~
+ * [ ] K3s
+ * [x] ~~Consul~~
  * [ ] Prometheus 
  * [x] ~~Vagrant~~
  * [ ] Halm
  * [ ] Vault(maybe)
  * [ ] Packer(maybe)
-
 
