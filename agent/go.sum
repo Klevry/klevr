@@ -60,6 +60,10 @@ github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa h1:sVP
 github.com/ralfyang/klevr/communicator v0.0.0-20200630061331-a60d513873aa/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6 h1:6IUN8XG2eLeYBJnNN7sji5JdvD483CftU+9MZ3bE7GM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200701080038-d3c3a1f1f9b6/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+<<<<<<< HEAD
+github.com/ralfyang/klevr/communicator v0.0.0-20200713001631-ed8a927b29f4 h1:X+u0Ni0Kbzoi6P7UGmgshg+EJjl5ZFukIkV+9Tki2gc=
+github.com/ralfyang/klevr/communicator v0.0.0-20200713001631-ed8a927b29f4/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+=======
 github.com/ralfyang/klevr/communicator v0.0.0-20200706033238-3e0b2b29d2c4 h1:sf5yQfa7y8lctXQ+6hQKWe0sKpP0nEUgwYgkLbcpJWQ=
 github.com/ralfyang/klevr/communicator v0.0.0-20200706033238-3e0b2b29d2c4/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200706121907-b61b0dbd6ab8 h1:LJXos/tPKArcBVY8ZSm09zRteckMwxd19fC3jf8vcBg=
@@ -72,6 +76,7 @@ github.com/ralfyang/klevr/communicator v0.0.0-20200710024050-942b631a4634 h1:+P7
 github.com/ralfyang/klevr/communicator v0.0.0-20200710024050-942b631a4634/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
 github.com/ralfyang/klevr/communicator v0.0.0-20200714060626-3f0f3a89d0fe h1:yNNpkgsgIfHg4E1THCz9BOVoO1GHlEqBV9HlmvqXOwY=
 github.com/ralfyang/klevr/communicator v0.0.0-20200714060626-3f0f3a89d0fe/go.mod h1:BH9TPJUPxr0jnsE57zmTQ7sia27bV13VgIaBUQsbhVM=
+>>>>>>> c8473637ed23e1c386d6162697330562a448dc20
 github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
