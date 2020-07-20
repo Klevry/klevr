@@ -2,7 +2,7 @@ docker_version="latest"
 
 hello:
 	#
-	# You can use - init / build / run / docker / all 
+	# You can use - init / build / run / docker / all /
 	#
 
 init:
@@ -16,6 +16,7 @@ build: require
 	go build -o ./docker_img/klevr_webconsole ./main.go
 run:
 	go run ./main.go -port=8000
+
 login:
 	docker login
 
