@@ -6,8 +6,7 @@ import (
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/ralfyang/api"
-	"github.com/ralfyang/pkg/klevr"
+	klevr "github.com/ralfyang/pkg/common"
 )
 
 // KlevrManager klevr manager struct
@@ -63,7 +62,7 @@ func (manager *KlevrManager) Run() error {
 		// MaxHeaderBytes: 1 << 20,
 	}
 
-	api.Init(db, manager.RootRouter)
+	Init(db, manager.RootRouter)
 
 	return s.ListenAndServe()
 }

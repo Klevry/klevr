@@ -1,4 +1,4 @@
-package api
+package manager
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/ralfyang/pkg/klevr/manager/model"
 )
 
 type apiDef struct {
@@ -63,18 +62,39 @@ func (api *API) ackprimary(c *gin.Context) {
 	zone := c.Param("Z")
 	platform := c.Param("P")
 
-	c.JSON(200, gin.H{
-		"accessTime": api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix())),
-	})
-	// GetHost()
+	var result string
+
+	result += fmt.Sprintf("get_timestamp: %s\n", api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix())))
+	result += fmt.Sprintf("%s\n", api.GetHost(group, user, zone, platform, "yes"))
+
+	c.String(200, result)
 }
 
 func (api *API) hostsinfo(c *gin.Context) {
-	c.String(200, "test2")
+	group, _ := strconv.ParseUint(c.Param("G"), 10, 64)
+	user, _ := strconv.ParseUint(c.Param("U"), 10, 64)
+	zone := c.Param("Z")
+	platform := c.Param("P")
+
+	var result string
+
+	result += fmt.Sprintf("User: %d\n", user)
+	result += fmt.Sprintf("\n\nHost(s) info.: \n%s\n", api.GetHost(group, user, zone, platform, "yes"))
+
+	c.String(200, result)
 }
 
 func (api *API) primaryinfo(c *gin.Context) {
+	group, _ := strconv.ParseUint(c.Param("G"), 10, 64)
+	user, _ := strconv.ParseUint(c.Param("U"), 10, 64)
+	zone := c.Param("Z")
+	platform := c.Param("P")
 
+	var result string
+
+	result += fmt.Sprintf("%s", api.GetInfoPrimary(group, user, zone, platform))
+
+	c.String(200, result)
 }
 
 func (api *API) hostsmgt(c *gin.Context) {
@@ -140,12 +160,14 @@ func SetParam() string {
 // GetPrimary company user zone platform
 //%s/+group+"/users/"+user+"/zones/"+zone+/+group+"\/groups/"+group+"/users/"+user+"/zones/"+zone+"\/zones/"+zone+/g
 /// Get Primary server infomation for secondary agent control
-func GetPrimary(group, user, zone, platform string) string {
-	// Primary_info = communicator.Get_http(ConsulURL+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primarys?raw=1", API_key_string)
-	// if len(Primary_info) == 0 {
-	// 	Primary_info = "Not yet"
-	// }
-	// return Primary_info
+func (api *API) GetPrimary(group, user uint64, zone, platform string) string {
+	api.DB.LogMode(true)
+
+	var primary Agents
+
+	api.DB.Joins("JOIN PRIMARY_AGENTS p ON p.GROUP_ID = AGENTS.group_id AND p.AGENT_ID = AGENTS.id").Where("p.GROUP_ID = ?", group).First(&primary)
+
+	logger.Debug(primary)
 
 	return ""
 }
@@ -163,16 +185,22 @@ func LogRequest(h http.Handler) http.Handler {
 func (api *API) GetHost(group uint64, user uint64, zone, platform, priyes string) string {
 	api.DB.LogMode(true)
 
-	api.DB.Joins
+	var agents []Agents
+
+	api.DB.Joins("JOIN AGENT_GROUPS g ON g.id = AGENTS.group_id").Where("g.id = ?", group).Find(&agents)
+
+	logger.Debug(agents)
 
 	return ""
 }
 
 // GetInfoPrimary ..
-func GetInfoPrimary(group, user, zone, platform string) {
+func (api *API) GetInfoPrimary(group uint64, user uint64, zone, platform string) string {
 	/// initial primary info
-	// GetHost(group, user, zone, platform, "")
-	GetPrimary(group, user, zone, platform)
+	api.GetHost(group, user, zone, platform, "")
+	api.GetPrimary(group, user, zone, platform)
+
+	return ""
 }
 
 // PutPlatformInit ..
@@ -185,7 +213,7 @@ func PutPlatformInit(platform, data string) {
 func (api *API) PutPrimaryAck(group uint64, user uint64, zone, platform, ack string) time.Time {
 	logger.Debug(fmt.Sprintf("group : %d, user : %d", group, user))
 
-	var ma = &model.PrimaryAgents{
+	var ma = &PrimaryAgents{
 		GroupId:        group,
 		AgentId:        user,
 		LastAccessTime: time.Now().UTC(),
@@ -193,7 +221,7 @@ func (api *API) PutPrimaryAck(group uint64, user uint64, zone, platform, ack str
 
 	api.DB.LogMode(true)
 
-	api.DB.Where(&model.PrimaryAgents{
+	api.DB.Where(&PrimaryAgents{
 		GroupId: group,
 		AgentId: user,
 	}).FirstOrCreate(&ma)
@@ -202,7 +230,7 @@ func (api *API) PutPrimaryAck(group uint64, user uint64, zone, platform, ack str
 
 	accessTime := time.Now().UTC()
 
-	api.DB.Model(&ma).Updates(model.PrimaryAgents{LastAccessTime: accessTime})
+	api.DB.Model(&ma).Updates(PrimaryAgents{LastAccessTime: accessTime})
 
 	return accessTime
 }

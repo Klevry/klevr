@@ -7,8 +7,8 @@ import (
 
 	"github.com/NexClipper/logger"
 
-	"github.com/ralfyang/pkg/klevr"
-	"github.com/ralfyang/pkg/klevr/manager"
+	klevr "github.com/ralfyang/pkg/common"
+	"github.com/ralfyang/pkg/manager"
 	"github.com/urfave/cli/v2"
 	"sigs.k8s.io/yaml"
 )
