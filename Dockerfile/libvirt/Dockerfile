@@ -12,6 +12,8 @@ RUN sed -i 's|[#]*PermitRootLogin no|PermitRootLogin yes|g' /etc/ssh/sshd_config
 RUN sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 RUN sed -i 's|[#]*ChallengeResponseAuthentication no|ChallengeResponseAuthentication yes|g' /etc/ssh/sshd_config
 RUN sed -i 's|UsePAM no|UsePAM yes|g' /etc/ssh/sshd_config
+RUN echo "AuthorizedKeysCommand /usr/local/bin/get_public_key.sh" >> /etc/ssh/sshd_config
+RUN echo "AuthorizedKeysCommandUser nobody" >> /etc/ssh/sshd_config
 
 RUN echo "listen_tls = 0" >> /etc/libvirt/libvirtd.conf; \
 echo 'listen_tcp = 1' >> /etc/libvirt/libvirtd.conf; \
@@ -25,7 +27,10 @@ RUN echo 'LIBVIRTD_ARGS="--listen"' >> /etc/sysconfig/libvirtd
 COPY network.xml /network.xml
 COPY customlibvirtpost.service /usr/lib/systemd/system/customlibvirtpost.service
 COPY customlibvirtpost.sh /customlibvirtpost.sh
-RUN chmod a+x /customlibvirtpost.sh
+COPY getkey.sh /usr/local/bin/get_public_key.sh
+RUN chmod a+x /customlibvirtpost.sh; \
+    chmod +x /usr/local/bin/get_public_key.sh; \
+    mkdir -p /root/.ssh/
 RUN systemctl enable customlibvirtpost
 
 EXPOSE 22
