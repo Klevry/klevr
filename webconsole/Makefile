@@ -18,7 +18,7 @@ run:
 	go run ./main.go -port=8000
 
 login:
-	docker login
+	sudo docker login
 
 docker: login
 	sudo docker build -t klevry/webconsole:${docker_version} ./docker_img/ --no-cache
