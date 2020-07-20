@@ -9,7 +9,7 @@ import (
 type AgentGroups struct {
 	gorm.Model
 	GroupName string
-	UserId    int64
+	UserId    uint64
 	Zone      string
 	Platform  string
 }
@@ -17,7 +17,8 @@ type AgentGroups struct {
 type Agents struct {
 	gorm.Model
 	AgentKey           string
-	GroupId            int64
+	GroupId            uint64
+	Group              AgentGroups
 	IsActive           bool
 	LastAliveCheckTime time.Time
 	LastAccessTime     time.Time
@@ -27,7 +28,9 @@ type Agents struct {
 }
 
 type PrimaryAgents struct {
-	GroupId        int64 `gorm:"primary_key"`
-	AgentId        int64 `gorm:"primary_key"`
+	GroupId        uint64 `gorm:"primary_key"`
+	Group          AgentGroups
+	AgentId        uint64 `gorm:"primary_key"`
+	Agents         Agents
 	LastAccessTime time.Time
 }

@@ -33,7 +33,7 @@ func (e *RuntimeError) Error() string {
 }
 
 func (e *CheckedError) Error() string {
-	return fmt.Sprintf("CheckedError : %v", e)
+	return fmt.Sprintf("CheckedError : %v", e.cause)
 }
 
 func (e *StandardError) initStandardError(message string, err *error) {

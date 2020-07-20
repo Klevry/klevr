@@ -18,13 +18,6 @@ type apiDef struct {
 	function func(*gin.Context)
 }
 
-// var arr = [...]apiDef{
-// 	apiDef{"any", "group/:G/user/:U/zone/:Z/platform/:P/ackprimary", test}
-// }
-// var apiMap = map[int]apiDef{
-// 	1: &apiDef{method: "any", uri: "group/:G/user/:U/zone/:Z/platform/:P/ackprimary", function: Test},
-// }
-
 var apiSlice []apiDef
 
 func (api *API) initAPI() {
@@ -62,31 +55,17 @@ func (api *API) InitLegacy(legacy *gin.RouterGroup) {
 			legacy.PATCH(def.uri, def.function)
 		}
 	}
-
-	// legacy.Any("group/:G/user/:U/zone/:Z/platform/:P/ackprimary", func(c *gin.Context) {
-	// 	// vars := mux.Vars(r)
-	// 	// user := vars["U"]
-	// 	// platform := vars["P"]
-	// 	// group := vars["G"]
-	// 	// zone := vars["Z"]
-	// 	// ackTime := fmt.Sprint(time.Now().Unix())
-	// 	// Put_primary_ack(group, user, zone, platform, ackTime)
-	// 	// Get_host(group, user, zone, platform, "")
-	// 	// /// Export result to web
-	// 	// fmt.Fprintf(w, "get_timestamp: %s\n", ackTime)
-	// 	// // fmt.Fprintf(w, "%s\n", Hostlist)
-	// 	// w.Write([]byte("test"))
-
-	// })
 }
 
 func (api *API) ackprimary(c *gin.Context) {
-	group, _ := strconv.ParseInt(c.Param("G"), 10, 64)
-	user, _ := strconv.ParseInt(c.Param("U"), 10, 64)
+	group, _ := strconv.ParseUint(c.Param("G"), 10, 64)
+	user, _ := strconv.ParseUint(c.Param("U"), 10, 64)
 	zone := c.Param("Z")
 	platform := c.Param("P")
 
-	api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix()))
+	c.JSON(200, gin.H{
+		"accessTime": api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix())),
+	})
 	// GetHost()
 }
 
@@ -181,79 +160,10 @@ func LogRequest(h http.Handler) http.Handler {
 }
 
 // GetHost Get Hostlist
-func GetHost(group, user, zone, platform, priyes string) string {
-	// var arr []string
-	// var quee string
-	// var arr_stop, fail_count, array_count int
-	// dataJson := communicator.Get_http(ConsulURL+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/hosts/?keys", API_key_string)
-	// _ = json.Unmarshal([]byte(dataJson), &arr)
-	// Get_primary(group, user, zone, platform)
-	// if Primary_info == "Not yet" {
-	// 	for i := 0; i < len(arr); i++ {
-	// 		endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
-	// 		if endpoint == "health" {
-	// 			Http_body_buffer = communicator.Get_http(ConsulURL+"/v1/kv/"+arr[i]+"?raw=1", API_key_string) /// Endpoing value will be "~/health" part of API
-	// 			strr1 := strings.Split(Http_body_buffer, "&")
-	// 			strr2 := strings.Split(strr1[1], "=")
-	// 			Primary_info = "primary=" + strr2[1]
-	// 			arr_stop = i
-	// 		}
-	// 		uri := "/v1/kv/klevr/groups/" + group + "/users/" + user + "/zones/" + zone + "/platforms/" + platform + "/primarys"
-	// 		communicator.Put_http(ConsulURL+uri, Primary_info, API_key_string)
-	// 		if priyes == "yes" {
-	// 			quee = quee + Primary_info
-	// 		} else {
-	// 			quee = quee
-	// 		}
-	// 		get_data := arr[arr_stop]
-	// 		Http_body_buffer = communicator.Get_http(ConsulURL+"/v1/kv/"+get_data+"?raw=1", API_key_string)
-	// 		println("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH", Http_body_buffer)
-	// 		quee = quee + Http_body_buffer + "\n"
-	// 	}
-	// } else {
-	// 	array_count = 0
-	// 	fail_count = 0
-	// 	for i := 0; i < len(arr); i++ {
-	// 		endpoint := arr[i][strings.LastIndex(arr[i], "/")+1:]
-	// 		if endpoint == "health" {
-	// 			Http_body_buffer = communicator.Get_http(ConsulURL+"/v1/kv/"+arr[i]+"?raw=1", API_key_string) /// Endpoing value will be "~/health" part of API
-	// 			strr1 := strings.Split(Http_body_buffer, "&")
-	// 			strr2 := strings.Split(strr1[1], "=")
-	// 			marr1 := strings.Split(Http_body_buffer, "&")
-	// 			// Failed counting with host listing
-	// 			for mm := 0; mm < len(marr1); mm++ {
-	// 				marr2 := marr1[mm][strings.LastIndex(marr1[mm], "=")+1:]
-	// 				if marr2 == "failed" {
-	// 					fail_count = fail_count + 1
-	// 				}
-	// 			}
+func (api *API) GetHost(group uint64, user uint64, zone, platform, priyes string) string {
+	api.DB.LogMode(true)
 
-	// 			Primary_info = "primary=" + strr2[1]
-	// 			//					log.Println("Error: Target endpoint will be /health, but current address is: "+endpoint+" please check the range of array from API.")
-	// 			if priyes == "yes" {
-	// 				quee = quee + Primary_info
-	// 			} else {
-	// 				quee = quee
-	// 			}
-	// 			array_count = array_count + 1
-	// 			arr_stop = i
-	// 			get_data := arr[i]
-	// 			Http_body_buffer = communicator.Get_http(ConsulURL+"/v1/kv/"+get_data+"?raw=1", API_key_string)
-	// 			quee = quee + Http_body_buffer + "\n"
-	// 			//						println("aaaaaaaaa--fail_countfail_countfail_countfail_countfail:",quee)
-	// 		}
-	// 	}
-	// 	//			println("fail_countfail_countfail_countfail_countfail_countfail_countfail_countfail_count:",fail_count)
-	// 	//			println("array_countarray_countarray_countarray_countarray_countarray_countarray_countarray_countarray_count:",array_count)
-	// 	if array_count == fail_count+1 {
-	// 		println("Primary is dead!!!!") // test output
-	// 	} else if array_count/2 <= fail_count+1 {
-	// 		println("Primary has something wrong!!!") // test output
-	// 	}
-	// }
-
-	// Hostlist = quee
-	// return Hostlist
+	api.DB.Joins
 
 	return ""
 }
@@ -261,7 +171,7 @@ func GetHost(group, user, zone, platform, priyes string) string {
 // GetInfoPrimary ..
 func GetInfoPrimary(group, user, zone, platform string) {
 	/// initial primary info
-	GetHost(group, user, zone, platform, "")
+	// GetHost(group, user, zone, platform, "")
 	GetPrimary(group, user, zone, platform)
 }
 
@@ -272,7 +182,7 @@ func PutPlatformInit(platform, data string) {
 }
 
 // PutPrimaryAck ..
-func (api *API) PutPrimaryAck(group int64, user int64, zone, platform, ack string) {
+func (api *API) PutPrimaryAck(group uint64, user uint64, zone, platform, ack string) time.Time {
 	logger.Debug(fmt.Sprintf("group : %d, user : %d", group, user))
 
 	var ma = &model.PrimaryAgents{
@@ -286,14 +196,15 @@ func (api *API) PutPrimaryAck(group int64, user int64, zone, platform, ack strin
 	api.DB.Where(&model.PrimaryAgents{
 		GroupId: group,
 		AgentId: user,
-	}).First(&ma)
+	}).FirstOrCreate(&ma)
 
 	logger.Debug(ma)
 
-	api.DB.Model(&ma).Updates(model.PrimaryAgents{LastAccessTime: time.Now().UTC()})
+	accessTime := time.Now().UTC()
 
-	// uri := "/v1/kv/klevr/groups/" + group + "/users/" + user + "/zones/" + zone + "/platforms/" + platform + "/primary_ack"
-	// communicator.Put_http(ConsulURL+uri, ack, API_key_string)
+	api.DB.Model(&ma).Updates(model.PrimaryAgents{LastAccessTime: accessTime})
+
+	return accessTime
 }
 
 // HostpoolMgt Old hostlist purge
