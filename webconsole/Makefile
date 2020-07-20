@@ -20,12 +20,12 @@ login:
 	docker login
 
 docker: login
-	docker build -t klevry/webconsole:${docker_version} ./docker_img/ --no-cache
-	docker push klevry/webconsole:${docker_version}
+	sudo docker build -t klevry/webconsole:${docker_version} ./docker_img/ --no-cache
+	sudo docker push klevry/webconsole:${docker_version}
 
 docker-compose:
-	docker-compose down
-	docker-compose -f ../docker-compose.yml up -d
+	sudo docker-compose down
+	sudo docker-compose -f ../docker-compose.yml up -d
 
 all: build docker docker-compose
 
