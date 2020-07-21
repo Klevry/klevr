@@ -11,49 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type apiDef struct {
-	method   string
-	uri      string
-	function func(*gin.Context)
-}
-
-var apiSlice []apiDef
-
-func (api *API) initAPI() {
-	logger.Debug("API InitLegacy - init URI")
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/ackprimary", api.ackprimary})
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/hostsinfo", api.hostsinfo})
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/primaryinfo", api.primaryinfo})
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/hostsmgt", api.hostsmgt})
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/job/:JOB/ticket/:TICKET/:MSG", api.callback})
-	apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/hostname/:H/hostinfo", api.hostinfo})
-	// apiSlice = append(apiSlice, apiDef{"any", "/group/:G/user/:U/zone/:Z/platform/:P/hostname/:H/:I/:TTL/:MLO", api.alivetime})
-	apiSlice = append(apiSlice, apiDef{"any", "/systems/platform_types/:P", api.initAgent})
-	apiSlice = append(apiSlice, apiDef{"any", "/groups/:G/users/:U/zones/:Z/platforms/:P/aliveagent", api.statusReciever})
-}
-
 // InitLegacy initialize legacy API
 func (api *API) InitLegacy(legacy *gin.RouterGroup) {
 	logger.Debug("API InitLegacy")
 
-	api.initAPI()
-
-	for _, def := range apiSlice {
-		switch def.method {
-		case "any":
-			legacy.Any(def.uri, def.function)
-		case "get":
-			legacy.GET(def.uri, def.function)
-		case "post":
-			legacy.POST(def.uri, def.function)
-		case "put":
-			legacy.PUT(def.uri, def.function)
-		case "delete":
-			legacy.DELETE(def.uri, def.function)
-		case "patch":
-			legacy.PATCH(def.uri, def.function)
-		}
-	}
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/ackprimary", api.ackprimary)
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/hostsinfo", api.hostsinfo)
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/primaryinfo", api.primaryinfo)
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/hostsmgt", api.hostsmgt)
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/job/:JOB/ticket/:TICKET/:MSG", api.callback)
+	registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/hostname/:H/hostinfo", api.hostinfo)
+	// registURI(legacy, ANY, "/group/:G/user/:U/zone/:Z/platform/:P/hostname/:H/:I/:TTL/:MLO", api.alivetime)
+	registURI(legacy, ANY, "/systems/platform_types/:P", api.initAgent)
+	registURI(legacy, ANY, "/groups/:G/users/:U/zones/:Z/platforms/:P/aliveagent", api.statusReciever)
 }
 
 func (api *API) ackprimary(c *gin.Context) {
