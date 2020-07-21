@@ -1,4 +1,4 @@
-![klevr_logo.png](./src/klevr_logo.png)
+![klevr_logo.png](./assets/klevr_logo.png)
 # Klevr: Kloud-native everywhere
 ## Interconnector for the Platform based SaaS delivery
  * Asynchronous distributed infrastructure management console and agent for separated networks.
@@ -17,7 +17,7 @@ docker-compose up -d
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](./src/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
+ * [![Diagram Overview](./assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## Features
  * **[Agent](./agent/)**

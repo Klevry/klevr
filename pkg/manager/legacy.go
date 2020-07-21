@@ -66,10 +66,6 @@ func (api *API) ackprimary(c *gin.Context) {
 	result += fmt.Sprintf("get_timestamp: %s\n", api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix())))
 	result += fmt.Sprintf("%s\n", api.GetHost(group, user, zone, platform, "yes"))
 
-	c.JSON(200, *gin.H({
-		"" : "",
-		"" : "",
-	}))
 	c.String(200, result)
 }
 
