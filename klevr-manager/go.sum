@@ -1,4 +1,5 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/Klevry/klevr v0.0.1 h1:MrcN1UN3ZGX9UYZbloA8ZaXz/242f/mk4tlk3btPmaM=
 github.com/NexClipper/logger v1.1.1 h1:p/USNBJevvsiKi08cDAD08SjSC8rlCJRNAEivEWNhnE=
 github.com/NexClipper/logger v1.1.1/go.mod h1:vto+egeGyVUWL0iIXRV2Y9Or5rvlU/nmFydcktw81ZE=
 github.com/NexClipper/logger v1.1.2 h1:Xsp4nAV22FKfORnfGRMFYscxwR77jEcjWLQol6jfwj0=

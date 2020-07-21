@@ -61,12 +61,15 @@ func (api *API) ackprimary(c *gin.Context) {
 	user, _ := strconv.ParseUint(c.Param("U"), 10, 64)
 	zone := c.Param("Z")
 	platform := c.Param("P")
-
 	var result string
 
 	result += fmt.Sprintf("get_timestamp: %s\n", api.PutPrimaryAck(group, user, zone, platform, fmt.Sprint(time.Now().Unix())))
 	result += fmt.Sprintf("%s\n", api.GetHost(group, user, zone, platform, "yes"))
 
+	c.JSON(200, *gin.H({
+		"" : "",
+		"" : "",
+	}))
 	c.String(200, result)
 }
 
