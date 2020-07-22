@@ -6,14 +6,14 @@ import (
 
 	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 )
 
 // KlevrManager klevr manager struct
 type KlevrManager struct {
 	ServerName string
 	Config     Config
-	RootRouter *gin.Engine
+	RootRouter *mux.Router
 }
 
 // Config klevr manager config struct
@@ -34,7 +34,7 @@ func (manager *KlevrManager) SetConfig(config *Config) {
 
 // NewKlevrManager constructor for KlevrManager
 func NewKlevrManager() (*KlevrManager, error) {
-	router := gin.Default()
+	router := mux.NewRouter()
 
 	instance := &KlevrManager{
 		RootRouter: router,

@@ -1,39 +1,32 @@
 package manager
 
 import (
+	"net/http"
+
 	"github.com/NexClipper/logger"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 )
 
 // InitAgent initialize agent API
-func (api *API) InitAgent(agent *gin.RouterGroup) {
+func (api *API) InitAgent(agent *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 
 	// registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	// registURI(agent, PUT, "/:agentKey", api.receivePolling)
-	registURI(agent, PUT, "/:path", api.route1Depth)
-	registURI(agent, PUT, "/reports/:agentKey", api.checkPrimaryInfo)
+
+	registURI(agent, PUT, "/handshake", api.receiveHandshake)
+	registURI(agent, PUT, "/{agentKey}", api.receivePolling)
+	registURI(agent, PUT, "/reports/{agentKey}", api.checkPrimaryInfo)
 }
 
-func (api *API) route1Depth(c *gin.Context) {
-	// path가 handshake인지, :agentKey인지 확인하여 분기처리
-	path := c.Param("path")
-
-	if path == "handshake" {
-		api.receiveHandshake(c)
-	} else {
-		api.receivePolling(c)
-	}
-}
-
-func (api *API) receiveHandshake(c *gin.Context) {
+func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (api *API) receivePolling(c *gin.Context) {
+func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (api *API) checkPrimaryInfo(c *gin.Context) {
+func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 
 }

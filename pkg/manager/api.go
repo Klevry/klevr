@@ -1,8 +1,11 @@
 package manager
 
 import (
+	"net/http"
+
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 )
 
@@ -21,12 +24,12 @@ const (
 
 // Routes router struct
 type Routes struct {
-	Root    *gin.Engine
-	APIRoot *gin.RouterGroup
+	Root    *mux.Router
+	APIRoot *mux.Router
 
-	Legacy  *gin.RouterGroup
-	Agent   *gin.RouterGroup
-	Install *gin.RouterGroup
+	Legacy  *mux.Router
+	Agent   *mux.Router
+	Install *mux.Router
 }
 
 // API api struct
@@ -42,10 +45,8 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(db *gorm.DB, baseRouter *gin.Engine) *API {
+func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 	logger.Debug("API Init")
-
-	baseRouter.Use(Test)
 
 	api := &API{
 		BaseRoutes: &Routes{},
@@ -53,11 +54,11 @@ func Init(db *gorm.DB, baseRouter *gin.Engine) *API {
 	}
 
 	api.BaseRoutes.Root = baseRouter
-	api.BaseRoutes.APIRoot = baseRouter.Group(APIURLPrefix)
+	api.BaseRoutes.APIRoot = baseRouter.PathPrefix(APIURLPrefix).Subrouter()
 
 	api.BaseRoutes.Legacy = api.BaseRoutes.APIRoot
-	api.BaseRoutes.Agent = api.BaseRoutes.APIRoot.Group("/agents")
-	api.BaseRoutes.Install = api.BaseRoutes.APIRoot.Group("/install")
+	api.BaseRoutes.Agent = api.BaseRoutes.APIRoot.PathPrefix("/agents").Subrouter()
+	api.BaseRoutes.Install = api.BaseRoutes.APIRoot.PathPrefix("/install").Subrouter()
 
 	api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
@@ -66,19 +67,19 @@ func Init(db *gorm.DB, baseRouter *gin.Engine) *API {
 	return api
 }
 
-func registURI(g *gin.RouterGroup, method int, uri string, f func(c *gin.Context)) {
+func registURI(r *mux.Router, method int, uri string, f func(http.ResponseWriter, *http.Request)) {
 	switch method {
 	case ANY:
-		g.Any(uri, f)
+		r.HandleFunc(uri, f)
 	case GET:
-		g.GET(uri, f)
+		r.HandleFunc(uri, f).Methods("GET")
 	case POST:
-		g.POST(uri, f)
+		r.HandleFunc(uri, f).Methods("POST")
 	case PUT:
-		g.PUT(uri, f)
+		r.HandleFunc(uri, f).Methods("PUT")
 	case DELETE:
-		g.DELETE(uri, f)
+		r.HandleFunc(uri, f).Methods("DELETE")
 	case PATCH:
-		g.PATCH(uri, f)
+		r.HandleFunc(uri, f).Methods("PATCH")
 	}
 }
