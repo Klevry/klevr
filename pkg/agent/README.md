@@ -1,7 +1,7 @@
 # klevr-agent
 ## Kickstart
 ```
-curl -sL bit.ly/klevry |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
+curl -sL gg.gg/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
 ```
 ## Primary host election
 * Image click to Youtube
