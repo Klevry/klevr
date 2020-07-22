@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -70,26 +71,28 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 
 	err := baseRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 
-		pathTemplate, err := route.GetPathTemplate()
-		if err == nil {
-			logger.Info("ROUTE:", pathTemplate)
-		}
+		pathTemplate, _ := route.GetPathTemplate()
+		// if err == nil {
+		// 	logger.Info("ROUTE:", pathTemplate)
+		// }
 		// pathRegexp, err := route.GetPathRegexp()
 		// if err == nil {
 		// 	logger.Info("Path regexp:", pathRegexp)
 		// }
-		queriesTemplates, err := route.GetQueriesTemplates()
-		if err == nil {
-			logger.Info("Queries templates:", strings.Join(queriesTemplates, ","))
-		}
+		queriesTemplates, _ := route.GetQueriesTemplates()
+		// if err == nil {
+		// 	logger.Info("Queries templates:", strings.Join(queriesTemplates, ","))
+		// }
 		// queriesRegexps, err := route.GetQueriesRegexp()
 		// if err == nil {
 		// 	logger.Info("Queries regexps:", strings.Join(queriesRegexps, ","))
 		// }
-		methods, err := route.GetMethods()
-		if err == nil {
-			logger.Info("Methods:", strings.Join(methods, ","))
-		}
+		methods, _ := route.GetMethods()
+		// if err == nil {
+		// 	logger.Info("Methods:", strings.Join(methods, ","))
+		// }
+
+		logger.Info(fmt.Sprintf("[%s] %s [%s]", strings.Join(methods, ","), pathTemplate, strings.Join(queriesTemplates, ",")))
 
 		return nil
 	})
