@@ -2,6 +2,7 @@ package manager
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
@@ -53,6 +54,9 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 		DB:         db,
 	}
 
+	baseRouter.Use(ExecutionInfoLoggerHandler)
+	// baseRouter.Use(TestHandler)
+
 	api.BaseRoutes.Root = baseRouter
 	api.BaseRoutes.APIRoot = baseRouter.PathPrefix(APIURLPrefix).Subrouter()
 
@@ -63,6 +67,36 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 	api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
+
+	err := baseRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+
+		pathTemplate, err := route.GetPathTemplate()
+		if err == nil {
+			logger.Info("ROUTE:", pathTemplate)
+		}
+		// pathRegexp, err := route.GetPathRegexp()
+		// if err == nil {
+		// 	logger.Info("Path regexp:", pathRegexp)
+		// }
+		queriesTemplates, err := route.GetQueriesTemplates()
+		if err == nil {
+			logger.Info("Queries templates:", strings.Join(queriesTemplates, ","))
+		}
+		// queriesRegexps, err := route.GetQueriesRegexp()
+		// if err == nil {
+		// 	logger.Info("Queries regexps:", strings.Join(queriesRegexps, ","))
+		// }
+		methods, err := route.GetMethods()
+		if err == nil {
+			logger.Info("Methods:", strings.Join(methods, ","))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Error(err)
+	}
 
 	return api
 }
@@ -81,5 +115,22 @@ func registURI(r *mux.Router, method int, uri string, f func(http.ResponseWriter
 		r.HandleFunc(uri, f).Methods("DELETE")
 	case PATCH:
 		r.HandleFunc(uri, f).Methods("PATCH")
+	}
+}
+
+func registURIWithQuery(r *mux.Router, method int, uri string, f func(http.ResponseWriter, *http.Request), q ...string) {
+	switch method {
+	case ANY:
+		r.Path(uri).Queries(q...).HandlerFunc(f)
+	case GET:
+		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("GET")
+	case POST:
+		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("POST")
+	case PUT:
+		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("PUT")
+	case DELETE:
+		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("DELETE")
+	case PATCH:
+		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("PATCH")
 	}
 }

@@ -8,6 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/mux v1.7.4
 	github.com/jinzhu/gorm v1.9.15
+	github.com/mattn/go-isatty v0.0.12
 	github.com/urfave/cli/v2 v2.2.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	sigs.k8s.io/yaml v1.2.0

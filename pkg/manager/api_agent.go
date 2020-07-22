@@ -20,7 +20,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
-
+	
 }
 
 func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
