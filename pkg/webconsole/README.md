@@ -1,4 +1,4 @@
-# Klevr Webserver console
+# Klevr Webserver console - it will be deprecated
 ## How to use
 * Simple for localhost serving: ```./klevr_webconsole```
 * Set for custom: ```klevr_webconsole -port=8080 -apiserver="http://192.168.2.100:8500"```
