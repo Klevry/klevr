@@ -5,7 +5,7 @@ curl -sL https://bit.ly/klevry |bash
 ```
 ## Primary host election
 * Image click to Youtube
-   * [![Image click to Youtube](https://github.com/ralfyang/klevr/blob/master/src/primary_election_s.png)](https://youtu.be/hyMaVsCcgbA)
+   * [![Image click to Youtube](https://github.com/Klevry/klevr/blob/master/assets/primary_election_s.png)](https://youtu.be/hyMaVsCcgbA)
 
 ## How to use
 * Help
