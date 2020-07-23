@@ -4,14 +4,6 @@ go 1.14
 
 require (
 	github.com/NexClipper/logger v1.1.5
-<<<<<<< HEAD
-	github.com/gin-gonic/gin v1.6.3
-	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gorilla/mux v1.7.4
-	github.com/jinzhu/gorm v1.9.15
-	github.com/urfave/cli/v2 v2.2.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-=======
 	github.com/astaxie/beego v1.12.2
 	github.com/beego/bee v1.12.0 // indirect
 	github.com/gin-gonic/gin v1.6.3
@@ -44,6 +36,5 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/apimachinery v0.18.6
->>>>>>> 0ead89eb0892def0113895448f6f8f08abb9e6b3
 	sigs.k8s.io/yaml v1.2.0
 )
