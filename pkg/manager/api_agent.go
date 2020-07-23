@@ -55,11 +55,11 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
-	var group = getAgentGroup(ch.ZoneID)
+	var group = getAgentGroup(GetDBConn(r), ch.ZoneID)
 
 	logger.Debugf("%v", group)
 
-	if group.ID == 0 {
+	if group.Id == 0 {
 		w.WriteHeader(400)
 		fmt.Fprintf(w, "Does not exist zone for zoneId : %d", ch.ZoneID)
 		return
@@ -69,7 +69,7 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	if agent.AgentKey == "" {
 		agent.AgentKey = ch.AgentKey
-		agent.GroupID = ch.ZoneID
+		agent.GroupId = ch.ZoneID
 		agent.IsActive = true
 		agent.LastAccessTime = time.Now().UTC()
 		agent.Ip = cr.Param("ip")
@@ -78,8 +78,6 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Debug(agent)
-
-	api.DB.Model(&group).Related(&agent)
 
 	logger.Debug(group)
 	logger.Debug(agent)

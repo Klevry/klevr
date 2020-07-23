@@ -25,8 +25,8 @@ func getAgentGroup(conn *xorm.Session, zoneID uint) *AgentGroups {
 	var m PrimaryAgents
 
 	// api.DB.SetLogger(gorm.Logger{logger.})
-	api.DB.Model(&PrimaryAgents{}).First(&m)
-	api.DB.Debug().First(&m)
+	// api.DB.Model(&PrimaryAgents{}).First(&m)
+	// api.DB.Debug().First(&m)
 
 	logger.Debugf("%v", m)
 
@@ -34,5 +34,5 @@ func getAgentGroup(conn *xorm.Session, zoneID uint) *AgentGroups {
 }
 
 func (api *API) addAgent(a *Agents) {
-	api.DB.Create(a)
+	// api.DB.Create(a)
 }
