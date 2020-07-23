@@ -1,6 +1,14 @@
 package manager
 
-type Header struct {
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/Klevry/klevr/pkg/common"
+)
+
+type CustomHeader struct {
 	APIKey         string `header:"X-API-KEY"`
 	AgentKey       string `header:"X-AGENT-KEY"`
 	HashCode       string `header:"X-HASH-CODE"`
@@ -26,4 +34,20 @@ type Resource struct {
 }
 
 type Task struct {
+}
+
+func getCustomHeader(r *http.Request) *CustomHeader {
+	zoneID, _ := strconv.ParseUint(strings.Join(r.Header.Values("X-ZONE-ID"), ""), 10, 64)
+
+	return &CustomHeader{
+		APIKey:         strings.Join(r.Header.Values("X-API-KEY"), ""),
+		AgentKey:       strings.Join(r.Header.Values("X-AGENT-KEY"), ""),
+		HashCode:       strings.Join(r.Header.Values("X-HASH-CODE"), ""),
+		ZoneID:         zoneID,
+		SupportVersion: strings.Join(r.Header.Values("X-SUPPORT-AGENT-VERSI"), ""),
+	}
+}
+
+func addCustomHeader(w *common.ResponseWrapper, h CustomHeader) {
+
 }

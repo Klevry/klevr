@@ -9,6 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// IsDebug debugabble for all
+var IsDebug = false
+
 // KlevrManager klevr manager struct
 type KlevrManager struct {
 	ServerName string
@@ -25,6 +28,14 @@ type Config struct {
 // ServerInfo klevr manager server info struct
 type ServerInfo struct {
 	Port int
+}
+
+func init() {
+	// level := logger.Level
+
+	// if level == 0 {
+	// 	IsDebug = true
+	// }
 }
 
 // SetConfig setter for Config struct
