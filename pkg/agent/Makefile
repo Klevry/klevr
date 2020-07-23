@@ -13,5 +13,7 @@ require:
 build: require
 	go build -o ./klevr ./main.go
 run:
-	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
+##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
+	go run ./main.go -apiKey="apiKey" -platform="baremetal" -manager="localhost:8080" -zoneId="8282"
+
 all: build

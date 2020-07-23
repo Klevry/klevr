@@ -13,14 +13,15 @@ require:
 	go get -u
 #	curl -sL bit.ly/go_req | bash
 build: require
-	go build -o ./docker_img/klevr_webconsole ./main.go
+	go build -o ./Docker/klevr-manager ./main.go
 run:
-	go run ../../cmd/klevr-manager/main.go -config ../../conf/klevr-manager-local.yml
+	go run ./main.go -config ../../conf/klevr-manager-local.yml
 login:
 	sudo docker login
 
 docker: login
-	docker build -t klevry/webconsole:${docker_version} ./docker_img/ --no-cache
+	cp -Rfv ../../conf/* ./Docker/conf/
+	docker build -t klevry/webconsole:${docker_version} ./Docker/ --no-cache
 	docker push klevry/webconsole:${docker_version}
 
 docker-compose:

@@ -125,6 +125,7 @@ func Check_variable() string {
 	}
 
 	// Flag options
+	// Sample: -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
 	userid := flag.String("id", "", "Account ID from Klevr service")
 	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
 	company := flag.String("group", "", "Group name will be a uniq company name or team name")

@@ -1,11 +1,11 @@
 # klevr-agent
 ## Kickstart
 ```
-curl -sL https://bit.ly/klevry |bash
+curl -sL gg.gg/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
 ```
 ## Primary host election
 * Image click to Youtube
-   * [![Image click to Youtube](https://github.com/ralfyang/klevr/blob/master/src/primary_election_s.png)](https://youtu.be/hyMaVsCcgbA)
+   * [![Image click to Youtube](https://github.com/Klevry/klevr/blob/master/assets/primary_election_s.png)](https://youtu.be/hyMaVsCcgbA)
 
 ## How to use
 * Help

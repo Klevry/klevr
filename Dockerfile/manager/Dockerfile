@@ -1,6 +1,6 @@
 FROM ubuntu:focal
-COPY ./cmd/klevr-manager/klevr-manager /
 COPY ./conf/* /conf/
+COPY ./klevr-manager /
 COPY ./wait-for-it.sh /
 CMD [ "./klevr-manager" ]
 EXPOSE 8090
