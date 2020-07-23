@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"encoding/base64"
 	"github.com/gorilla/mux"
-	"github.com/ralfyang/klevr/communicator"
+	"github.com/klevry/klevr/pkg/communicator"
 )
 
 

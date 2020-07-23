@@ -26,7 +26,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b // indirect
+	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
 	go.starlark.net v0.0.0-20200721233451-0ec63f134c7d // indirect
 	golang.org/x/arch v0.0.0-20200511175325-f7c78586839d // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
