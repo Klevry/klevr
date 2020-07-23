@@ -3,8 +3,9 @@ package common
 import (
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql" //justfying
+	_ "github.com/go-sql-driver/mysql" //justifying
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite" //justifying
 	// _ "github.com/jinzhu/gorm/dialects/mysql" //justfying
 )
 

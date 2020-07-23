@@ -1,9 +1,12 @@
 package manager
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
@@ -41,13 +44,45 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ch := getCustomHeader(r)
-	// zoneId := ch.ZoneID
-	// agentKey := ch.AgentKey
+	var cr = &common.Request{r}
+	var pa Agent
+
+	err := json.NewDecoder(r.Body).Decode(&pa)
+	if err != nil {
+		common.HTTPError(500, w, err, "JSON parsing error")
+		return
+	}
 
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
-	api.DB.LogMode(IsDebug)
+	var group = api.getAgentGroup(ch.ZoneID)
 
+	logger.Debugf("%v", group)
+
+	if group.ID == 0 {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Does not exist zone for zoneId : %d", ch.ZoneID)
+		return
+	}
+
+	var agent = api.getAgent(ch.AgentKey)
+
+	if agent.AgentKey == "" {
+		agent.AgentKey = ch.AgentKey
+		agent.GroupID = ch.ZoneID
+		agent.IsActive = true
+		agent.LastAccessTime = time.Now().UTC()
+		agent.Ip = cr.Param("ip")
+
+		api.addAgent(agent)
+	}
+
+	logger.Debug(agent)
+
+	api.DB.Model(&group).Related(&agent)
+
+	logger.Debug(group)
+	logger.Debug(agent)
 }
 
 func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {

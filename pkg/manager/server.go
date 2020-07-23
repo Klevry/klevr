@@ -31,11 +31,11 @@ type ServerInfo struct {
 }
 
 func init() {
-	// level := logger.Level
+	var level = logger.GetLevel()
 
-	// if level == 0 {
-	// 	IsDebug = true
-	// }
+	if level == 0 {
+		IsDebug = true
+	}
 }
 
 // SetConfig setter for Config struct

@@ -1,9 +1,12 @@
 package common
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/NexClipper/logger"
 )
 
 // Request http.Request override
@@ -52,4 +55,14 @@ func (w *ResponseWrapper) Write(b []byte) (int, error) {
 func (w *ResponseWrapper) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// HTTPError common error process
+func HTTPError(statusCode int, w http.ResponseWriter, err error, message string) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(statusCode)
+	fmt.Fprintf(w, "%s : %v", message, err)
+
+	logger.Warningf("%s : %v", message, err)
 }
