@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 )
@@ -12,7 +13,7 @@ type CustomHeader struct {
 	APIKey         string `header:"X-API-KEY"`
 	AgentKey       string `header:"X-AGENT-KEY"`
 	HashCode       string `header:"X-HASH-CODE"`
-	ZoneID         uint64 `header:"X-ZONE-ID"`
+	ZoneID         uint   `header:"X-ZONE-ID"`
 	SupportVersion string `header:"X-SUPPORT-AGENT-VERSION"`
 }
 
@@ -22,9 +23,13 @@ type Primary struct {
 }
 
 type Agent struct {
-	IP       string `json:"ip"`
-	Running  bool   `json:"running"`
-	AgentKey string `json:"agentKey"`
+	AgentKey           string    `json:"agentKey"`
+	IsActive           bool      `json:"isActive"`
+	LastAliveCheckTime time.Time `json:"lastAliveCheckTime"`
+	LastAccessTime     time.Time `json:"lastAccessTime"`
+	IP                 string    `json:"ip"`
+	HmacKey            string    `json:"hmacKey"`
+	EncKey             string    `json:"encKey"`
 }
 
 type Resource struct {
@@ -43,7 +48,7 @@ func getCustomHeader(r *http.Request) *CustomHeader {
 		APIKey:         strings.Join(r.Header.Values("X-API-KEY"), ""),
 		AgentKey:       strings.Join(r.Header.Values("X-AGENT-KEY"), ""),
 		HashCode:       strings.Join(r.Header.Values("X-HASH-CODE"), ""),
-		ZoneID:         zoneID,
+		ZoneID:         uint(zoneID),
 		SupportVersion: strings.Join(r.Header.Values("X-SUPPORT-AGENT-VERSI"), ""),
 	}
 }

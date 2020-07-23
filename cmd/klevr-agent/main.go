@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/jasonlvhit/gocron"
-	"github.com/klevry/klevr/pkg/communicator"
+	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/zcalusic/sysinfo"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	//"github.com/mackerelio/go-osstat/memory"

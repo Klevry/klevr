@@ -7,18 +7,20 @@ import (
 )
 
 type AgentGroups struct {
-	gorm.Model
+	ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `sql:"index"`
 	GroupName string
-	UserId    uint64
-	Zone      string
+	UserId    uint
 	Platform  string
 }
 
 type Agents struct {
 	gorm.Model
-	AgentKey           string
-	GroupId            uint64
-	Group              AgentGroups
+	AgentKey string
+	GroupID  uint
+	// Group              AgentGroups `gorm:"foreignkey:GroupID"`
 	IsActive           bool
 	LastAliveCheckTime time.Time
 	LastAccessTime     time.Time
@@ -28,9 +30,9 @@ type Agents struct {
 }
 
 type PrimaryAgents struct {
-	GroupId        uint64 `gorm:"primary_key"`
-	Group          AgentGroups
-	AgentId        uint64 `gorm:"primary_key"`
-	Agents         Agents
+	GroupId uint `gorm:"primary_key"`
+	// Group          AgentGroups `gorm:"foreignKey:GroupId"`
+	AgentId uint `gorm:"primary_key"`
+	// Agents         Agents
 	LastAccessTime time.Time
 }

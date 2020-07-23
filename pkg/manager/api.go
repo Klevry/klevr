@@ -55,6 +55,8 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 		DB:         db,
 	}
 
+	api.DB.LogMode(IsDebug)
+
 	baseRouter.Use(CommonWrappingHandler)
 	baseRouter.Use(ExecutionInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
@@ -98,7 +100,6 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 
 		return nil
 	})
-
 	if err != nil {
 		logger.Error(err)
 	}
