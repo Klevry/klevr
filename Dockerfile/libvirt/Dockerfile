@@ -24,7 +24,7 @@ echo 'auth_tcp = "none"' >> /etc/libvirt/libvirtd.conf
 RUN echo 'vnc_listen = "0.0.0.0"' >> /etc/libvirt/qemu.conf
 RUN echo 'LIBVIRTD_ARGS="--listen"' >> /etc/sysconfig/libvirtd
 
-COPY network.xml /network.xml
+COPY ./network.xml /
 COPY customlibvirtpost.service /usr/lib/systemd/system/customlibvirtpost.service
 COPY customlibvirtpost.sh /customlibvirtpost.sh
 COPY getkey.sh /usr/local/bin/get_public_key.sh
