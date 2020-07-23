@@ -3,30 +3,20 @@ package manager
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"reflect"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	"github.com/gin-gonic/gin"
 )
 
-// APIHandler API handler
-func (api *API) APIHandler(h func(*gin.Context)) gin.HandlerFunc {
-	logger.Debug("pre handle")
-
-	return h
-}
-
-// TestHandler test handler
-func TestHandler(next http.Handler) http.Handler {
+// CommonWrappingHandler common handler for processing standard
+func CommonWrappingHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger.Debug("호출전")
+		// response wrapping
+		nw := common.ResponseWrapper{w, http.StatusOK}
 
-		// Process request
-		next.ServeHTTP(w, r)
-
-		logger.Debug("호출후")
+		next.ServeHTTP(&nw, r)
 	})
 }
 
@@ -60,10 +50,10 @@ func ExecutionInfoLoggerHandler(next http.Handler) http.Handler {
 		path := r.URL.Path
 		raw := r.URL.RawQuery
 
-		nw := httptest.NewRecorder()
-
 		// Process request
-		next.ServeHTTP(nw, r)
+		next.ServeHTTP(w, r)
+
+		nw := reflect.ValueOf(w).Interface().(*common.ResponseWrapper)
 
 		keys := make(map[string]interface{})
 		for k, v := range r.URL.Query() {
@@ -80,7 +70,7 @@ func ExecutionInfoLoggerHandler(next http.Handler) http.Handler {
 		param.Latency = param.TimeStamp.Sub(start)
 		param.ClientIP = r.RemoteAddr
 		param.Method = r.Method
-		param.StatusCode = nw.Result().StatusCode
+		param.StatusCode = nw.StatusCode
 		// param.ErrorMessage = nw.Result().c.Errors.ByType(ErrorTypePrivate).String()
 
 		// param.BodySize = c.Writer.Size()

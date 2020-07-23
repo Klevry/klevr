@@ -55,6 +55,7 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 		DB:         db,
 	}
 
+	baseRouter.Use(CommonWrappingHandler)
 	baseRouter.Use(ExecutionInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
 
@@ -80,6 +81,7 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 		// 	logger.Info("Path regexp:", pathRegexp)
 		// }
 		queriesTemplates, _ := route.GetQueriesTemplates()
+		route.GetQueriesRegexp()
 		// if err == nil {
 		// 	logger.Info("Queries templates:", strings.Join(queriesTemplates, ","))
 		// }

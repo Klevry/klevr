@@ -21,7 +21,7 @@ func (api *API) InitInstall(install *mux.Router) {
 
 // agent setup script 생성
 func (api *API) generateBootstrapCommand(w http.ResponseWriter, r *http.Request) {
-	var cmd = "curl -sL bit.ly/klevry |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}"
+	var cmd = "curl -sL gg.gg/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}"
 
 	var cr = &common.Request{r}
 
@@ -30,7 +30,8 @@ func (api *API) generateBootstrapCommand(w http.ResponseWriter, r *http.Request)
 	cmd = strings.Replace(cmd, "{managerUrl}", cr.Param("managerUrl"), 1)
 	cmd = strings.Replace(cmd, "{zoneId}", cr.Param("zoneId"), 1)
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusUnauthorized)
+	// w.Write([]byte(fmt.Sprintf("%s", cmd)))
 	fmt.Fprintf(w, "%s", cmd)
 }
 
