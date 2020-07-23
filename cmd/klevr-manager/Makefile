@@ -2,7 +2,7 @@ docker_version="latest"
 
 hello:
 	#
-	# You can use - init / build / run / docker / all 
+	# You can use - init / build / run / sudo docker / all 
 	#
 
 init:
@@ -17,16 +17,16 @@ build: require
 run:
 	go run ./main.go -config ../../conf/klevr-manager-local.yml
 login:
-	sudo docker login
+	sudo sudo docker login
 
 docker: login
 	cp -Rfv ../../conf/* ./Docker/conf/
-	docker build -t klevry/webconsole:${docker_version} ./Docker/ --no-cache
-	docker push klevry/webconsole:${docker_version}
+	sudo docker build -t klevry/webconsole:${docker_version} ./Docker/ --no-cache
+	sudo docker push klevry/webconsole:${docker_version}
 
 docker-compose:
-	docker-compose down
-	docker-compose -f ../docker-compose.yml up -d
+	sudo docker-compose down
+	sudo docker-compose -f ../docker-compose.yml up -d
 
-all: build docker docker-compose
+all: build docker #docker-compose
 

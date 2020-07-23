@@ -3,6 +3,7 @@ module github.com/Klevry/klevr
 go 1.14
 
 require (
+<<<<<<< HEAD
 	github.com/Klevry/klevr/pkg/common v0.0.0-20200723071431-2fd6f13e2841 // indirect
 	github.com/Klevry/klevr/pkg/manager v0.0.0-20200723071431-2fd6f13e2841 // indirect
 	github.com/NexClipper/logger v1.1.5
@@ -35,5 +36,12 @@ require (
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+=======
+	github.com/Klevry/klevr/pkg/common v0.0.0-20200723071431-2fd6f13e2841
+	github.com/Klevry/klevr/pkg/manager v0.0.0-20200723071431-2fd6f13e2841
+	github.com/NexClipper/logger v1.1.5
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/urfave/cli/v2 v2.2.0
+>>>>>>> 4611272235b339fe9a7f587ced15eb81f08a31a2
 	sigs.k8s.io/yaml v1.2.0
 )
