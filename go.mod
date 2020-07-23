@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/logger v1.1.0
+	github.com/gorilla/context v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/jasonlvhit/gocron v0.0.0-20200423141508-ab84337f7963
 	github.com/jinzhu/gorm v1.9.15
@@ -26,7 +27,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b // indirect
+	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
 	go.starlark.net v0.0.0-20200721233451-0ec63f134c7d // indirect
 	golang.org/x/arch v0.0.0-20200511175325-f7c78586839d // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
@@ -37,4 +38,5 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/apimachinery v0.18.6
 	sigs.k8s.io/yaml v1.2.0
+	xorm.io/xorm v1.0.3
 )

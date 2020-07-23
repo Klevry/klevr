@@ -55,7 +55,7 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
-	var group = api.getAgentGroup(ch.ZoneID)
+	var group = getAgentGroup(ch.ZoneID)
 
 	logger.Debugf("%v", group)
 

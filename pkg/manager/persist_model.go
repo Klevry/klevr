@@ -2,24 +2,24 @@ package manager
 
 import (
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 type AgentGroups struct {
-	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
+	Id        uint      `xorm:"pk autoincr"`
+	CreatedAt time.Time `xorm:created`
+	UpdatedAt time.Time `xorm:updated`
+	DeletedAt *time.Time
 	GroupName string
 	UserId    uint
 	Platform  string
 }
 
 type Agents struct {
-	gorm.Model
-	AgentKey string
-	GroupID  uint
+	Id        uint      `xorm:"pk autoincr"`
+	CreatedAt time.Time `xorm:created`
+	UpdatedAt time.Time `xorm:updated`
+	AgentKey  string
+	GroupId   uint
 	// Group              AgentGroups `gorm:"foreignkey:GroupID"`
 	IsActive           bool
 	LastAliveCheckTime time.Time
@@ -30,9 +30,9 @@ type Agents struct {
 }
 
 type PrimaryAgents struct {
-	GroupId uint `gorm:"primary_key"`
+	GroupId uint `xorm:"pk"`
 	// Group          AgentGroups `gorm:"foreignKey:GroupId"`
-	AgentId uint `gorm:"primary_key"`
+	AgentId uint `xorm:"pk"`
 	// Agents         Agents
 	LastAccessTime time.Time
 }
