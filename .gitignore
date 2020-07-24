@@ -54,3 +54,6 @@ __debug_bin
 *.tar.gz
 *.rar
 
+# MariaDB Database file
+./data
+
