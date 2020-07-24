@@ -16,7 +16,7 @@ services:
           - "3306:3306"
 
     klevr-manager:
-        image: mrchopa/klevr-manager
+            image: klevry/klevr-manager:latest
         ports: 
             - "8090:8090"
         depends_on: 
