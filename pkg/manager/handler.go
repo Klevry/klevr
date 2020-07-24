@@ -6,19 +6,80 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/gorilla/context"
+
+	"github.com/gorilla/mux"
+
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
+	"xorm.io/xorm"
 )
 
 // CommonWrappingHandler common handler for processing standard
-func CommonWrappingHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// response wrapping
-		nw := common.ResponseWrapper{w, http.StatusOK}
+func CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// response wrapping
+			nw := common.ResponseWrapper{w, http.StatusOK}
 
-		next.ServeHTTP(&nw, r)
-	})
+			// DB session 시작
+			session := DB.NewSession()
+
+			err := session.Begin()
+			if err != nil {
+				logger.Errorf("DB session begin error : %v", err)
+				common.HTTPError(500, w, err, "Service is unavailable")
+			}
+
+			// 트랜잭션 recover 정의
+			defer func() {
+				r := recover()
+				if r != nil {
+					logger.Warningf("recovered : %v", r)
+
+					if !session.IsClosed() {
+						session.Rollback()
+					}
+
+					common.HTTPError(500, w, common.NewRuntimeError(fmt.Sprintf("%", r)), "Service is unavailable")
+				}
+			}()
+
+			// Request context에 DB session 설정
+			context.Set(r, DBConnContextName, session)
+
+			// 다음 핸들러로 진행
+			next.ServeHTTP(&nw, r)
+
+			// 트랜잭션 commit
+			err = session.Commit()
+			if err != nil {
+				logger.Warningf("commit failed : %v", err)
+
+				common.HTTPError(500, w, common.NewRuntimeError(fmt.Sprintf("%", err)), "Service is unavailable")
+			}
+
+			// 세션 close
+			defer func() {
+				if !session.IsClosed() {
+					session.Close()
+				}
+			}()
+
+		})
+	}
 }
+
+// // CommonWrappingHandler common handler for processing standard
+// func CommonWrappingHandler(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+// 		// response wrapping
+// 		nw := common.ResponseWrapper{w, http.StatusOK}
+
+// 		next.ServeHTTP(&nw, r)
+// 	})
+// }
 
 // ExecutionInfoLoggerHandler request processing information logging handler
 func ExecutionInfoLoggerHandler(next http.Handler) http.Handler {

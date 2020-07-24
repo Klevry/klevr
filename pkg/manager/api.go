@@ -3,12 +3,15 @@ package manager
 import (
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"strings"
+
+	"github.com/gorilla/context"
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
+	"xorm.io/xorm"
 )
 
 // APIURLPrefix default API URL prefix
@@ -24,6 +27,9 @@ const (
 	PATCH
 )
 
+// DBConnContextName DB connection name for Request context
+const DBConnContextName string = "CTX_DB_CONN"
+
 // Routes router struct
 type Routes struct {
 	Root    *mux.Router
@@ -37,7 +43,7 @@ type Routes struct {
 // API api struct
 type API struct {
 	BaseRoutes *Routes
-	DB         *gorm.DB
+	DB         *xorm.Engine
 }
 
 type apiDef struct {
@@ -47,7 +53,7 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(db *gorm.DB, baseRouter *mux.Router) *API {
+func Init(db *xorm.Engine, baseRouter *mux.Router) *API {
 	logger.Debug("API Init")
 
 	api := &API{
@@ -55,9 +61,11 @@ func Init(db *gorm.DB, baseRouter *mux.Router) *API {
 		DB:         db,
 	}
 
-	api.DB.LogMode(IsDebug)
+	api.DB.ShowSQL(IsDebug)
+	// TODO: ContextLogger interface 구현하여 logger override
+	// api.DB.SetLogger(log.NewSimpleLogger(f))
 
-	baseRouter.Use(CommonWrappingHandler)
+	baseRouter.Use(CommonWrappingHandler(api.DB))
 	baseRouter.Use(ExecutionInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
 
@@ -139,4 +147,21 @@ func registURIWithQuery(r *mux.Router, method int, uri string, f func(http.Respo
 	case PATCH:
 		r.Path(uri).Queries(q...).HandlerFunc(f).Methods("PATCH")
 	}
+}
+
+// GetDBConn return DB connection(session) from Request context
+func GetDBConn(r *http.Request) *xorm.Session {
+	v := context.Get(r, DBConnContextName)
+	if v == nil {
+		logger.Warningf("The variable in context is not DB session : %d", debug.Stack())
+		panic("DB is not exist")
+	}
+
+	db, ok := v.(*xorm.Session)
+	if !ok {
+		logger.Warningf("DB session not exist : %d", debug.Stack())
+		panic("DB is not exist")
+	}
+
+	return db
 }

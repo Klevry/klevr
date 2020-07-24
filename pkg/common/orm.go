@@ -1,12 +1,12 @@
 package common
 
 import (
-	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql" //justifying
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite" //justifying
-	// _ "github.com/jinzhu/gorm/dialects/mysql" //justfying
+	"xorm.io/xorm"
+	// _ "github.com/jinzhu/gorm/dialects/sqlite" //justifying
+	// // _ "github.com/jinzhu/gorm/dialects/mysql" //justfying
 )
 
 // DBInfo database connect info & connection info.
@@ -21,19 +21,23 @@ type DBInfo struct {
 }
 
 // Connect connect to Database and return DB
-func (info *DBInfo) Connect() (*gorm.DB, error) {
-	db, err := gorm.Open(info.Type, info.URL)
+func (info *DBInfo) Connect() (*xorm.Engine, error) {
+	db, err := xorm.NewEngine(info.Type, info.URL)
 	if err != nil {
 		return db, err
 	}
+
+	db.SetMaxOpenConns(info.MaxOpenConns)
+	db.SetMaxIdleConns(info.MaxIdleConns)
+	db.SetConnMaxLifetime(time.Duration(info.MaxConnLifeTime) * time.Second)
 
 	return db, err
 }
 
 func init() {
-	// 기본 테이블명 설정 변경
-	// https://gorm.io/docs/conventions.html#Change-default-tablenames
-	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-		return strings.ToUpper(defaultTableName)
-	}
+	// // 기본 테이블명 설정 변경
+	// // https://gorm.io/docs/conventions.html#Change-default-tablenames
+	// gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+	// 	return strings.ToUpper(defaultTableName)
+	// }
 }

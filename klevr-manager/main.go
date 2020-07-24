@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/gorilla/mux"
-	"github.com/ralfyang/klevr/communicator"
 
 	"github.com/urfave/cli/v2"
 )
