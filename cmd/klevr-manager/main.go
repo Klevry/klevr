@@ -80,6 +80,7 @@ func main() {
 				config.Log.Level = c.String("log.level")
 			}
 
+			/// Actual instance running point
 			instance, err := manager.NewKlevrManager()
 			if err != nil {
 				logger.Error(err)
