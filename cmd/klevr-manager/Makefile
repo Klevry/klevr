@@ -21,8 +21,8 @@ login:
 
 docker: login
 	cp -Rfv ../../conf/* ./Docker/conf/
-	sudo docker build -t klevry/webconsole:${docker_version} ./Docker/ --no-cache
-	sudo docker push klevry/webconsole:${docker_version}
+	sudo docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
+	sudo docker push klevry/klevr-manager:${docker_version}
 
 docker-compose:
 	sudo docker-compose down
