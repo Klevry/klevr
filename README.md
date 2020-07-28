@@ -65,7 +65,7 @@ docker-compose up -d
 ├── docker-compose.yml          // Kickstarter: Bootstraping by docker-compose
 ├── Dockerfile                  // Directory for docker image build
 │   ├── libvirt
-│   └── manager
+│   └── manager                 // Actual binary file of manager will be move to this linke directory for the docker build
 ├── assets
 │   └── [Images & Contents]
 ├── cmd                         // Actual artifacts fpr Klevr agent & manager(webserver) 
@@ -75,7 +75,7 @@ docker-compose up -d
 │   │   ├── klevr               // Actual `Klevr` agent binary
 │   │   └── main.go             // main source code of the Agent
 │   └── klevr-manager
-│       ├── Docker -> ../../Dockerfile/manager    // Actual binary file of manager will be move to this linke directory for the docker build
+│       ├── Docker -> ../../Dockerfile/manager  // Binary artifact send to this directory for Docker build  
 │       ├── Makefile
 │       └── main.go             // main source code of the Manager
 ├── conf
