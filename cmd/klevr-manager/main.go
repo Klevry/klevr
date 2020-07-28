@@ -84,6 +84,7 @@ func main() {
 			common.ContextPut("appConfig", config)
 			common.ContextPut("cliContext", c)
 
+			/// Actual instance running point
 			instance, err := manager.NewKlevrManager()
 			if err != nil {
 				logger.Error(err)
