@@ -82,7 +82,7 @@ docker-compose up -d
 │   ├── Dump20200720.sql        // Database for Manager initialinzing & running
 │   └── klevr-manager-local.yml // Config file for Manager running
 ├── pkg
-│   ├── common                  // 'comman' package directory
+│   ├── common                  // 'common' package directory
 │   │   ├── config.go
 │   │   ├── error.go
 │   │   ├── http.go
