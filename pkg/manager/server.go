@@ -1,12 +1,15 @@
 package manager
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/common"
 	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
+	"xorm.io/xorm"
 )
 
 // IsDebug debugabble for all
@@ -17,6 +20,7 @@ type KlevrManager struct {
 	ServerName string
 	Config     Config
 	RootRouter *mux.Router
+	InstanceID string
 }
 
 // Config klevr manager config struct
@@ -27,7 +31,8 @@ type Config struct {
 
 // ServerInfo klevr manager server info struct
 type ServerInfo struct {
-	Port int
+	Port          int
+	EncryptionKey string
 }
 
 func init() {
@@ -51,6 +56,8 @@ func NewKlevrManager() (*KlevrManager, error) {
 		RootRouter: router,
 	}
 
+	instance.InstanceID = fmt.Sprintf("%v_%v", &instance, time.Now().UTC().Unix())
+
 	return instance, nil
 }
 
@@ -73,7 +80,42 @@ func (manager *KlevrManager) Run() error {
 		// MaxHeaderBytes: 1 << 20,
 	}
 
-	Init(db, manager.RootRouter)
+	go manager.updateAgentStatus(db, 10)
+
+	Init(manager, db, manager.RootRouter)
 
 	return s.ListenAndServe()
+}
+
+func (manager *KlevrManager) updateAgentStatus(db *xorm.Engine, cycle time.Duration) {
+	for {
+		time.Sleep(cycle * time.Second)
+
+		conn := db.NewSession()
+
+		defer func() {
+			defer func() {
+				if !conn.IsClosed() {
+					conn.Close()
+				}
+			}()
+
+			r := recover()
+			if r != nil {
+				logger.Errorf("recovered : %v", r)
+			}
+
+			if !conn.IsClosed() {
+				conn.Rollback()
+			}
+		}()
+
+		common.ErrorWithPanic(conn.Begin(),
+			"updateAgentStatus() connection open error")
+
+		getLock(conn, "UPDATE_AGENT_STATUS")
+
+		common.ErrorWithPanic(conn.Commit(),
+			"updateAgentStatus() commit error")
+	}
 }

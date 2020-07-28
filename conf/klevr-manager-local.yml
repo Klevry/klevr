@@ -9,6 +9,7 @@ Log:
 Klevr:
     Server:
         Port: 8090
+        EncryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
     DB:
         Type: 'mysql'
         URL: 'klevr:klevr@tcp(127.0.0.1:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'

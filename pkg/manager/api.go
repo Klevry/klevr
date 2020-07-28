@@ -44,6 +44,7 @@ type Routes struct {
 type API struct {
 	BaseRoutes *Routes
 	DB         *xorm.Engine
+	InstanceID string
 }
 
 type apiDef struct {
@@ -53,19 +54,20 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(db *xorm.Engine, baseRouter *mux.Router) *API {
+func Init(instance *KlevrManager, db *xorm.Engine, baseRouter *mux.Router) *API {
 	logger.Debug("API Init")
 
 	api := &API{
 		BaseRoutes: &Routes{},
 		DB:         db,
+		InstanceID: instance.InstanceID,
 	}
 
-	api.DB.ShowSQL(IsDebug)
+	api.DB.ShowSQL(true)
 	// TODO: ContextLogger interface 구현하여 logger override
 	// api.DB.SetLogger(log.NewSimpleLogger(f))
 
-	baseRouter.Use(CommonWrappingHandler(api.DB))
+	baseRouter.Use(api.CommonWrappingHandler(api.DB))
 	baseRouter.Use(ExecutionInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
 
