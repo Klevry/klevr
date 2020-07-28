@@ -57,8 +57,8 @@ func (w *ResponseWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-// HTTPError common error process
-func HTTPError(statusCode int, w http.ResponseWriter, err error, message string) {
+// WriteHTTPError common error process
+func WriteHTTPError(statusCode int, w http.ResponseWriter, err error, message string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(statusCode)

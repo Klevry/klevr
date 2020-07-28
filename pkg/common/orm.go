@@ -1,7 +1,11 @@
 package common
 
 import (
+	"fmt"
+	"strings"
 	"time"
+
+	"xorm.io/xorm/names"
 
 	_ "github.com/go-sql-driver/mysql" //justifying
 	"xorm.io/xorm"
@@ -31,6 +35,8 @@ func (info *DBInfo) Connect() (*xorm.Engine, error) {
 	db.SetMaxIdleConns(info.MaxIdleConns)
 	db.SetConnMaxLifetime(time.Duration(info.MaxConnLifeTime) * time.Second)
 
+	db.SetTableMapper(CustomTableNameMapper{})
+
 	return db, err
 }
 
@@ -40,4 +46,30 @@ func init() {
 	// gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
 	// 	return strings.ToUpper(defaultTableName)
 	// }
+}
+
+type CustomTableNameMapper struct {
+	base names.SnakeMapper
+}
+
+func (c CustomTableNameMapper) Obj2Table(s string) string {
+	return strings.ToUpper(c.base.Obj2Table(s))
+}
+
+func (c CustomTableNameMapper) Table2Obj(s string) string {
+	return c.base.Table2Obj(s)
+}
+
+// CheckGetQuery check query result
+func CheckGetQuery(ok bool, err error) bool {
+	if err != nil {
+		panic(err)
+	}
+
+	return ok
+}
+
+// PanicForUpdate raise panic for update failure
+func PanicForUpdate(t string, exeCnt int64, totCnt int64) {
+	panic(fmt.Sprintf("All rows was not %s - (%d/%d)", t, exeCnt, totCnt))
 }
