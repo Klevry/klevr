@@ -4,8 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
-
-	"github.com/Klevry/klevr/pkg/common"
 )
 
 // CustomHeader header for klevr
@@ -27,11 +25,13 @@ type Body struct {
 
 // Me requester
 type Me struct {
-	IP      string `json:"ip"`
-	Port    int    `json:"port"`
-	HmacKey string `json:"hmacKey"`
-	EncKey  string `json:"encKey"`
-	Version string `json:"version"`
+	IP        string `json:"ip"`
+	Port      int    `json:"port"`
+	HmacKey   string `json:"hmacKey"`
+	EncKey    string `json:"encKey"`
+	Version   string `json:"version"`
+	CallCycle int    `json:"callCycle"`
+	LogLevel  string `json:"logLevel"`
 }
 
 // BodyAgent agents
@@ -56,7 +56,7 @@ type Agent struct {
 	IP                 string `json:"ip"`
 	Port               int    `json:"port"`
 	Version            string `json:"version"`
-	*Resource
+	Resource
 }
 
 // Resource agent resource
@@ -72,8 +72,4 @@ type Task struct {
 
 func getCustomHeader(r *http.Request) *CustomHeader {
 	return context.Get(r, CustomHeaderName).(*CustomHeader)
-}
-
-func addCustomHeader(w *common.ResponseWrapper, h CustomHeader) {
-
 }
