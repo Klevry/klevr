@@ -79,8 +79,8 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 	}
 }
 
-// ExecutionInfoLoggerHandler request processing information logging handler
-func ExecutionInfoLoggerHandler(next http.Handler) http.Handler {
+// RequestInfoLoggerHandler request processing information logging handler
+func RequestInfoLoggerHandler(next http.Handler) http.Handler {
 	var formatter = func(param common.LogFormatterParams) string {
 		var statusColor, methodColor, resetColor string
 		if param.IsOutputColor() {

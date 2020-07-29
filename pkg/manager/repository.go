@@ -1,6 +1,10 @@
 package manager
 
 import (
+	"time"
+
+	"github.com/pkg/errors"
+
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"xorm.io/xorm"
@@ -13,6 +17,21 @@ func getPrimaryAgent(conn *xorm.Session, zoneID uint) *PrimaryAgents {
 	logger.Debugf("Selected PrimaryAgent : %v", pa)
 
 	return &pa
+}
+
+func insertPrimaryAgent(conn *xorm.Session, pa *PrimaryAgents) (int64, error) {
+	return conn.Insert(pa)
+}
+
+func deletePrimaryAgentIfOld(conn *xorm.Session, zoneID uint, agentID uint, time time.Duration) {
+	sql := "delete p from PRIMARY_AGENTS p join AGENT a on a.ID = p.AGENT_ID where p.GROUP_ID = ? and p.AGENT_ID = ? and a.LAST_ACCESS_TIME < ?"
+	res, err := conn.Exec(sql, zoneID, agentID, time)
+	if err != nil {
+		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+	}
+
+	logger.Debug(res)
+
 }
 
 func getAgentByAgentKey(conn *xorm.Session, agentKey string) *Agents {
@@ -75,10 +94,20 @@ func existAPIKey(conn *xorm.Session, apiKey string, zoneID uint) bool {
 	return cnt > 0
 }
 
-func getLock(conn *xorm.Session, task string) *TaskLock {
+func getLock(conn *xorm.Session, task string) (*TaskLock, bool) {
 	var tl TaskLock
-	common.CheckGetQuery(conn.Where("task = ?", task).ForUpdate().Get(&tl))
+	exist := common.CheckGetQuery(conn.Where("task = ?", task).ForUpdate().Get(&tl))
 	logger.Debugf("Selected TaskLock : %v", tl)
 
-	return &tl
+	return &tl, exist
+}
+
+func insertLock(conn *xorm.Session, tl *TaskLock) {
+	cnt, err := conn.Insert(tl)
+
+	if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
+	} else if err != nil {
+		panic(err)
+	}
 }

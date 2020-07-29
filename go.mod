@@ -6,6 +6,8 @@ require (
 	github.com/NexClipper/logger v1.1.5
 	github.com/astaxie/beego v1.12.2 // indirect
 	github.com/beego/bee v1.12.0 // indirect
+	github.com/caarlos0/env/v6 v6.3.0 // indirect
+	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/logger v1.1.0 // indirect

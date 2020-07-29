@@ -38,7 +38,6 @@ type PrimaryAgents struct {
 	// Group          AgentGroups `gorm:"foreignKey:GroupId"`
 	AgentId uint `xorm:"pk"`
 	// Agents         Agents
-	LastAccessTime time.Time
 }
 
 type ApiAuthentications struct {
@@ -52,4 +51,9 @@ type TaskLock struct {
 	Task       string `xorm:"PK"`
 	InstanceId string
 	LockDate   time.Time
+}
+
+func (tl *TaskLock) expired() bool {
+	// if tl.LockDate.Unix() > time.Now().UTC().Add()
+	return true
 }
