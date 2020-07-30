@@ -28,7 +28,7 @@ services:
          - -c
          - |
             chmod +x /init-db.sh
-            /init-db.sh root root klevr-db 3306 klevr-manager-db.sql
+            /init-db.sh root root klevr-db 3306 klevr ./conf/klevr-manager-db.sql
             chmod +x /wait-for-it.sh
             /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
-            ./klevr-manager
+            /klevr-manager -c ./conf/klevr-manager-compose.yml
