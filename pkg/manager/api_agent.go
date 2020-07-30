@@ -16,8 +16,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// CustomHeader name constants
 const (
-	CHeaderApiKey         = "X-API-KEY"
+	CHeaderAPIKey         = "X-API-KEY"
 	CHeaderAgentKey       = "X-AGENT-KEY"
 	CHeaderHashCode       = "X-HASH-CODE"
 	CHeaderZoneID         = "X-ZONE-ID"
@@ -83,7 +84,7 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	ts, _ := strconv.ParseInt(strings.Join(r.Header.Values(CHeaderTimestamp), ""), 10, 64)
 
 	h := &common.CustomHeader{
-		APIKey:         strings.Join(r.Header.Values(CHeaderApiKey), ""),
+		APIKey:         strings.Join(r.Header.Values(CHeaderAPIKey), ""),
 		AgentKey:       strings.Join(r.Header.Values(CHeaderAgentKey), ""),
 		HashCode:       strings.Join(r.Header.Values(CHeaderHashCode), ""),
 		ZoneID:         uint(zoneID),
@@ -219,7 +220,7 @@ func (api *API) getPrimary(conn *xorm.Session, zoneID uint, agentID uint) common
 
 // primary agent 선출
 func (api *API) electPrimary(zoneID uint, agentID uint, oldDel bool) *Agents {
-	logger.Debug("electPrimary for %d", zoneID)
+	logger.Debugf("electPrimary for %d", zoneID)
 
 	var conn *xorm.Session
 	var agent *Agents

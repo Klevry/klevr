@@ -22,6 +22,7 @@ type DBInfo struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	MaxConnLifeTime int
+	InitScriptPath  string
 }
 
 // Connect connect to Database and return DB
@@ -38,14 +39,6 @@ func (info *DBInfo) Connect() (*xorm.Engine, error) {
 	db.SetTableMapper(CustomTableNameMapper{})
 
 	return db, err
-}
-
-func init() {
-	// // 기본 테이블명 설정 변경
-	// // https://gorm.io/docs/conventions.html#Change-default-tablenames
-	// gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-	// 	return strings.ToUpper(defaultTableName)
-	// }
 }
 
 type CustomTableNameMapper struct {

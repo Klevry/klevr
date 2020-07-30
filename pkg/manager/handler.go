@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -26,7 +25,10 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 			common.Block{
 				Try: func() {
 					// response wrapping
-					nw := common.ResponseWrapper{w, http.StatusOK}
+					nw := common.ResponseWrapper{
+						ResponseWriter: w,
+						StatusCode:     http.StatusOK,
+					}
 
 					w.Header().Set("Content-Type", "json/application; charset=utf-8")
 					w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -59,7 +61,7 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 						session.Rollback()
 					}
 
-					common.WriteHTTPError(500, w, errors.New(fmt.Sprintf("%+v", e)), "Service is unavailable")
+					common.WriteHTTPError(500, w, fmt.Errorf("%+v", e), "Service is unavailable")
 				},
 				Finally: func() {
 					// Context 초기화

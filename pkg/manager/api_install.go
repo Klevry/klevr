@@ -23,7 +23,7 @@ func (api *API) InitInstall(install *mux.Router) {
 func (api *API) generateBootstrapCommand(w http.ResponseWriter, r *http.Request) {
 	var cmd = "curl -sL gg.gg/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}"
 
-	var cr = &common.Request{r}
+	var cr = &common.Request{Request: r}
 
 	cmd = strings.Replace(cmd, "{apiKey}", cr.Param("apiKey"), 1)
 	cmd = strings.Replace(cmd, "{platform}", cr.Param("platform"), 1)

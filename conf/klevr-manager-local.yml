@@ -13,6 +13,6 @@ Klevr:
     DB:
         Type: 'mysql'
         URL: 'klevr:klevr@tcp(127.0.0.1:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'
-        # maxOpenConns: 10
-        # maxIdleConns: 5
-        # maxConnLifeTime: 1
+        MaxOpenConns: 10
+        MaxIdleConns: 5
+        MaxConnLifeTime: 1
