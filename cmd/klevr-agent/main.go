@@ -42,7 +42,7 @@ var Klevr_agent_id_string string
 var Klevr_console string
 var Api_key_string string
 var Local_ip_add string
-var User_account_id string
+var API_key_id string
 var Platform_type string
 var Klevr_zone string
 var Klevr_company string
@@ -126,22 +126,17 @@ func Check_variable() string {
 
 	// Flag options
 	// Sample: -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
-	userid := flag.String("id", "", "Account ID from Klevr service")
+	apikey := flag.String("apiKey", "", "API Key from Klevr service")
 	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
-	company := flag.String("group", "", "Group name will be a uniq company name or team name")
-	zone := flag.String("zone", "dev-zone", "zone will be a [Dev/Stg/Prod]")
+	zone := flag.String("zoneId", "dev-zone", "zone will be a [Dev/Stg/Prod]")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
-	klevr_addr := flag.String("webconsole", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
+	klevr_addr := flag.String("manager", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
 
 	flag.Parse() // Important for parsing
 
 	// Check the null data from CLI
-	if len(*userid) == 0 {
-		fmt.Println("Please insert an AccountID")
-		os.Exit(0)
-	}
-	if len(*company) == 0 {
-		fmt.Println("Please make sure the group name")
+	if len(*apikey) == 0 {
+		fmt.Println("Please insert an API Key")
 		os.Exit(0)
 	}
 	if len(*platform) == 0 {
@@ -163,25 +158,23 @@ func Check_variable() string {
 	Klevr_console = "http://" + klevr_tmp_server
 
 	// Check for the Print
-	User_account_id = *userid
-	fmt.Println("Account:", User_account_id)
+	API_key_id = *apikey
+	fmt.Println("Account:", API_key_id)
 	mca := Get_mac()
 	//base_info := "User Account ID + MAC address as a HW + local IP address"
-	base_info := *userid + mca + *local_ip
+	base_info := *apikey + mca + *local_ip
 	_, err = ioutil.ReadFile(Klevr_agent_id_file)
 	if err != nil {
 		hash_create(base_info)
 	}
 	Platform_type = string(*platform)
 	Klevr_zone = string(*zone)
-	Klevr_company = string(*company)
 
 	return Platform_type
 	return Local_ip_add
-	return User_account_id
+	return API_key_id
 	return Klevr_console
 	return Klevr_zone
-	return Klevr_company
 
 	return Api_key_string
 }
@@ -281,13 +274,13 @@ func Get_provisionig_script() {
 //Klevr_company Klevr_zone
 func Alive_chk_to_mgm(fail_chk string) {
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	uri := fmt.Sprint(Klevr_console + "/group/" + Klevr_company + "/user/" + User_account_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/" + Local_ip_add + "/" + now_time + "/" + fail_chk)
+	uri := fmt.Sprint(Klevr_console + "/group/"  + "/user/" + API_key_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/" + Local_ip_add + "/" + now_time + "/" + fail_chk)
 	Debug(uri) /// log output
 	communicator.Get_http(uri, Api_key_string)
 }
 
 func Get_primaryinfo() string {
-	uri_result := strings.Split(communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/primaryinfo", Api_key_string), "=")
+	uri_result := strings.Split(communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+API_key_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/primaryinfo", Api_key_string), "=")
 	Primary_ip = uri_result[1]
 	Debug(Primary_ip) /// log output
 	return Primary_ip
@@ -307,7 +300,7 @@ func Check_primary() string {
 }
 
 func Resource_chk_to_mgm() {
-	uri := fmt.Sprint(Klevr_console + "/group/" + Klevr_company + "/user/" + User_account_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/hostinfo")
+	uri := fmt.Sprint(Klevr_console + "/group/"  + "/user/" + API_key_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/hostinfo")
 	Debug(uri) /// log output
 	Resource_info()
 	communicator.Put_http(uri, System_info, Api_key_string)
@@ -360,7 +353,7 @@ func Secondary_scanner() {
 
 func Hosts_alive_list(alive_list string) {
 	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
-	uri := fmt.Sprint(Klevr_console + "/groups/" + Klevr_company + "/users/" + User_account_id + "/zones/" + Klevr_zone + "/platforms/" + Platform_type + "/aliveagent")
+	uri := fmt.Sprint(Klevr_console + "/groups/"  + "/users/" + API_key_id + "/zones/" + Klevr_zone + "/platforms/" + Platform_type + "/aliveagent")
 	Debug(uri) /// log output
 	alive_conv := fmt.Sprintf("%s", alive_list)
 	communicator.Put_http(uri, alive_conv, Api_key_string)
@@ -370,7 +363,7 @@ func RnR() {
 	Check_primary()
 	if AM_I_PRIMARY == "PRIMARY" {
 		// Put primary alive time to stamp
-		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+User_account_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
+		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+API_key_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
 
 		// Write done the information about of Final result time & hostlists
 		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
