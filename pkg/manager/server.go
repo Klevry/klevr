@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Klevry/klevr/pkg/common"
 	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
@@ -82,7 +81,7 @@ func (manager *KlevrManager) Run() error {
 
 	go manager.updateAgentStatus(db, 10)
 
-	Init(manager, db, manager.RootRouter)
+	Init(manager, db)
 
 	return s.ListenAndServe()
 }
@@ -110,12 +109,12 @@ func (manager *KlevrManager) updateAgentStatus(db *xorm.Engine, cycle time.Durat
 			}
 		}()
 
-		common.ErrorWithPanic(conn.Begin(),
-			"updateAgentStatus() connection open error")
+		// common.ErrorWithPanic(conn.Begin(),
+		// 	"updateAgentStatus() connection open error")
 
-		getLock(conn, "UPDATE_AGENT_STATUS")
+		// getLock(conn, "UPDATE_AGENT_STATUS")
 
-		common.ErrorWithPanic(conn.Commit(),
-			"updateAgentStatus() commit error")
+		// common.ErrorWithPanic(conn.Commit(),
+		// 	"updateAgentStatus() commit error")
 	}
 }

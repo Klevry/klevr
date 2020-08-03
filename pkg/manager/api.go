@@ -44,7 +44,7 @@ type Routes struct {
 type API struct {
 	BaseRoutes *Routes
 	DB         *xorm.Engine
-	InstanceID string
+	Manager    *KlevrManager
 }
 
 type apiDef struct {
@@ -54,25 +54,25 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(instance *KlevrManager, db *xorm.Engine, baseRouter *mux.Router) *API {
+func Init(manager *KlevrManager, db *xorm.Engine) *API {
 	logger.Debug("API Init")
 
 	api := &API{
 		BaseRoutes: &Routes{},
 		DB:         db,
-		InstanceID: instance.InstanceID,
+		Manager:    manager,
 	}
 
 	api.DB.ShowSQL(true)
 	// TODO: ContextLogger interface 구현하여 logger override
 	// api.DB.SetLogger(log.NewSimpleLogger(f))
 
-	baseRouter.Use(api.CommonWrappingHandler(api.DB))
-	baseRouter.Use(ExecutionInfoLoggerHandler)
+	manager.RootRouter.Use(api.CommonWrappingHandler(api.DB))
+	manager.RootRouter.Use(RequestInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
 
-	api.BaseRoutes.Root = baseRouter
-	api.BaseRoutes.APIRoot = baseRouter.PathPrefix(APIURLPrefix).Subrouter()
+	api.BaseRoutes.Root = manager.RootRouter
+	api.BaseRoutes.APIRoot = api.BaseRoutes.Root.PathPrefix(APIURLPrefix).Subrouter()
 
 	api.BaseRoutes.Legacy = api.BaseRoutes.APIRoot
 	api.BaseRoutes.Agent = api.BaseRoutes.APIRoot.PathPrefix("/agents").Subrouter()
@@ -82,7 +82,7 @@ func Init(instance *KlevrManager, db *xorm.Engine, baseRouter *mux.Router) *API 
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 
-	err := baseRouter.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	err := api.BaseRoutes.Root.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 
 		pathTemplate, _ := route.GetPathTemplate()
 		// if err == nil {

@@ -8,14 +8,13 @@ import (
 	"github.com/NexClipper/logger"
 
 	"github.com/Klevry/klevr/pkg/common"
-	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/manager"
 	"github.com/urfave/cli/v2"
 	"sigs.k8s.io/yaml"
 )
 
 type config struct {
-	Log   klevr.LoggerEnv
+	Log   common.LoggerEnv
 	Klevr manager.Config
 }
 
@@ -25,14 +24,14 @@ func loadConfig(configPath string) (*config, error) {
 
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return nil, klevr.NewStandardErrorWrap("configuration loading failed", err)
+		return nil, common.NewStandardErrorWrap("configuration loading failed", err)
 	}
 
 	config := &config{}
 
 	err = yaml.Unmarshal(file, config)
 	if err != nil {
-		return nil, klevr.NewStandardErrorWrap("configuration loading failed", err)
+		return nil, common.NewStandardErrorWrap("configuration loading failed", err)
 	}
 
 	logger.Debug("loaded config : ", *config)
@@ -41,7 +40,7 @@ func loadConfig(configPath string) (*config, error) {
 }
 
 func main() {
-	klevr.InitLogger(klevr.NewLoggerEnv())
+	common.InitLogger(common.NewLoggerEnv())
 
 	logger.Info("Start Klevr-manager")
 

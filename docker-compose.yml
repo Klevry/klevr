@@ -3,8 +3,8 @@ services:
    klevr-db:
       image: mariadb
       restart: always
-      volumes:
-         - ./data/mariadb:/var/lib/mysql
+#      volumes:
+#         - ./data/mariadb:/var/lib/mysql
       environment:
          - MYSQL_ROOT_PASSWORD=root
       healthcheck:
@@ -14,24 +14,21 @@ services:
          retries: 10
       ports:
          - "3306:3306"
+
    klevr-manager:
-       image: klevry/klevr-manager
-       ports: 
-          - "8090:8090"
-       depends_on: 
-          - klevr-db
-       links:
-          - klevr-db
-       command:
-          - bash
-          - -c
-          - |
-             chmod +x /wait-for-it.sh
-             /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
-             ls -al
-             pwd
-             cd conf
-             ls -al
-             cat klevr-manager-local.yml
-             cd ..
-             ./klevr-manager
+      image: klevry/klevr-manager
+      ports: 
+         - "8090:8090"
+      depends_on: 
+         - klevr-db
+      links:
+         - klevr-db
+      command:
+         - bash
+         - -c
+         - |
+            chmod +x /init-db.sh
+            /init-db.sh root root klevr-db 3306 klevr ./conf/klevr-manager-db.sql
+            chmod +x /wait-for-it.sh
+            /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
+            /klevr-manager -c ./conf/klevr-manager-compose.yml

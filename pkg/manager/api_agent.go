@@ -9,17 +9,16 @@ import (
 	"time"
 
 	"github.com/gorilla/context"
+	"xorm.io/xorm"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
 
-// CustomHeaderName custom header name
-const CustomHeaderName = "CTX-CUSTOM-HEADER"
-
+// CustomHeader name constants
 const (
-	CHeaderApiKey         = "X-API-KEY"
+	CHeaderAPIKey         = "X-API-KEY"
 	CHeaderAgentKey       = "X-AGENT-KEY"
 	CHeaderHashCode       = "X-HASH-CODE"
 	CHeaderZoneID         = "X-ZONE-ID"
@@ -36,7 +35,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 	registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", api.receivePolling)
-	registURI(agent, PUT, "/reports/{agentKey}", api.checkPrimaryInfo)
+	registURI(agent, GET, "/reports/{agentKey}", api.checkPrimaryInfo)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -80,12 +79,12 @@ func authenticate(w http.ResponseWriter, r *http.Request, zoneID uint, apiKey st
 	return true
 }
 
-func parseCustomHeader(r *http.Request) *CustomHeader {
+func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	zoneID, _ := strconv.ParseUint(strings.Join(r.Header.Values(CHeaderZoneID), ""), 10, 64)
 	ts, _ := strconv.ParseInt(strings.Join(r.Header.Values(CHeaderTimestamp), ""), 10, 64)
 
-	h := &CustomHeader{
-		APIKey:         strings.Join(r.Header.Values(CHeaderApiKey), ""),
+	h := &common.CustomHeader{
+		APIKey:         strings.Join(r.Header.Values(CHeaderAPIKey), ""),
 		AgentKey:       strings.Join(r.Header.Values(CHeaderAgentKey), ""),
 		HashCode:       strings.Join(r.Header.Values(CHeaderHashCode), ""),
 		ZoneID:         uint(zoneID),
@@ -93,23 +92,25 @@ func parseCustomHeader(r *http.Request) *CustomHeader {
 		Timestamp:      ts,
 	}
 
-	context.Set(r, CustomHeaderName, h)
+	context.Set(r, common.CustomHeaderName, h)
 
 	return h
 }
 
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
-	ch := getCustomHeader(r)
+	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
 	var conn = GetDBConn(r)
-	var paramAgent Agent
+	var rquestBody common.Body
+	var paramAgent common.Me
 
-	err := json.NewDecoder(r.Body).Decode(&paramAgent)
+	err := json.NewDecoder(r.Body).Decode(&rquestBody)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
 		return
 	}
 
+	paramAgent = rquestBody.Me
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
 	group := getAgentGroup(conn, ch.ZoneID)
@@ -121,6 +122,168 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	agent := getAgentByAgentKey(conn, ch.AgentKey)
 
+	// agent 생성 or 수정
+	upsertAgent(conn, agent, ch, &paramAgent)
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	// primary 조회
+	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
+
+	// 접속한 agent 정보
+	me := &rb.Me
+
+	me.HmacKey = agent.HmacKey
+	me.EncKey = agent.EncKey
+	// me.CallCycle = 0 // seconds
+	// me.LogLevel = "DEBUG"
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
+	ch := common.GetCustomHeader(r)
+	// var cr = &common.Request{r}
+	var conn = GetDBConn(r)
+	var param common.Body
+
+	err := json.NewDecoder(r.Body).Decode(&param)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	agent := getAgentByAgentKey(conn, ch.AgentKey)
+
+	// agent 접속 시간 갱신
+	agent.LastAccessTime = time.Now().UTC()
+	updateAgent(conn, agent)
+
+	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func (api *API) getPrimary(conn *xorm.Session, zoneID uint, agentID uint) common.Primary {
+	// primary agent 정보
+	groupPrimary := getPrimaryAgent(conn, zoneID)
+	var primaryAgent *Agents
+
+	if groupPrimary.AgentId == 0 {
+		primaryAgent = api.electPrimary(zoneID, agentID, false)
+	} else {
+		primaryAgent = getAgentByID(conn, groupPrimary.AgentId)
+
+		if primaryAgent.Id == 0 {
+			logger.Warning(fmt.Sprintf("primary agent not exist for id : %d", agentID))
+			common.Throw(common.NewHTTPError(500, "primary agent not exist."))
+		}
+
+		// TODO: primary가 inactive인 경우 재선출 로직 추가
+		old := primaryAgent.LastAccessTime.Add(1 * time.Second)
+		now := time.Now().UTC()
+
+		logger.Debugf("old origin : %v, old : %v, now : %v, before : %v", primaryAgent.LastAccessTime, old, now, old.Before(now))
+
+		if old.Before(now) {
+			primaryAgent = api.electPrimary(zoneID, agentID, true)
+		}
+	}
+
+	return common.Primary{
+		IP:             primaryAgent.Ip,
+		Port:           primaryAgent.Port,
+		IsActive:       primaryAgent.IsActive,
+		LastAccessTime: primaryAgent.LastAccessTime.UTC().Unix(),
+	}
+}
+
+// primary agent 선출
+func (api *API) electPrimary(zoneID uint, agentID uint, oldDel bool) *Agents {
+	logger.Debugf("electPrimary for %d", zoneID)
+
+	var conn *xorm.Session
+	var agent *Agents
+
+	common.Block{
+		Try: func() {
+			conn = api.DB.NewSession()
+
+			if oldDel {
+				deletePrimaryAgentIfOld(conn, zoneID, agentID, 30*time.Second)
+			}
+
+			pa := &PrimaryAgents{
+				GroupId: zoneID,
+				AgentId: agentID,
+			}
+
+			cnt, err := insertPrimaryAgent(conn, pa)
+
+			if err != nil {
+				pa = getPrimaryAgent(conn, zoneID)
+			} else if cnt != 1 {
+				logger.Warning(fmt.Sprintf("insert primary agent cnt : %d", cnt))
+				common.Throw(common.NewStandardError("elect primary failed."))
+			}
+
+			if pa.AgentId == 0 {
+				logger.Debugf("invalid primary agent : %v", pa)
+				common.Throw(common.NewStandardError("elect primary failed."))
+			}
+
+			agent = getAgentByID(conn, pa.AgentId)
+
+			if agent.Id == 0 {
+				logger.Warning(fmt.Sprintf("primary agent not exist for id : %d, [%v]", agent.Id, agent))
+				common.Throw(common.NewStandardError("elect primary failed."))
+			}
+
+			conn.Commit()
+		},
+		Catch: func(e common.Exception) {
+			if conn != nil {
+				conn.Rollback()
+			}
+
+			logger.Warning(e)
+			common.Throw(e)
+		},
+		Finally: func() {
+			if conn != nil && !conn.IsClosed() {
+				conn.Close()
+			}
+		},
+	}.Do()
+
+	return agent
+}
+
+func hasLockAuth() bool {
+	return true
+}
+
+func upsertAgent(conn *xorm.Session, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
 		agent.GroupId = ch.ZoneID
@@ -148,48 +311,4 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 		updateAgent(conn, agent)
 	}
-
-	rb := &Body{}
-	groupPrimary := getPrimaryAgent(conn, ch.ZoneID)
-
-	// Primary agent 정보 반환
-	if groupPrimary.AgentId != 0 {
-		primaryAgent := getAgentByID(conn, groupPrimary.AgentId)
-
-		rp := &rb.Agent.Primary
-
-		rp.IP = primaryAgent.Ip
-		rp.Port = primaryAgent.Port
-		rp.IsActive = primaryAgent.IsActive
-		rp.LastAccessTime = primaryAgent.LastAccessTime.UTC().Unix()
-	} else {
-		// TODO: primary agent 선정
-	}
-
-	me := &rb.Me
-
-	me.HmacKey = agent.HmacKey
-	me.EncKey = agent.EncKey
-	// me.CallCycle = 0 // seconds
-	// me.LogLevel = "DEBUG"
-
-	b, err := json.Marshal(rb)
-	if err != nil {
-		panic(err)
-	}
-
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", b)
-}
-
-func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func electPrimary() *Agents {
-	return nil
 }
