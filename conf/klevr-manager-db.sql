@@ -21,10 +21,10 @@ USE `klevr`;
 -- Table structure for table `AGENTS`
 --
 
-DROP TABLE IF EXISTS `AGENTS`;
+-- DROP TABLE IF EXISTS `AGENTS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `AGENTS` (
+CREATE TABLE IF NOT EXISTS `AGENTS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '에이전트 ID',
   `AGENT_KEY` varchar(45) DEFAULT NULL COMMENT '에이전트 고유 식별 키 (향후 unique 키로 만들어야 함 - 현재는 개발중)',
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 그룹 ID',
@@ -49,10 +49,10 @@ CREATE TABLE `AGENTS` (
 -- Table structure for table `AGENT_GROUPS`
 --
 
-DROP TABLE IF EXISTS `AGENT_GROUPS`;
+-- DROP TABLE IF EXISTS `AGENT_GROUPS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `AGENT_GROUPS` (
+CREATE TABLE IF NOT EXISTS `AGENT_GROUPS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '그룹 ID',
   `GROUP_NAME` varchar(200) NOT NULL COMMENT '그룹 이름',
   `USER_ID` bigint(20) unsigned NOT NULL COMMENT '사용자 ID',
@@ -70,10 +70,10 @@ CREATE TABLE `AGENT_GROUPS` (
 -- Table structure for table `API_AUTHENTICATIONS`
 --
 
-DROP TABLE IF EXISTS `API_AUTHENTICATIONS`;
+-- DROP TABLE IF EXISTS `API_AUTHENTICATIONS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `API_AUTHENTICATIONS` (
+CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
   `API_KEY` varchar(64) NOT NULL COMMENT 'API key',
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '그룹 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
@@ -86,10 +86,10 @@ CREATE TABLE `API_AUTHENTICATIONS` (
 -- Table structure for table `PRIMARY_AGENTS`
 --
 
-DROP TABLE IF EXISTS `PRIMARY_AGENTS`;
+-- DROP TABLE IF EXISTS `PRIMARY_AGENTS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `PRIMARY_AGENTS` (
+CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트의 group ID',
   `AGENT_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 ID',
   `LAST_ACCESS_TIME` timestamp NULL DEFAULT NULL COMMENT '에이전트가 마지막으로 엑세스한 타임스탬프',
@@ -105,10 +105,10 @@ CREATE TABLE `PRIMARY_AGENTS` (
 -- Table structure for table `TASK_LOCK`
 --
 
-DROP TABLE IF EXISTS `TASK_LOCK`;
+-- DROP TABLE IF EXISTS `TASK_LOCK`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `TASK_LOCK` (
+CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
   `TASK` varchar(45) NOT NULL COMMENT 'lock을 잡은 task 명',
   `INSTANCE_ID` varchar(45) NOT NULL COMMENT 'lock을 잡은 인스턴스 ID',
   `LOCK_DATE` timestamp NULL DEFAULT NULL COMMENT 'lock이 걸린 일시',
@@ -126,3 +126,7 @@ CREATE TABLE `TASK_LOCK` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2020-07-30 11:19:00
+
+CREATE USER 'klevr'@'%' identified by 'klevr';
+
+GRANT ALL PRIVILEGES ON klevr.* to `klevr`@`%`;
