@@ -32,7 +32,7 @@ var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
-var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+var Prov_script = "https://raw.githubusercontent.com/Klevry/klevr/master/scripts"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
@@ -261,7 +261,7 @@ func Get_provisionig_script() {
 	for i := 0; i < len(Get_script_arr); i++ {
 		if len(Get_script_arr[i]) > 1 {
 			fin_arr := strings.Split(Get_script_arr[i], ",")
-			//			println("eval "+fin_arr[0], fin_arr[1])
+			// println("::::::::::::::::::: eval "+fin_arr[0], fin_arr[1])
 			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
 			if err != nil {
 				os.Exit(1)
