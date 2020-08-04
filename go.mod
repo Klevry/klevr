@@ -16,6 +16,7 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/json-iterator/go v1.1.10 // indirect
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mackerelio/go-osstat v0.1.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect

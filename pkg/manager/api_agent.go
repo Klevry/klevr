@@ -149,7 +149,53 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
+	ch := common.GetCustomHeader(r)
+	// var cr = &common.Request{r}
+	var conn = GetDBConn(r)
+	var param common.Body
 
+	err := json.NewDecoder(r.Body).Decode(&param)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	// primary agent access 정보 갱신
+	agent := updateAgentAccess(conn, ch.AgentKey)
+	logger.Debugf("%v", agent)
+
+	// TODO: primary agent 실행 정보 update
+	// rb.Me.CallCycle =
+	// rb.Me.LogLevel =
+
+	// TODO: agent 상태 정보 업데이트
+	nodes := param.Agent.Nodes
+	len := len(nodes)
+	arrAgent := make([]map[string]interface{}, len)
+
+	for i := 0; i < len; i++ {
+		arrAgent[i]["AGENT_KEY"] = nodes[i].AgentKey
+		arrAgent[i]["LAST_ALIVE_CHECK_TIME"] = nodes[i].LastAliveCheckTime
+		arrAgent[i]["IS_ACTIVE"] = nodes[i].IsActive
+		arrAgent[i]["CORE"] = nodes[i].Core
+		arrAgent[i]["MEMORY"] = nodes[i].Memory
+		arrAgent[i]["DISK"] = nodes[i].Disk
+	}
+
+	// TODO: task 상태 정보 업데이트
+
+	// 신규 task 할당
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
@@ -167,11 +213,8 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	// response 데이터 생성
 	rb := &common.Body{}
 
-	agent := getAgentByAgentKey(conn, ch.AgentKey)
-
-	// agent 접속 시간 갱신
-	agent.LastAccessTime = time.Now().UTC()
-	updateAgent(conn, agent)
+	// agent access 정보 갱신
+	agent := updateAgentAccess(conn, ch.AgentKey)
 
 	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
 
@@ -182,6 +225,16 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+func updateAgentAccess(conn *xorm.Session, agentKey string) *Agents {
+	agent := getAgentByAgentKey(conn, agentKey)
+
+	// agent 접속 시간 갱신
+	agent.LastAccessTime = time.Now().UTC()
+	updateAgent(conn, agent)
+
+	return agent
 }
 
 func (api *API) getPrimary(conn *xorm.Session, zoneID uint64, agentID uint64) common.Primary {

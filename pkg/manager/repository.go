@@ -55,7 +55,10 @@ func getAgentByID(conn *xorm.Session, id uint64) *Agents {
 func getAgentsForInactive(conn *xorm.Session, before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
-	cnt, err := conn.Where("IS_ACTIVE = ?", true).And("LAST_ALIVE_CHECK_TIME < ?", before).Cols("ID").FindAndCount(&agents)
+	cnt, err := conn.Table(&Agents{}).
+		Join("INNER", "PRIMARY_AGENTS", "AGENTS.ID = PRIMARY_AGENTS.AGENT_ID").
+		Where("AGENTS.IS_ACTIVE = ?", true).And("AGENTS.LAST_ACCESS_TIME < ?", before).
+		Cols("AGENTS.ID").FindAndCount(&agents)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +71,7 @@ func updateAgentStatus(conn *xorm.Session, ids []uint64) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
+	} else if cnt != int64(len(ids)) {
 		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }

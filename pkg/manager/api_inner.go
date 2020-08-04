@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// InitNexClipper initialize NexClipper API
+// InitInner initialize inner server API
 func (api *API) InitInner(inner *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 

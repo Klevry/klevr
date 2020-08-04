@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// AgentGroups model for AGENT_GROUPS
 type AgentGroups struct {
 	Id        uint64    `xorm:"pk autoincr"`
 	CreatedAt time.Time `xorm:"created"`
@@ -14,6 +15,7 @@ type AgentGroups struct {
 	Platform  string
 }
 
+// Agents model for AGENTS
 type Agents struct {
 	Id        uint64    `xorm:"pk autoincr"`
 	CreatedAt time.Time `xorm:"created"`
@@ -33,6 +35,7 @@ type Agents struct {
 	Disk               int
 }
 
+// PrimaryAgents model for PIMARY_AGENTS
 type PrimaryAgents struct {
 	GroupId uint64 `xorm:"pk"`
 	// Group          AgentGroups `gorm:"foreignKey:GroupId"`
@@ -40,6 +43,7 @@ type PrimaryAgents struct {
 	// Agents         Agents
 }
 
+// ApiAuthentications model for API_AUTHENTICATIONS
 type ApiAuthentications struct {
 	ApiKey    string `xorm:"pk"`
 	GroupId   uint64
@@ -47,6 +51,7 @@ type ApiAuthentications struct {
 	UpdatedAt time.Time `xorm:"updated"`
 }
 
+// TaskLock model for TASK_LOCK
 type TaskLock struct {
 	Task       string `xorm:"PK"`
 	InstanceId string
