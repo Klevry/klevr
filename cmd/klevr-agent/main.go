@@ -19,20 +19,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jasonlvhit/gocron"
 	"github.com/Klevry/klevr/pkg/communicator"
+	"github.com/jasonlvhit/gocron"
 	"github.com/zcalusic/sysinfo"
 	netutil "k8s.io/apimachinery/pkg/util/net"
-	//"github.com/mackerelio/go-osstat/memory"
+	"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
-	//"github.com/mackerelio/go-osstat/disk"
+	"github.com/mackerelio/go-osstat/disk"
 )
 
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
 var Klevr_agent_conf_file = "/tmp/klevr_agent.conf"
 var Primary_communication_result = "/tmp/communication_result.stmp"
-var Prov_script = "https://raw.githubusercontent.com/ralfyang/klevr/master/provisioning_lists"
+var Prov_script = "https://raw.githubusercontent.com/Klevry/klevr/master/scripts"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
@@ -46,6 +46,7 @@ var API_key_id string
 var Platform_type string
 var Klevr_zone string
 var Klevr_company string
+var Local_port string
 
 var Installer string
 var Primary_ip string
@@ -56,6 +57,8 @@ var Result_buffer string
 
 /// Mode_debug = dev or not
 var Mode_debug string = "dev"
+
+var AGENT_VERSION string = "1.0.0"
 
 /// Function for Debug
 func Debug(output string) {
@@ -119,22 +122,49 @@ func hash_create(s string) {
 func Check_variable() string {
 	// get Local IP address automatically
 	default_ip, err := netutil.ChooseHostInterface()
-	klevr_tmp_server := "localhost:8080"
+	default_port := "8080"
+	klevr_tmp_server := "localhost:8090"
 	if err != nil {
 		log.Fatalf("Failed to get IP address: %v", err)
 	}
 
 	// Flag options
 	// Sample: -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}
+<<<<<<< HEAD
+	//userid := flag.String("id", "", "Account ID from Klevr service")
+	//platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
+	//company := flag.String("group", "", "Group name will be a uniq company name or team name")
+	//zone := flag.String("zone", "dev-zone", "zone will be a [Dev/Stg/Prod]")
+	//local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
+	//klevr_addr := flag.String("webconsole", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
+
+	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
+	port := flag.String("port", default_port, "communication port")
+=======
 	apikey := flag.String("apiKey", "", "API Key from Klevr service")
 	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
 	zone := flag.String("zoneId", "dev-zone", "zone will be a [Dev/Stg/Prod]")
 	local_ip := flag.String("ip", default_ip.String(), "local IP address for networking")
 	klevr_addr := flag.String("manager", klevr_tmp_server, "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
+>>>>>>> d3ca7eb9537577ddf921502f2c368c6f9cc61dcc
 
 	flag.Parse() // Important for parsing
 
 	// Check the null data from CLI
+<<<<<<< HEAD
+	//if len(*userid) == 0 {
+	//	fmt.Println("Please insert an AccountID")
+	//	os.Exit(0)
+	//}
+	//if len(*company) == 0 {
+	//	fmt.Println("Please make sure the group name")
+	//	os.Exit(0)
+	//}
+	//if len(*platform) == 0 {
+	//	fmt.Println("Please make sure the platform")
+	//	os.Exit(0)
+	//}
+=======
 	if len(*apikey) == 0 {
 		fmt.Println("Please insert an API Key")
 		os.Exit(0)
@@ -143,21 +173,41 @@ func Check_variable() string {
 		fmt.Println("Please make sure the platform")
 		os.Exit(0)
 	}
+>>>>>>> d3ca7eb9537577ddf921502f2c368c6f9cc61dcc
 	if len(*local_ip) == 0 {
 		Local_ip_add = default_ip.String()
 	} else {
 		Local_ip_add = *local_ip
 	}
-
-	if len(*klevr_addr) == 0 {
-		klevr_tmp_server = klevr_tmp_server
+	if len(*port) == 0{
+		Local_port = default_port
 	} else {
-		klevr_tmp_server = *klevr_addr
+		Local_port = *port
 	}
+
+	//if len(*klevr_addr) == 0 {
+	//	klevr_tmp_server = klevr_tmp_server
+	//} else {
+	//	klevr_tmp_server = *klevr_addr
+	//}
 
 	Klevr_console = "http://" + klevr_tmp_server
 
 	// Check for the Print
+<<<<<<< HEAD
+	//User_account_id = *userid
+	//fmt.Println("Account:", User_account_id)
+	//mca := Get_mac()
+	////base_info := "User Account ID + MAC address as a HW + local IP address"
+	//base_info := *userid + mca + *local_ip
+	//_, err = ioutil.ReadFile(Klevr_agent_id_file)
+	//if err != nil {
+	//	hash_create(base_info)
+	//}
+	//Platform_type = string(*platform)
+	//Klevr_zone = string(*zone)
+	//Klevr_company = string(*company)
+=======
 	API_key_id = *apikey
 	fmt.Println("Account:", API_key_id)
 	mca := Get_mac()
@@ -169,6 +219,7 @@ func Check_variable() string {
 	}
 	Platform_type = string(*platform)
 	Klevr_zone = string(*zone)
+>>>>>>> d3ca7eb9537577ddf921502f2c368c6f9cc61dcc
 
 	return Platform_type
 	return Local_ip_add
@@ -261,7 +312,7 @@ func Get_provisionig_script() {
 	for i := 0; i < len(Get_script_arr); i++ {
 		if len(Get_script_arr[i]) > 1 {
 			fin_arr := strings.Split(Get_script_arr[i], ",")
-			//			println("eval "+fin_arr[0], fin_arr[1])
+			// println("::::::::::::::::::: eval "+fin_arr[0], fin_arr[1])
 			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
 			if err != nil {
 				os.Exit(1)
@@ -463,6 +514,45 @@ func Primary_works_check() string {
 		primary_latest_check = ""
 	}
 	return primary_latest_check
+}
+
+func GetCpuCore() string{
+	out, err := exec.Command("bash", "-c", "cat /proc/cpuinfo | grep -c processor").Output()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return string(out)
+}
+
+func HandShake(){
+	uri := fmt.Sprint(Klevr_console + "/agents/handshake/")
+	communicator.Put_http(uri, Local_ip_add, Api_key_string)
+	communicator.Put_http(uri, Local_port, Api_key_string)
+	communicator.Put_http(uri, AGENT_VERSION, Api_key_string)
+}
+
+func Polling(){
+	uri := fmt.Sprint(Klevr_console + "/agents/" + agentkey)
+
+
+}
+
+func TaskManagement(){
+	uri := fmt.Sprint(Klevr_console + "/agents/" + agentkey)
+	memory, err := memory.Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return
+	}
+	communicator.Put_http(uri, GetCpuCore(), Api_key_string)
+	communicator.Put_http(uri, string(memory.Free), Api_key_string)
+}
+
+func PrimaryStatusReport(){
+	uri := fmt.Sprint(Klevr_console + "/agents/reports/" + agentkey)
+
 }
 
 func main() {
