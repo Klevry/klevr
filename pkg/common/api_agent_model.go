@@ -14,7 +14,7 @@ type CustomHeader struct {
 	APIKey         string `header:"X-API-KEY"`
 	AgentKey       string `header:"X-AGENT-KEY"`
 	HashCode       string `header:"X-HASH-CODE"`
-	ZoneID         uint   `header:"X-ZONE-ID"`
+	ZoneID         uint64 `header:"X-ZONE-ID"`
 	SupportVersion string `header:"X-SUPPORT-AGENT-VERSION"`
 	Timestamp      int64  `header:"X-TIMESTAMP"`
 }
