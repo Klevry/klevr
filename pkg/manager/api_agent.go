@@ -68,7 +68,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	})
 }
 
-func authenticate(w http.ResponseWriter, r *http.Request, zoneID uint, apiKey string) bool {
+func authenticate(w http.ResponseWriter, r *http.Request, zoneID uint64, apiKey string) bool {
 	logger.Debug(r.RequestURI)
 
 	if !existAPIKey(GetDBConn(r), apiKey, zoneID) {
@@ -87,7 +87,7 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 		APIKey:         strings.Join(r.Header.Values(CHeaderAPIKey), ""),
 		AgentKey:       strings.Join(r.Header.Values(CHeaderAgentKey), ""),
 		HashCode:       strings.Join(r.Header.Values(CHeaderHashCode), ""),
-		ZoneID:         uint(zoneID),
+		ZoneID:         uint64(zoneID),
 		SupportVersion: strings.Join(r.Header.Values(CHeaderSupportVersion), ""),
 		Timestamp:      ts,
 	}
@@ -101,21 +101,21 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
 	var conn = GetDBConn(r)
-	var rquestBody common.Body
+	var requestBody common.Body
 	var paramAgent common.Me
 
-	err := json.NewDecoder(r.Body).Decode(&rquestBody)
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
 		return
 	}
 
-	paramAgent = rquestBody.Me
+	paramAgent = requestBody.Me
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
-	group := getAgentGroup(conn, ch.ZoneID)
+	_, exist := getAgentGroup(conn, ch.ZoneID)
 
-	if group.Id == 0 {
+	if !exist {
 		common.WriteHTTPError(400, w, nil, fmt.Sprintf("Does not exist zone for zoneId : %d", ch.ZoneID))
 		return
 	}
@@ -184,7 +184,7 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) getPrimary(conn *xorm.Session, zoneID uint, agentID uint) common.Primary {
+func (api *API) getPrimary(conn *xorm.Session, zoneID uint64, agentID uint64) common.Primary {
 	// primary agent 정보
 	groupPrimary := getPrimaryAgent(conn, zoneID)
 	var primaryAgent *Agents
@@ -219,7 +219,7 @@ func (api *API) getPrimary(conn *xorm.Session, zoneID uint, agentID uint) common
 }
 
 // primary agent 선출
-func (api *API) electPrimary(zoneID uint, agentID uint, oldDel bool) *Agents {
+func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents {
 	logger.Debugf("electPrimary for %d", zoneID)
 
 	var conn *xorm.Session
@@ -277,10 +277,6 @@ func (api *API) electPrimary(zoneID uint, agentID uint, oldDel bool) *Agents {
 	}.Do()
 
 	return agent
-}
-
-func hasLockAuth() bool {
-	return true
 }
 
 func upsertAgent(conn *xorm.Session, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {

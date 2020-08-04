@@ -1,18 +1,23 @@
-Log:
-    Level: debug
-    LogPath: ./log/klevr-manager.log
-    MaxSize: 1
-    MaxBackups: 3
-    MaxAge: 1
-    Compress: false
+log:
+    level: debug
+    logPath: ./log/klevr-manager.log
+    maxSize: 1
+    maxBackups: 3
+    maxAge: 1
+    compress: false
 
-Klevr:
-    Server:
-        Port: 8090
-        EncryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
-    DB:
-        Type: 'mysql'
-        URL: 'klevr:klevr@tcp(127.0.0.1:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'
-        MaxOpenConns: 10
-        MaxIdleConns: 5
-        MaxConnLifeTime: 1
+klevr:
+    server:
+        port: 8090
+        encryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
+        transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
+        statusUpdateCycle: 10 #seconds
+    agent:
+        callCycle: 10 #seconds
+        logLevel: INFO
+    db:
+        type: 'mysql'
+        uRL: 'klevr:klevr@tcp(127.0.0.1:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'
+        maxOpenConns: 10
+        maxIdleConns: 5
+        maxConnLifeTime: 1
