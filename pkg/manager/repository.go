@@ -66,10 +66,10 @@ func getAgentsForInactive(conn *xorm.Session, before time.Time) (int64, *[]Agent
 func updateAgentStatus(conn *xorm.Session, ids []uint64) {
 	cnt, err := conn.Table(new(Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": false})
 
-	if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, int64(len(ids)))
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }
 
@@ -98,10 +98,10 @@ func addAgentGroup(conn *xorm.Session, ag *AgentGroups) {
 
 	logger.Debugf("Inserted AgentGroup(%d) : %v", cnt, ag)
 
-	if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -109,10 +109,10 @@ func addAgent(conn *xorm.Session, a *Agents) {
 	cnt, err := conn.Insert(a)
 	logger.Debugf("Inserted Agent(%d) : %v", cnt, a)
 
-	if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -120,11 +120,39 @@ func updateAgent(conn *xorm.Session, a *Agents) {
 	cnt, err := conn.Where("id = ?", a.Id).Update(a)
 	logger.Debugf("Updated Agent(%d) : %v", cnt, a)
 
-	if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, 1)
 	}
+}
+
+func addAPIKey(conn *xorm.Session, auth *ApiAuthentications) {
+	cnt, err := conn.Insert(auth)
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
+	}
+}
+
+func updateAPIKey(conn *xorm.Session, auth *ApiAuthentications) {
+	cnt, err := conn.Where("group_id = ?", auth.GroupId).Update(auth)
+	logger.Debugf("Updated APIKey(%d) : %v", cnt, auth)
+
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, 1)
+	}
+}
+
+func getAPIKey(conn *xorm.Session, groupID uint64) (*ApiAuthentications, bool) {
+	var auth ApiAuthentications
+	exist := common.CheckGetQuery(conn.Where("group_id = ?", groupID).Get(&auth))
+	logger.Debugf("Selected ApiAuthentications : %v", auth)
+
+	return &auth, exist
 }
 
 func existAPIKey(conn *xorm.Session, apiKey string, zoneID uint64) bool {
@@ -149,10 +177,10 @@ func getLock(conn *xorm.Session, task string) (*TaskLock, bool) {
 func insertLock(conn *xorm.Session, tl *TaskLock) {
 	cnt, err := conn.Insert(tl)
 
-	if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -160,9 +188,9 @@ func updateLock(conn *xorm.Session, tl *TaskLock) {
 	cnt, err := conn.Where("task = ?", tl.Task).Update(tl)
 	logger.Debugf("Updated TaskLock(%d) : %+v", cnt, tl)
 
-	if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
-	} else if err != nil {
+	if err != nil {
 		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, 1)
 	}
 }

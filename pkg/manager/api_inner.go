@@ -21,6 +21,73 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/groups", api.addGroup)
 	registURI(inner, GET, "/groups", api.getGroups)
 	registURI(inner, GET, "/groups/{groupID}", api.getGroup)
+	registURI(inner, POST, "/groups/{groupID}/apikey", api.addAPIKey)
+	registURI(inner, PUT, "/groups/{groupID}/apikey", api.updateAPIKey)
+	registURI(inner, GET, "/groups/{groupID}/apikey", api.getAPIKey)
+}
+
+func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
+	var conn = GetDBConn(r)
+
+	nr := &common.Request{Request: r}
+
+	vars := mux.Vars(r)
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	auth := &ApiAuthentications{
+		ApiKey:  nr.BodyToString(),
+		GroupId: groupID,
+	}
+
+	addAPIKey(conn, auth)
+
+	w.WriteHeader(200)
+}
+
+func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
+	var conn = GetDBConn(r)
+
+	nr := &common.Request{Request: r}
+
+	vars := mux.Vars(r)
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	auth := &ApiAuthentications{
+		ApiKey:  nr.BodyToString(),
+		GroupId: groupID,
+	}
+
+	updateAPIKey(conn, auth)
+
+	w.WriteHeader(200)
+}
+
+func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
+	var conn = GetDBConn(r)
+
+	vars := mux.Vars(r)
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	auth, exist := getAPIKey(conn, groupID)
+	if !exist {
+		common.WriteHTTPError(400, w, nil, fmt.Sprintf("Does not exist APIKey for groupId : %d", groupID))
+		return
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", auth.ApiKey)
 }
 
 func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {

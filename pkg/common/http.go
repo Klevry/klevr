@@ -22,6 +22,13 @@ type ResponseWrapper struct {
 	StatusCode int
 }
 
+// BodyToString return body as string
+func (r *Request) BodyToString() string {
+	body := make([]byte, r.ContentLength)
+	r.Body.Read(body)
+	return string(body)
+}
+
 // Param return string param
 func (r *Request) Param(name string) string {
 	return strings.Join(r.URL.Query()[name], "")
