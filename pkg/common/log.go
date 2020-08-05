@@ -22,8 +22,8 @@ const (
 
 // LoggerEnv logger environment structure
 type LoggerEnv struct {
-	Level      string
-	LogPath    string
+	Level      string `envconfig:"LOG_LEVEL"`
+	LogPath    string `envconfig:"LOG_PATH"`
 	MaxSize    int
 	MaxBackups int
 	MaxAge     int

@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `AGENT_GROUPS` (
   PRIMARY KEY (`ID`),
   UNIQUE KEY `UNQ_01` (`USER_ID`,`PLATFORM`,`GROUP_NAME`),
   KEY `IDX_01` (`USER_ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -78,7 +78,8 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '그룹 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`API_KEY`)
+  PRIMARY KEY (`API_KEY`),
+  UNIQUE KEY `GROUP_ID_UNIQUE` (`GROUP_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='인증 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -125,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-07-30 11:19:00
+-- Dump completed on 2020-08-04 16:40:22
 
 CREATE USER 'klevr'@'%' identified by 'klevr';
 

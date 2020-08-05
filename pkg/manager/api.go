@@ -38,6 +38,7 @@ type Routes struct {
 	Legacy  *mux.Router
 	Agent   *mux.Router
 	Install *mux.Router
+	Inner   *mux.Router
 }
 
 // API api struct
@@ -77,10 +78,12 @@ func Init(manager *KlevrManager, db *xorm.Engine) *API {
 	api.BaseRoutes.Legacy = api.BaseRoutes.APIRoot
 	api.BaseRoutes.Agent = api.BaseRoutes.APIRoot.PathPrefix("/agents").Subrouter()
 	api.BaseRoutes.Install = api.BaseRoutes.APIRoot.PathPrefix("/install").Subrouter()
+	api.BaseRoutes.Inner = api.BaseRoutes.APIRoot.PathPrefix("/inner").Subrouter()
 
-	api.InitLegacy(api.BaseRoutes.Legacy)
+	// api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
+	api.InitInner(api.BaseRoutes.Inner)
 
 	err := api.BaseRoutes.Root.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 
