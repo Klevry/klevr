@@ -1,5 +1,5 @@
 FROM ubuntu
-LABEL version=0.1
+LABEL version=0.2
 
 COPY ./conf/* /conf/
 COPY ./klevr-manager /
