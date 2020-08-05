@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/context"
-	"xorm.io/xorm"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
@@ -71,7 +70,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 func authenticate(w http.ResponseWriter, r *http.Request, zoneID uint64, apiKey string) bool {
 	logger.Debug(r.RequestURI)
 
-	if !existAPIKey(GetDBConn(r), apiKey, zoneID) {
+	if !GetDBConn(r).existAPIKey(apiKey, zoneID) {
 		common.WriteHTTPError(401, w, nil, "authentication failed")
 		return false
 	}
@@ -100,7 +99,7 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -113,23 +112,23 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	paramAgent = requestBody.Me
 	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
-	_, exist := getAgentGroup(conn, ch.ZoneID)
+	_, exist := tx.getAgentGroup(ch.ZoneID)
 
 	if !exist {
 		common.WriteHTTPError(400, w, nil, fmt.Sprintf("Does not exist zone for zoneId : %d", ch.ZoneID))
 		return
 	}
 
-	agent := getAgentByAgentKey(conn, ch.AgentKey)
+	agent := tx.getAgentByAgentKey(ch.AgentKey)
 
 	// agent 생성 or 수정
-	upsertAgent(conn, agent, ch, &paramAgent)
+	upsertAgent(tx, agent, ch, &paramAgent)
 
 	// response 데이터 생성
 	rb := &common.Body{}
 
 	// primary 조회
-	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
+	rb.Agent.Primary = api.getPrimary(tx, ch.ZoneID, agent.Id)
 
 	// 접속한 agent 정보
 	me := &rb.Me
@@ -151,7 +150,7 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -164,28 +163,33 @@ func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// primary agent access 정보 갱신
-	agent := updateAgentAccess(conn, ch.AgentKey)
+	agent := updateAgentAccess(tx, ch.AgentKey)
 	logger.Debugf("%v", agent)
 
-	// TODO: primary agent 실행 정보 update
+	// TODO: primary agent 실행 파라미터 update
 	// rb.Me.CallCycle =
 	// rb.Me.LogLevel =
 
-	// TODO: agent 상태 정보 업데이트
+	// agent zone 상태 정보 업데이트
 	nodes := param.Agent.Nodes
 	len := len(nodes)
-	arrAgent := make([]map[string]interface{}, len)
+	arrAgent := make([]Agents, len)
 
-	for i := 0; i < len; i++ {
-		arrAgent[i]["AGENT_KEY"] = nodes[i].AgentKey
-		arrAgent[i]["LAST_ALIVE_CHECK_TIME"] = nodes[i].LastAliveCheckTime
-		arrAgent[i]["IS_ACTIVE"] = nodes[i].IsActive
-		arrAgent[i]["CORE"] = nodes[i].Core
-		arrAgent[i]["MEMORY"] = nodes[i].Memory
-		arrAgent[i]["DISK"] = nodes[i].Disk
+	for i, agent := range nodes {
+		arrAgent[i].AgentKey = agent.AgentKey
+		arrAgent[i].LastAliveCheckTime = time.Unix(agent.LastAliveCheckTime, 0)
+		arrAgent[i].IsActive = agent.IsActive
+		arrAgent[i].Cpu = agent.Core
+		arrAgent[i].Memory = agent.Memory
+		arrAgent[i].Disk = agent.Disk
 	}
 
-	// TODO: task 상태 정보 업데이트
+	tx.updateZoneStatus(&arrAgent)
+
+	// TODO: 수행한 task 상태 정보 업데이트
+	// for i, task := range param.Task {
+
+	// }
 
 	// 신규 task 할당
 
@@ -227,25 +231,25 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func updateAgentAccess(conn *xorm.Session, agentKey string) *Agents {
-	agent := getAgentByAgentKey(conn, agentKey)
+func updateAgentAccess(tx *Tx, agentKey string) *Agents {
+	agent := tx.getAgentByAgentKey(agentKey)
 
 	// agent 접속 시간 갱신
 	agent.LastAccessTime = time.Now().UTC()
-	updateAgent(conn, agent)
+	tx.updateAgent(agent)
 
 	return agent
 }
 
-func (api *API) getPrimary(conn *xorm.Session, zoneID uint64, agentID uint64) common.Primary {
+func (api *API) getPrimary(tx *Tx, zoneID uint64, agentID uint64) common.Primary {
 	// primary agent 정보
-	groupPrimary := getPrimaryAgent(conn, zoneID)
+	groupPrimary := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
 
 	if groupPrimary.AgentId == 0 {
 		primaryAgent = api.electPrimary(zoneID, agentID, false)
 	} else {
-		primaryAgent = getAgentByID(conn, groupPrimary.AgentId)
+		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 
 		if primaryAgent.Id == 0 || !primaryAgent.IsActive {
 			primaryAgent = api.electPrimary(zoneID, agentID, true)
@@ -264,15 +268,15 @@ func (api *API) getPrimary(conn *xorm.Session, zoneID uint64, agentID uint64) co
 func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents {
 	logger.Debugf("electPrimary for %d", zoneID)
 
-	var conn *xorm.Session
+	var tx *Tx
 	var agent *Agents
 
 	common.Block{
 		Try: func() {
-			conn = api.DB.NewSession()
+			tx = &Tx{api.DB.NewSession()}
 
 			if oldDel {
-				deletePrimaryAgentIfOld(conn, zoneID, agentID, 30*time.Second)
+				tx.deletePrimaryAgentIfOld(zoneID, agentID, 30*time.Second)
 			}
 
 			pa := &PrimaryAgents{
@@ -280,10 +284,10 @@ func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents
 				AgentId: agentID,
 			}
 
-			cnt, err := insertPrimaryAgent(conn, pa)
+			cnt, err := tx.insertPrimaryAgent(pa)
 
 			if err != nil {
-				pa = getPrimaryAgent(conn, zoneID)
+				pa = tx.getPrimaryAgent(zoneID)
 			} else if cnt != 1 {
 				logger.Warning(fmt.Sprintf("insert primary agent cnt : %d", cnt))
 				common.Throw(common.NewStandardError("elect primary failed."))
@@ -294,26 +298,26 @@ func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents
 				common.Throw(common.NewStandardError("elect primary failed."))
 			}
 
-			agent = getAgentByID(conn, pa.AgentId)
+			agent = tx.getAgentByID(pa.AgentId)
 
 			if agent.Id == 0 {
 				logger.Warning(fmt.Sprintf("primary agent not exist for id : %d, [%v]", agent.Id, agent))
 				common.Throw(common.NewStandardError("elect primary failed."))
 			}
 
-			conn.Commit()
+			tx.Commit()
 		},
 		Catch: func(e common.Exception) {
-			if conn != nil {
-				conn.Rollback()
+			if tx != nil {
+				tx.Rollback()
 			}
 
 			logger.Warning(e)
 			common.Throw(e)
 		},
 		Finally: func() {
-			if conn != nil && !conn.IsClosed() {
-				conn.Close()
+			if tx != nil && !tx.IsClosed() {
+				tx.Close()
 			}
 		},
 	}.Do()
@@ -321,7 +325,7 @@ func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents
 	return agent
 }
 
-func upsertAgent(conn *xorm.Session, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
+func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
 		agent.GroupId = ch.ZoneID
@@ -335,7 +339,7 @@ func upsertAgent(conn *xorm.Session, agent *Agents, ch *common.CustomHeader, par
 		agent.HmacKey = common.GetKey(16)
 		agent.EncKey = common.GetKey(32)
 
-		addAgent(conn, agent)
+		tx.addAgent(agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
 		agent.IsActive = true
 		agent.LastAccessTime = time.Now().UTC()
@@ -347,6 +351,6 @@ func upsertAgent(conn *xorm.Session, agent *Agents, ch *common.CustomHeader, par
 		agent.HmacKey = common.GetKey(16)
 		agent.EncKey = common.GetKey(32)
 
-		updateAgent(conn, agent)
+		tx.updateAgent(agent)
 	}
 }

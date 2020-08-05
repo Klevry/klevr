@@ -12,14 +12,13 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	"xorm.io/xorm"
 )
 
 // CommonWrappingHandler common handler for processing standard
-func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
+func (api *API) CommonWrappingHandler(DB *common.DB) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var session *xorm.Session
+			var tx *Tx
 
 			// 복잡한 flow 정리를 위해 try-catch-finally 블럭 사용
 			common.Block{
@@ -34,22 +33,21 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 					w.Header().Set("X-Content-Type-Options", "nosniff")
 
 					// DB session 시작
-					session = DB.NewSession()
-
-					err := session.Begin()
+					tx = &Tx{DB.NewSession()}
+					err := tx.Begin()
 					if err != nil {
 						logger.Errorf("DB session begin error : %v", err)
 						common.Throw(err)
 					}
 
 					// Request context에 DB session 설정
-					context.Set(r, DBConnContextName, session)
+					context.Set(r, DBConnContextName, tx)
 
 					// 다음 핸들러로 진행
 					next.ServeHTTP(&nw, r)
 
 					// 트랜잭션 commit
-					err = session.Commit()
+					err = tx.Commit()
 					if err != nil {
 						logger.Warningf("commit failed : %v", err)
 						common.Throw(err)
@@ -57,8 +55,8 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 				},
 				Catch: func(e common.Exception) {
 					// 트랜잭션 recover 정의
-					if !session.IsClosed() {
-						session.Rollback()
+					if !tx.IsClosed() {
+						tx.Rollback()
 					}
 
 					common.WriteHTTPError(500, w, fmt.Errorf("%+v", e), "Service is unavailable")
@@ -71,8 +69,8 @@ func (api *API) CommonWrappingHandler(DB *xorm.Engine) mux.MiddlewareFunc {
 
 					// 세션 close
 					defer func() {
-						if !session.IsClosed() {
-							session.Close()
+						if !tx.IsClosed() {
+							tx.Close()
 						}
 					}()
 				},

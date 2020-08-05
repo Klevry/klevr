@@ -6,12 +6,12 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/gorilla/context"
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
-	"xorm.io/xorm"
 )
 
 // APIURLPrefix default API URL prefix
@@ -44,7 +44,7 @@ type Routes struct {
 // API api struct
 type API struct {
 	BaseRoutes *Routes
-	DB         *xorm.Engine
+	DB         *common.DB
 	Manager    *KlevrManager
 }
 
@@ -55,7 +55,7 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(manager *KlevrManager, db *xorm.Engine) *API {
+func Init(manager *KlevrManager, db *common.DB) *API {
 	logger.Debug("API Init")
 
 	api := &API{
@@ -155,18 +155,18 @@ func registURIWithQuery(r *mux.Router, method int, uri string, f func(http.Respo
 }
 
 // GetDBConn return DB connection(session) from Request context
-func GetDBConn(r *http.Request) *xorm.Session {
+func GetDBConn(r *http.Request) *Tx {
 	v := context.Get(r, DBConnContextName)
 	if v == nil {
 		logger.Warningf("The variable in context is not DB session : %d", debug.Stack())
 		panic("DB is not exist")
 	}
 
-	db, ok := v.(*xorm.Session)
+	tx, ok := v.(*Tx)
 	if !ok {
 		logger.Warningf("DB session not exist : %d", debug.Stack())
 		panic("DB is not exist")
 	}
 
-	return db
+	return tx
 }
