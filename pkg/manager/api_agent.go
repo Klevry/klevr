@@ -247,18 +247,7 @@ func (api *API) getPrimary(conn *xorm.Session, zoneID uint64, agentID uint64) co
 	} else {
 		primaryAgent = getAgentByID(conn, groupPrimary.AgentId)
 
-		if primaryAgent.Id == 0 {
-			logger.Warning(fmt.Sprintf("primary agent not exist for id : %d", agentID))
-			common.Throw(common.NewHTTPError(500, "primary agent not exist."))
-		}
-
-		// TODO: primary가 inactive인 경우 재선출 로직 추가
-		old := primaryAgent.LastAccessTime.Add(1 * time.Second)
-		now := time.Now().UTC()
-
-		logger.Debugf("old origin : %v, old : %v, now : %v, before : %v", primaryAgent.LastAccessTime, old, now, old.Before(now))
-
-		if old.Before(now) {
+		if primaryAgent.Id == 0 || !primaryAgent.IsActive {
 			primaryAgent = api.electPrimary(zoneID, agentID, true)
 		}
 	}
