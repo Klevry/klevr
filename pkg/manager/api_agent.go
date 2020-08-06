@@ -124,6 +124,8 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	// agent 생성 or 수정
 	upsertAgent(tx, agent, ch, &paramAgent)
 
+	tx.Commit()
+
 	// response 데이터 생성
 	rb := &common.Body{}
 
