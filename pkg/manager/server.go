@@ -9,7 +9,6 @@ import (
 	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
-	"xorm.io/xorm"
 )
 
 // IsDebug debugabble for all
@@ -103,21 +102,27 @@ func (manager *KlevrManager) Run() error {
 	return s.ListenAndServe()
 }
 
-func (manager *KlevrManager) updateAgentStatus(db *xorm.Engine, cycle time.Duration) {
+func (manager *KlevrManager) updateAgentStatus(db *common.DB, cycle time.Duration) {
 	for {
 		time.Sleep(cycle * time.Second)
 		logger.Debugf("sleep duration : %+v", cycle*time.Second)
 
-		conn := db.NewSession()
+		tx := &Tx{db.NewSession()}
 		duration := time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second
 
 		common.Block{
 			Try: func() {
-				if checkLock(conn, manager.InstanceID, duration) {
+				err := tx.Begin()
+				if err != nil {
+					logger.Errorf("DB session begin error : %v", err)
+					common.Throw(err)
+				}
+
+				if checkLock(tx, manager.InstanceID, duration) {
 					current := time.Now().UTC()
 					before := current.Add(-time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second)
 
-					cnt, agents := getAgentsForInactive(conn, before)
+					cnt, agents := tx.getAgentsForInactive(before)
 
 					if cnt > 0 {
 						len := len(*agents)
@@ -127,46 +132,46 @@ func (manager *KlevrManager) updateAgentStatus(db *xorm.Engine, cycle time.Durat
 							ids[i] = (*agents)[i].Id
 						}
 
-						updateAgentStatus(conn, ids)
+						tx.updateAgentStatus(ids)
 					}
 
-					conn.Commit()
+					tx.Commit()
 				}
 			},
 			Catch: func(e common.Exception) {
-				if !conn.IsClosed() {
-					conn.Rollback()
+				if !tx.IsClosed() {
+					tx.Rollback()
 				}
 
 				logger.Errorf("update agent status failed : %+v", e)
 			},
 			Finally: func() {
-				if !conn.IsClosed() {
-					conn.Close()
+				if !tx.IsClosed() {
+					tx.Close()
 				}
 			},
 		}.Do()
 	}
 }
 
-func checkLock(conn *xorm.Session, instanceID string, d time.Duration) bool {
+func checkLock(tx *Tx, instanceID string, d time.Duration) bool {
 	var hasLock = false
 
-	lock, exist := getLock(conn, AgentStatusUpdateTask)
+	lock, exist := tx.getLock(AgentStatusUpdateTask)
 
 	if !exist {
 		lock.Task = AgentStatusUpdateTask
 		lock.InstanceId = instanceID
 		lock.LockDate = time.Now().UTC()
 
-		insertLock(conn, lock)
+		tx.insertLock(lock)
 
 		hasLock = true
 	} else if expired(lock.LockDate, d) || lock.InstanceId == instanceID {
 		lock.InstanceId = instanceID
 		lock.LockDate = time.Now().UTC()
 
-		updateLock(conn, lock)
+		tx.updateLock(lock)
 
 		hasLock = true
 	}

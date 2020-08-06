@@ -25,11 +25,19 @@ type DBInfo struct {
 	InitScriptPath  string
 }
 
+type DB struct {
+	*xorm.Engine
+}
+
+type Session struct {
+	*xorm.Session
+}
+
 // Connect connect to Database and return DB
-func (info *DBInfo) Connect() (*xorm.Engine, error) {
+func (info *DBInfo) Connect() (*DB, error) {
 	db, err := xorm.NewEngine(info.Type, info.URL)
 	if err != nil {
-		return db, err
+		return &DB{db}, err
 	}
 
 	db.SetMaxOpenConns(info.MaxOpenConns)
@@ -38,7 +46,16 @@ func (info *DBInfo) Connect() (*xorm.Engine, error) {
 
 	db.SetTableMapper(CustomTableNameMapper{})
 
-	return db, err
+	return &DB{db}, err
+}
+
+// NewSession New a session
+func (db *DB) NewSession() *Session {
+	return &Session{db.Engine.NewSession()}
+}
+
+func (tx *Session) Begin() error {
+	return tx.Session.Begin()
 }
 
 type CustomTableNameMapper struct {

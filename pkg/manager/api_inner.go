@@ -27,7 +27,7 @@ func (api *API) InitInner(inner *mux.Router) {
 }
 
 func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 
 	nr := &common.Request{Request: r}
 
@@ -43,13 +43,13 @@ func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
 		GroupId: groupID,
 	}
 
-	addAPIKey(conn, auth)
+	tx.addAPIKey(auth)
 
 	w.WriteHeader(200)
 }
 
 func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 
 	nr := &common.Request{Request: r}
 
@@ -65,13 +65,13 @@ func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 		GroupId: groupID,
 	}
 
-	updateAPIKey(conn, auth)
+	tx.updateAPIKey(auth)
 
 	w.WriteHeader(200)
 }
 
 func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -80,7 +80,7 @@ func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auth, exist := getAPIKey(conn, groupID)
+	auth, exist := tx.getAPIKey(groupID)
 	if !exist {
 		common.WriteHTTPError(400, w, nil, fmt.Sprintf("Does not exist APIKey for groupId : %d", groupID))
 		return
@@ -91,7 +91,7 @@ func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 	var ag AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
@@ -103,7 +103,7 @@ func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("request AgentGroup : %+v", &ag)
 	// logger.Debug("%v", time.Now().UTC())
 
-	addAgentGroup(conn, &ag)
+	tx.addAgentGroup(&ag)
 
 	logger.Debugf("response AgentGroup : %+v", &ag)
 
@@ -117,9 +117,9 @@ func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) getGroups(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 
-	ags := getAgentGroups(conn)
+	ags := tx.getAgentGroups()
 
 	b, err := json.Marshal(&ags)
 	if err != nil {
@@ -131,7 +131,7 @@ func (api *API) getGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) getGroup(w http.ResponseWriter, r *http.Request) {
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(r)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -140,7 +140,7 @@ func (api *API) getGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ag, exist := getAgentGroup(conn, groupID)
+	ag, exist := tx.getAgentGroup(groupID)
 	if !exist {
 		common.WriteHTTPError(400, w, nil, fmt.Sprintf("Does not exist zone for groupId : %d", groupID))
 		return
