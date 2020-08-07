@@ -8,6 +8,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/NexClipper/logger"
+	"github.com/mackerelio/go-osstat/memory"
 	"io/ioutil"
 	"log"
 	"net"
@@ -15,18 +18,20 @@ import (
 	"os"
 	"os/exec"
 	_ "regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/jasonlvhit/gocron"
 	"github.com/Klevry/klevr/pkg/communicator"
-	"github.com/zcalusic/sysinfo"
+	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
-	//"github.com/mackerelio/go-osstat/memory"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
 )
+
+var AGENT_VERSION = "0.0.1"
 
 var Klevr_agent_id_file = "/tmp/klevr_agent.id"
 var Klevr_task_dir = "/tmp/klevr_task"
@@ -53,6 +58,8 @@ var AM_I_PRIMARY string
 var System_info string
 var Error_buffer string
 var Result_buffer string
+
+var Body common.Body
 
 /// Mode_debug = dev or not
 var Mode_debug string = "dev"
@@ -302,21 +309,21 @@ func Check_primary() string {
 func Resource_chk_to_mgm() {
 	uri := fmt.Sprint(Klevr_console + "/group/"  + "/user/" + API_key_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/hostinfo")
 	Debug(uri) /// log output
-	Resource_info()
+	//Resource_info()
 	communicator.Put_http(uri, System_info, Api_key_string)
 	Debug("System_info:" + System_info) /// log output
 }
 
-func Resource_info() string {
-	var si sysinfo.SysInfo
-	si.GetSysInfo()
-	data, err := json.Marshal(&si)
-	if err != nil {
-		log.Fatal(err)
-	}
-	System_info = fmt.Sprintf("%s", data)
-	return System_info
-}
+//func Resource_info() string {
+//	var si sysinfo.SysInfo
+//	si.GetSysInfo()
+//	data, err := json.Marshal(&si)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	System_info = fmt.Sprintf("%s", data)
+//	return System_info
+//}
 
 //func Primary_ack_stamping(){
 //	primary_ack_time := fmt.Sprint(time.Now().Unix())
@@ -381,7 +388,7 @@ func RnR() {
 		}
 		println("Get_task_excution_from_here")
 		Debug("I am Primary")
-		Resource_info() /// test
+		//Resource_info() /// test
 		Resource_chk_to_mgm()
 	} else {
 		/// http://192.168.1.22:18800/primaryworks
@@ -465,29 +472,162 @@ func Primary_works_check() string {
 	return primary_latest_check
 }
 
+/*
+=======================================================================
+*/
+
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
+}
+
+// disk usage of path/disk
+func DiskUsage(path string) (disk DiskStatus) {
+	fs := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &fs)
+	if err != nil {
+		return
+	}
+	disk.All = fs.Blocks * uint64(fs.Bsize)
+	disk.Free = fs.Bfree * uint64(fs.Bsize)
+	disk.Used = disk.All - disk.Free
+	return
+}
+
+const (
+	B  = 1
+	KB = 1024 * B
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
+
+/*
+in: body.me
+out: body.me, body.agent.primary
+ */
+func HandShake(){
+	uri := "http://localhost:8090/agents/handshake"
+
+	rb := &common.Body{}
+
+	rb.Me.IP = Local_ip_add
+	rb.Me.Port = 8080
+	rb.Me.Version = AGENT_VERSION
+
+	disk := DiskUsage("/")
+
+
+	memory, err := memory.Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return
+	}
+
+	rb.Me.Resource.Core = runtime.NumCPU()
+	rb.Me.Resource.Memory = int(memory.Total/MB)
+	rb.Me.Resource.Disk = int(disk.All/MB)
+
+	logger.Debugf("%v", &rb.Me)
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	result := communicator.Put_Json_http(uri, b)
+
+	err2 := json.Unmarshal(result, &Body)
+	if err2 != nil{
+		panic(err)
+	}
+
+	logger.Debugf("%v", string(result))
+	Primary_ip = Body.Agent.Primary.IP
+}
+/*
+in: body.me, body.agent.nodes, body.task
+out: body.me, body.task
+ */
+func TaskManagement(){
+	uri := "http://localhost:8090/agents/handshake"
+
+	rb := &common.Body{}
+
+	rb.Me.IP = Local_ip_add
+	rb.Me.Port = 8080
+	rb.Me.Version = AGENT_VERSION
+
+	disk := DiskUsage("/")
+
+
+	memory, err := memory.Get()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		return
+	}
+
+	rb.Me.Resource.Core = runtime.NumCPU()
+	rb.Me.Resource.Memory = int(memory.Total/MB)
+	rb.Me.Resource.Disk = int(disk.All/MB)
+
+	//agent := &common.Agent{}
+	//
+	//rb.Agent.Nodes = (agent)
+
+	logger.Debugf("%v", &rb.Me)
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	communicator.Put_Json_http(uri, b)
+}
+
+/*
+in: body.me, body.agent.primary
+out: body.me, body.agent.primary
+ */
+func PrimaryStatusReport(){
+	uri := fmt.Sprint(Klevr_console + "/agents/reports/" + Klevr_agent_id_string)
+
+	rb := &common.Body{}
+
+	//primary-ip
+	rb.Agent.Primary.IP = Primary_ip
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	communicator.Put_http(uri, string(b), Api_key_string)
+}
+
 func main() {
 	/// check the cli command with required options
 	Check_variable()
 
-	/// Requirement package check
-	if Platform_type == "baremetal" {
-		Check_package("curl")
-		Check_package("docker")
-	}
-
-	/// Checks env. for baremetal to Hypervisor provisioning
-	Get_provisionig_script()
-
-	/// Set up the Task & configuration directory
-	Set_basement()
-
-	/// Uniq ID create & get
-	Klevr_agent_id_get()
-
-	/// Check for primary info
-	Alive_chk_to_mgm("ok")
-	Resource_chk_to_mgm()
-	Get_primaryinfo()
+	///// Requirement package check
+	//if Platform_type == "baremetal" {
+	//	Check_package("curl")
+	//	Check_package("docker")
+	//}
+	//
+	///// Checks env. for baremetal to Hypervisor provisioning
+	//Get_provisionig_script()
+	//
+	///// Set up the Task & configuration directory
+	//Set_basement()
+	//
+	///// Uniq ID create & get
+	//Klevr_agent_id_get()
+	//
+	///// Check for primary info
+	//Alive_chk_to_mgm("ok")
+	//Resource_chk_to_mgm()
+	//Get_primaryinfo()
 
 	println("platform: ", Platform_type)
 	println("Local_ip_add:", Local_ip_add)
@@ -496,9 +636,9 @@ func main() {
 
 	/// Scheduler
 	s := gocron.NewScheduler()
-	s.Every(1).Seconds().Do(Get_primaryinfo)
+	s.Every(1).Seconds().Do(HandShake)
 	//	s.Every(1).Seconds().Do(Turn_on)
-	s.Every(2).Seconds().Do(RnR)
+	//s.Every(2).Seconds().Do(RnR)
 
 	go func() {
 		<-s.Start()
@@ -506,7 +646,7 @@ func main() {
 
 	/// Http listen for host info get
 	http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {
-		Resource_info()
+		//Resource_info()
 		w.Write([]byte(System_info))
 	})
 
