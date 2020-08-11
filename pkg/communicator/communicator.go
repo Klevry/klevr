@@ -70,7 +70,9 @@ func Get_http(uri, api_key_string string) string {
 	return http_body_buffer
 }
 
-func Get_Json_http(url string) string{
+func Get_Json_http(url string) []byte{
+	var body []byte
+
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
@@ -81,12 +83,12 @@ func Get_Json_http(url string) string{
 	res, err := http.DefaultClient.Do(req)
 	if err == nil{
 		defer res.Body.Close()
-		body, _ := ioutil.ReadAll(res.Body)
+		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	} else{
 		logger.Error("Server connection error: ", err)
 	}
-	return http_body_buffer
+	return body
 }
 
 func Delete_http(uri, api_key_string string) {
