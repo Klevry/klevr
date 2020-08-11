@@ -549,6 +549,19 @@ func Ping(){
 	}
 }
 
+func GetPrimaryIP() string{
+	uri := Klevr_manager + "/agents/handshake"
+
+	result := communicator.Get_Json_http(uri)
+	test := common.Body{}
+	err := json.Unmarshal(result, &test)
+	check(err)
+
+	primaryip := Body.Agent.Primary.IP
+
+	return string(primaryip)
+}
+
 /*
 in: body.me
 out: body.me, body.agent.primary
@@ -557,53 +570,44 @@ func HandShake(){
 
 	uri := Klevr_manager + "/agents/handshake"
 
-	rb := &common.Body{}
+	if GetPrimaryIP() == ""{
+		rb := &common.Body{}
 
-	rb.Me.IP = Local_ip_add
-	rb.Me.Port = 8080
-	rb.Me.Version = AGENT_VERSION
+		rb.Me.IP = Local_ip_add
+		rb.Me.Port = 8080
+		rb.Me.Version = AGENT_VERSION
 
-	disk := DiskUsage("/")
+		disk := DiskUsage("/")
 
-	memory, _ := memory.Get()
+		memory, _ := memory.Get()
 
-	rb.Me.Resource.Core = runtime.NumCPU()
-	rb.Me.Resource.Memory = int(memory.Total/MB)
-	rb.Me.Resource.Disk = int(disk.All/MB)
+		rb.Me.Resource.Core = runtime.NumCPU()
+		rb.Me.Resource.Memory = int(memory.Total/MB)
+		rb.Me.Resource.Disk = int(disk.All/MB)
 
-	logger.Debugf("%v", rb)
+		logger.Debugf("%v", rb)
 
-	b, err := json.Marshal(rb)
-	if err != nil {
-		panic(err)
+		b, err := json.Marshal(rb)
+		if err != nil {
+			panic(err)
+		}
+
+		result := communicator.Put_Json_http(uri, b)
+
+		err2 := json.Unmarshal(result, &Body)
+		if err2 != nil{
+			panic(err)
+		}
+
+		primaryinfo, _ := json.Marshal(Body.Agent.Primary)
+
+		err3 := ioutil.WriteFile(Klevr_primary_info, primaryinfo, os.FileMode(0644))
+		if err3 != nil{
+			fmt.Println(err3)
+			//return
+		}
 	}
 
-	result := communicator.Put_Json_http(uri, b)
-
-	err2 := json.Unmarshal(result, &Body)
-	if err2 != nil{
-		panic(err)
-	}
-
-	primaryinfo, _ := json.Marshal(Body.Agent.Primary)
-
-	err3 := ioutil.WriteFile(Klevr_primary_info, primaryinfo, os.FileMode(0644))
-	if err3 != nil{
-		fmt.Println(err3)
-		//return
-	}
-}
-func Get(){
-	uri := Klevr_manager + "/agents/handshake"
-
-	result := communicator.Get_Json_http(uri)
-	test := common.Body{}
-	err := json.Unmarshal(result, &test)
-	check(err)
-
-	Primary_ip = Body.Agent.Primary.IP
-
-	logger.Debugf("%v", Body)
 }
 
 /*
@@ -699,11 +703,8 @@ func main() {
 	println("Agent UniqID:", Klevr_agent_id_string)
 	println("Primary:", Primary_ip)
 
-	if(Primary_ip == ""){
-		HandShake()
-	}
-	Get()
-
+	HandShake()
+	Primary_ip = GetPrimaryIP()
 	/// Scheduler
 	s := gocron.NewScheduler()
 	//s.Every(1).Seconds().Do(Get)
