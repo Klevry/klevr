@@ -27,11 +27,12 @@ func (tx *Tx) insertPrimaryAgent(pa *PrimaryAgents) (int64, error) {
 	return tx.Insert(pa)
 }
 
-func (tx *Tx) deletePrimaryAgentIfOld(zoneID uint64, agentID uint64, time time.Duration) {
-	sql := "delete p from PRIMARY_AGENTS p join AGENT a on a.ID = p.AGENT_ID where p.GROUP_ID = ? and p.AGENT_ID = ? and a.LAST_ACCESS_TIME < ?"
-	res, err := tx.Exec(sql, zoneID, agentID, time)
+func (tx *Tx) deletePrimaryAgent(zoneID uint64) {
+	sql := "delete p from PRIMARY_AGENTS p where p.GROUP_ID = ?"
+	res, err := tx.Exec(sql, zoneID)
 	if err != nil {
 		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+		panic(err)
 	}
 
 	logger.Debug(res)
@@ -54,6 +55,17 @@ func (tx *Tx) getAgentByID(id uint64) *Agents {
 	logger.Debugf("Selected Agent : %v", a)
 
 	return &a
+}
+
+func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
+	var agents []Agents
+
+	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&agents)
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt, &agents
 }
 
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {

@@ -46,6 +46,7 @@ type BodyAgent struct {
 
 // Primary primary info
 type Primary struct {
+	AgentKey       string `json:"agentKey"`
 	IP             string `json:"ip"`
 	Port           int    `json:"port"`
 	IsActive       bool   `json:"isActive"`
@@ -60,7 +61,7 @@ type Agent struct {
 	IP                 string `json:"ip"`
 	Port               int    `json:"port"`
 	Version            string `json:"version"`
-	Resource
+	*Resource
 }
 
 // Resource agent resource

@@ -33,6 +33,7 @@ type Agents struct {
 	Cpu                int
 	Memory             int
 	Disk               int
+	Version            string
 }
 
 // PrimaryAgents model for PIMARY_AGENTS

@@ -140,6 +140,30 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	// me.CallCycle = 0 // seconds
 	// me.LogLevel = "DEBUG"
 
+	// Primary agent인 경우 node 정보 추가
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+		cnt, agents := tx.getAgentsByGroupId(ch.ZoneID)
+		nodes := make([]common.Agent, cnt)
+
+		if cnt > 0 {
+			for i, a := range *agents {
+				nodes[i] = common.Agent{
+					AgentKey: a.AgentKey,
+					IP:       a.Ip,
+					Port:     a.Port,
+					Version:  a.Version,
+					Resource: &common.Resource{
+						Core:   a.Cpu,
+						Memory: a.Memory,
+						Disk:   a.Disk,
+					},
+				}
+			}
+
+			rb.Agent.Nodes = nodes
+		}
+	}
+
 	b, err := json.Marshal(rb)
 	if err != nil {
 		panic(err)
@@ -253,12 +277,17 @@ func (api *API) getPrimary(tx *Tx, zoneID uint64, agentID uint64) common.Primary
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 
+		logger.Debugf("primaryAgent : %+v", primaryAgent)
+
 		if primaryAgent.Id == 0 || !primaryAgent.IsActive {
 			primaryAgent = api.electPrimary(zoneID, agentID, true)
+
+			logger.Debugf("changed primaryAgent : %+v", primaryAgent)
 		}
 	}
 
 	return common.Primary{
+		AgentKey:       primaryAgent.AgentKey,
 		IP:             primaryAgent.Ip,
 		Port:           primaryAgent.Port,
 		IsActive:       primaryAgent.IsActive,
@@ -278,7 +307,7 @@ func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents
 			tx = &Tx{api.DB.NewSession()}
 
 			if oldDel {
-				tx.deletePrimaryAgentIfOld(zoneID, agentID, 30*time.Second)
+				tx.deletePrimaryAgent(zoneID)
 			}
 
 			pa := &PrimaryAgents{
