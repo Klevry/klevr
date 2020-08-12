@@ -454,7 +454,7 @@ func PingToMaster(){
 		logger.Debugf("%v", err)
 	}
 
-	logger.Debug("%v", ping)
+	logger.Debug("%v", Primary_ip)
 }
 
 func SendMe(body *common.Body) {
