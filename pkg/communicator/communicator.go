@@ -30,7 +30,7 @@ func Put_http(url, data, api_key_string string) {
 	}
 }
 
-func Put_Json_http(url string, data []byte) []byte{
+func Put_Json_http(url string, data []byte, api string) []byte{
 	var body []byte
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil{
@@ -38,7 +38,7 @@ func Put_Json_http(url string, data []byte) []byte{
 	}
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
-	req.Header.Add("X-AGENT-KEY", "testkey")
+	req.Header.Add("X-AGENT-KEY", api)
 	req.Header.Add("X-ZONE-ID", "8282")
 	req.Header.Add("X-API-KEY", "wnskslxptmxmrPwjd123")
 

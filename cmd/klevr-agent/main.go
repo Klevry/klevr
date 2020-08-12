@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/binary"
+	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
 	"os/exec"
 	"strings"
@@ -115,26 +117,26 @@ func Command_checker(cmd, msg string) (string, error) {
 //	Command_checker("cat /sys/module/kvm_intel/parameters/nested", "Error: Required check for this file - /sys/module/kvm_intel/parameters/nested for \"Y\"")
 //}
 
-//func Get_mac() (mac_add string) {
-//	interfaces, err := net.Interfaces()
-//	if err == nil {
-//		for _, i := range interfaces {
-//			if i.Flags&net.FlagUp != 0 && bytes.Compare(i.HardwareAddr, nil) != 0 {
-//				mac_add = i.HardwareAddr.String()
-//				break
-//			}
-//		}
-//	}
-//	return mac_add
-//}
+func Get_mac() (mac_add string) {
+	interfaces, err := net.Interfaces()
+	if err == nil {
+		for _, i := range interfaces {
+			if i.Flags&net.FlagUp != 0 && bytes.Compare(i.HardwareAddr, nil) != 0 {
+				mac_add = i.HardwareAddr.String()
+				break
+			}
+		}
+	}
+	return mac_add
+}
 
-//func hash_create(s string) {
-//	h := sha1.New()
-//	h.Write([]byte(s))
-//	hashed := h.Sum(nil)
-//	err := ioutil.WriteFile(Klevr_agent_id_file, []byte(hex.EncodeToString(hashed)+"\n"), 0644)
-//	check(err)
-//}
+func hash_create(s string) {
+	h := sha1.New()
+	h.Write([]byte(s))
+	hashed := h.Sum(nil)
+	err := ioutil.WriteFile(Klevr_agent_id_file, []byte(hex.EncodeToString(hashed)+"\n"), 0644)
+	check(err)
+}
 
 // Find out the IP mac_addess
 func Check_variable() string {
@@ -177,16 +179,16 @@ func Check_variable() string {
 
 	Klevr_manager = "http://" + Klevr_tmp_manager
 
-	//// Check for the Print
-	//API_key_id = *apikey
-	//fmt.Println("Account:", API_key_id)
-	//mca := Get_mac()
-	////base_info := "User Account ID + MAC address as a HW + local IP address"
-	//base_info := *apikey + mca + *local_ip
-	//_, err = ioutil.ReadFile(Klevr_agent_id_file)
-	//if err != nil {
-	//	hash_create(base_info)
-	//}
+	// Check for the Print
+	API_key_id = *apikey
+	fmt.Println("Account:", API_key_id)
+	mca := Get_mac()
+	//base_info := "User Account ID + MAC address as a HW + local IP address"
+	base_info := *apikey + mca + *local_ip
+	_, err = ioutil.ReadFile(Klevr_agent_id_file)
+	if err != nil {
+		hash_create(base_info)
+	}
 	Platform_type = string(*platform)
 	Klevr_zone = string(*zone)
 
@@ -570,7 +572,6 @@ func HandShake(){
 
 	uri := Klevr_manager + "/agents/handshake"
 
-	if GetPrimaryIP() == ""{
 		rb := &common.Body{}
 
 		rb.Me.IP = Local_ip_add
@@ -592,7 +593,7 @@ func HandShake(){
 			panic(err)
 		}
 
-		result := communicator.Put_Json_http(uri, b)
+		result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
 
 		err2 := json.Unmarshal(result, &Body)
 		if err2 != nil{
@@ -601,13 +602,25 @@ func HandShake(){
 
 		primaryinfo, _ := json.Marshal(Body.Agent.Primary)
 
+		logger.Debugf("%v", Body.Agent.Primary)
+		Primary_ip = Body.Agent.Primary.IP
+
 		err3 := ioutil.WriteFile(Klevr_primary_info, primaryinfo, os.FileMode(0644))
-		if err3 != nil{
+		if err3 != nil {
 			fmt.Println(err3)
 			//return
 		}
-	}
 
+}
+
+func test() {
+	Debug(Primary_ip)
+	Debug(Local_ip_add)
+	if Primary_ip == Local_ip_add  {
+		Debug("I am primary")
+	} else {
+		Debug("I am secondary")
+	}
 }
 
 /*
@@ -663,7 +676,7 @@ func TaskManagement(){
 		panic(err)
 	}
 
-	communicator.Put_Json_http(uri, b)
+	communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
 }
 
 /*
@@ -704,12 +717,11 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
-	Primary_ip = GetPrimaryIP()
 	/// Scheduler
 	s := gocron.NewScheduler()
 	//s.Every(1).Seconds().Do(Get)
-	s.Every(2).Seconds().Do(Ping)
-	s.Every(1).Seconds().Do(TaskManagement)
+	s.Every(2).Seconds().Do(test)
+	//s.Every(1).Seconds().Do(TaskManagement)
 
 	//	s.Every(1).Seconds().Do(Turn _on)
 	//s.Every(2).Seconds().Do(RnR)
