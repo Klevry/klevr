@@ -21,7 +21,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	//"net"
@@ -436,40 +435,25 @@ func Check_primary() string {
 	return AM_I_PRIMARY
 }
 
-func Ping(){
-	if Check_primary() == "true"{
-		timeout := time.Duration(1 * time.Second)
+func PingToMaster(){
+	timeout := time.Duration(1 * time.Second)
 
-		_, err := net.DialTimeout("tcp", Klevr_tmp_manager, timeout)
-		if err != nil {
-			logger.Error(err)
-			ping = false
-		} else {
-			ping = true
+	alive := agent.AliveCheck{}
 
-			Primary_alivecheck_time = time.Now().Unix()
-			err := ioutil.WriteFile(Primary_alivecheck, []byte(strconv.Itoa(int(Primary_alivecheck_time))), os.FileMode(0644))
-			if err != nil{
-				logger.Debugf("manager connection error")
-				logger.Debugf("%v", err)
-			}
-		}
+	_, err := net.DialTimeout("tcp", Primary_ip+":18800", timeout)
+	if err != nil {
+		logger.Error(err)
+		alive.IsActive = false
 	} else {
-		timeout := time.Duration(1 * time.Second)
+		alive.IsActive = true
+		Primary_alivecheck_time = time.Now().Unix()
+		alive.Time = Primary_alivecheck_time
+	}
 
-		_, err := net.DialTimeout("tcp", Primary_ip+":18800", timeout)
-		if err != nil {
-			logger.Error(err)
-			ping = false
-		} else {
-			ping = true
-
-			Primary_alivecheck_time = time.Now().Unix()
-			err := ioutil.WriteFile(Primary_alivecheck, []byte(strconv.Itoa(int(Primary_alivecheck_time))), os.FileMode(0644))
-			if err != nil{
-				logger.Debugf("%v", err)
-			}
-		}
+	m, _ := json.MarshalIndent(alive, "", "  ")
+	err2 := ioutil.WriteFile(Primary_alivecheck, m, os.FileMode(0644))
+	if err2 != nil{
+		logger.Debugf("%v", err)
 	}
 
 	logger.Debug("%v", ping)
@@ -527,6 +511,8 @@ out: body.me, body.task
 func TaskManagement(){
 	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
+	PingToMaster()
+
 	getbody := communicator.Get_Json_http(uri)
 
 	err2 := json.Unmarshal(getbody, &Body)
@@ -555,6 +541,17 @@ in: body.me, body.agent.primary
 out: body.me, body.agent.primary
  */
 func PrimaryStatusReport(){
+	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
+	if err != nil{
+		logger.Error(err)
+	}
+
+	var alive agent.AliveCheck
+	json.Unmarshal(alivecheck, &alive)
+
+	if alive.IsActive{
+
+	}
 
 }
 
@@ -606,41 +603,14 @@ func main() {
 		}()
 	} else {
 		s := gocron.NewScheduler()
+		s.Every(1).Seconds().Do(PingToMaster)
 		s.Every(1).Seconds().Do(slave)
 
 		go func() {
 			<-s.Start()
 		}()
 	}
-	/// Scheduler
-	//s := gocron.NewScheduler()
-	//s.Every(1).Seconds().Do(Ping)
-	//s.Every(2).Seconds().Do(test)
-	//s.Every(1).Seconds().Do(TaskManagement)
 
-	//	s.Every(1).Seconds().Do(Turn _on)
-	//s.Every(2).Seconds().Do(RnR)
-
-	//go func() {
-	//	<-s.Start()
-	//}()
-
-	///// Http listen for host info get
-	//http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {
-	//	//Resource_info()
-	//	w.Write([]byte(System_info))
-	//})
-	//
-	///// Http listen for primary latest working time
-	//http.HandleFunc("/primaryworks", func(w http.ResponseWriter, req *http.Request) {
-	//	primary_uptime := Primary_works_check()
-	//	w.Write([]byte(primary_uptime))
-	//})
-	//
-	///// Http listen for beacon
-	//http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
-	//	w.Write([]byte("OK"))
-	//})
 	http.ListenAndServe(":18800", nil)
 
 }
