@@ -534,19 +534,11 @@ func TaskManagement(){
 		logger.Error(err2)
 	}
 
-	if Check_primary() {
-
-	}
 
 	rb := &common.Body{}
 
 	SendMe(rb)
 
-	if Check_primary(){
-		logger.Debugf("I am Primary")
-	} else {
-
-	}
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
@@ -570,7 +562,7 @@ func master(){
 	logger.Debug("master task")
 }
 
-func agent(){
+func slave(){
 	logger.Debug("agent task")
 }
 
@@ -614,7 +606,7 @@ func main() {
 		}()
 	} else {
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(agent)
+		s.Every(1).Seconds().Do(slave)
 
 		go func() {
 			<-s.Start()
