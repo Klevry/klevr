@@ -76,8 +76,6 @@ var Result_buffer string
 
 var Body common.Body
 var Primary_alivecheck_time int64
-var Cluster agent.Cluster
-var Secondary_array []agent.Secondary
 var ping bool
 
 ///// Mode_debug = dev or not
