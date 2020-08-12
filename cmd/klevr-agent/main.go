@@ -593,11 +593,12 @@ func HandShake(){
 			panic(err)
 		}
 
+		Debug("agentid : " +Klevr_agent_id_get())
 		result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
 
 		err2 := json.Unmarshal(result, &Body)
 		if err2 != nil{
-			panic(err)
+			logger.Error(err2)
 		}
 
 		primaryinfo, _ := json.Marshal(Body.Agent.Primary)
