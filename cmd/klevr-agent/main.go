@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"encoding/binary"
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
 	"os/exec"
@@ -56,6 +55,8 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 var Klevr_tmp_manager = "localhost:8090"
+var Cluster_info = "/tmp/cluster_info"
+
 
 var Klevr_agent_id_string string
 
@@ -75,24 +76,14 @@ var Error_buffer string
 var Result_buffer string
 
 var Body common.Body
-var ping bool
 var Primary_alivecheck_time int64
+var Cluster agent.Cluster
+var Secondary_array []agent.Secondary
+var ping bool
 
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
 //
-
-/// Function for Debug
-func Debug(output string) {
-	logger.Debugf("%v", output)
-}
-
-
-func check(e error) {
-	if e != nil {
-		logger.Error("%v", e)
-	}
-}
 
 func Command_checker(cmd, msg string) (string, error) {
 	chk_command := exec.Command("sh", "-c", cmd)
@@ -135,7 +126,7 @@ func hash_create(s string) {
 	h.Write([]byte(s))
 	hashed := h.Sum(nil)
 	err := ioutil.WriteFile(Klevr_agent_id_file, []byte(hex.EncodeToString(hashed)+"\n"), 0644)
-	check(err)
+	logger.Errorf("%v", err)
 }
 
 // Find out the IP mac_addess
@@ -207,73 +198,6 @@ func Klevr_agent_id_get() string {
 	Klevr_agent_id_string = string_parse[0]
 	return Klevr_agent_id_string
 }
-
-func Set_basement() {
-	cluster := &agent.Cluster{}
-
-	cluster.Primary = ""
-}
-
-//func Chk_inst() string {
-//	docker_ps_command := exec.Command("which", "apt-get")
-//	err := docker_ps_command.Run()
-//	if err != nil {
-//		Installer = "yum"
-//	} else {
-//		Installer = "apt-get"
-//	}
-//	return Installer
-//}
-
-//func Check_package(pkg string) {
-//	Chk_inst()
-//	docker_ps_command := exec.Command("which", pkg)
-//	docker_ps_command.Env = append(os.Environ())
-//	if err := docker_ps_command.Run(); err != nil {
-//		if pkg == "docker" {
-//			log.Printf("- Package install for %s", pkg)
-//			Manual_inst("https://bit.ly/startdocker", "docker")
-//		} else {
-//			Install_pkg(pkg)
-//		}
-//	}
-//}
-
-//func Manual_inst(uri, target string) {
-//	exec_file := "/tmp/temporary_file_for_install.sh"
-//	m_down := exec.Command("curl", "-sL", uri, "-o", exec_file)
-//	m_down.Run()
-//	if err := os.Chmod(exec_file, 0755); err != nil {
-//		check(err)
-//	}
-//	m_inst := exec.Command("bash", exec_file)
-//	m_inst.Stdout = os.Stdout
-//	m_inst.Run()
-//
-//	check_command := exec.Command("which", target)
-//	if err := check_command.Run(); err != nil {
-//		log.Printf("- %s package has not been installed: Please install the package manually: %s", target, target)
-//		os.Exit(1)
-//	} else {
-//		log.Printf("- %s package has been installed", target)
-//	}
-//}
-
-//func Install_pkg(packs string) {
-//	if Installer == "apt-get" {
-//		log.Printf("- Please wait for the %s update", Installer)
-//		update := exec.Command("sudo", Installer, "update")
-//		update.Run()
-//	}
-//	log.Printf("- Please wait for Installing the %s Package....", packs)
-//	cmd := exec.Command("sudo", Installer, "install", "-y", packs)
-//	err := cmd.Run()
-//	if err != nil {
-//		log.Printf("- Command finished with error for %s: %v", packs, err)
-//	} else {
-//		log.Printf("- \"%s\" package has been installed", packs)
-//	}
-//}
 
 //Provisioning file download
 func Get_provisionig_script() {
@@ -442,32 +366,32 @@ func Docker_pull(image_name string) {
 	}
 }
 
-// Docker image runner
-func Docker_runner(image_name, service_name, options string) {
-	docker_ps_command := "docker ps | grep " + image_name + "|egrep -v CONTAINER | head -1"
-	Command_checker(docker_ps_command, "Error: Docker running process check failed")
-	if len(Result_buffer) != 0 {
-		Debug(image_name + " docker container is running now.")
-	} else {
-		Docker_pull(image_name)
-		Command_checker("docker run -d --name "+service_name+" "+options+" "+image_name, "\"- %s container already existed. Please check the docker process.\", image_name")
-	}
-}
+//// Docker image runner
+//func Docker_runner(image_name, service_name, options string) {
+//	docker_ps_command := "docker ps | grep " + image_name + "|egrep -v CONTAINER | head -1"
+//	Command_checker(docker_ps_command, "Error: Docker running process check failed")
+//	if len(Result_buffer) != 0 {
+//		Debug(image_name + " docker container is running now.")
+//	} else {
+//		Docker_pull(image_name)
+//		Command_checker("docker run -d --name "+service_name+" "+options+" "+image_name, "\"- %s container already existed. Please check the docker process.\", image_name")
+//	}
+//}
 
-/// Primary last working time checker
-func Primary_works_check() string {
-	var primary_latest_check string
-	primary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
-	raw_string_parse := strings.Split(string(primary_raw_file), "\n")
-	if strings.Contains(raw_string_parse[0], "get_timestamp") == true {
-		strr1 := strings.Split(raw_string_parse[0], ": ")
-		primary_latest_check = strr1[1]
-	} else {
-		log.Println("Primary uptime is not recognized")
-		primary_latest_check = ""
-	}
-	return primary_latest_check
-}
+///// Primary last working time checker
+//func Primary_works_check() string {
+//	var primary_latest_check string
+//	primary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
+//	raw_string_parse := strings.Split(string(primary_raw_file), "\n")
+//	if strings.Contains(raw_string_parse[0], "get_timestamp") == true {
+//		strr1 := strings.Split(raw_string_parse[0], ": ")
+//		primary_latest_check = strr1[1]
+//	} else {
+//		log.Println("Primary uptime is not recognized")
+//		primary_latest_check = ""
+//	}
+//	return primary_latest_check
+//}
 
 
 
@@ -502,9 +426,7 @@ const (
 )
 
 func Check_primary() string {
-	if Primary_ip == "" {
-		log.Printf("- Klevr task manager has not defined. Please wait for vote from webconsole")
-	} else if Primary_ip == Local_ip_add {
+	if Primary_ip == Local_ip_add {
 		AM_I_PRIMARY = "true"
 		log.Printf("--------------------------------  Primary_ip=%s, Local_ip_add=%s", Primary_ip, Local_ip_add)
 	} else if Primary_ip != Local_ip_add {
@@ -515,7 +437,7 @@ func Check_primary() string {
 }
 
 func Ping(){
-	if Check_primary() == "true" {
+	if Check_primary() == "true"{
 		timeout := time.Duration(1 * time.Second)
 
 		_, err := net.DialTimeout("tcp", Klevr_tmp_manager, timeout)
@@ -549,19 +471,23 @@ func Ping(){
 			}
 		}
 	}
+
+	logger.Debug("%v", ping)
 }
 
-func GetPrimaryIP() string{
-	uri := Klevr_manager + "/agents/handshake"
+func SendMe(body *common.Body) {
+	body.Me.IP = Local_ip_add
+	body.Me.IP = Local_ip_add
+	body.Me.Port = 8080
+	body.Me.Version = AGENT_VERSION
 
-	result := communicator.Get_Json_http(uri)
-	test := common.Body{}
-	err := json.Unmarshal(result, &test)
-	check(err)
+	disk := DiskUsage("/")
 
-	primaryip := Body.Agent.Primary.IP
+	memory, _ := memory.Get()
 
-	return string(primaryip)
+	body.Me.Resource.Core = runtime.NumCPU()
+	body.Me.Resource.Memory = int(memory.Total/MB)
+	body.Me.Resource.Disk = int(disk.All/MB)
 }
 
 /*
@@ -572,56 +498,26 @@ func HandShake(){
 
 	uri := Klevr_manager + "/agents/handshake"
 
-		rb := &common.Body{}
+	rb := &common.Body{}
 
-		rb.Me.IP = Local_ip_add
-		rb.Me.Port = 8080
-		rb.Me.Version = AGENT_VERSION
+	SendMe(rb)
 
-		disk := DiskUsage("/")
+	logger.Debugf("%v", rb)
 
-		memory, _ := memory.Get()
-
-		rb.Me.Resource.Core = runtime.NumCPU()
-		rb.Me.Resource.Memory = int(memory.Total/MB)
-		rb.Me.Resource.Disk = int(disk.All/MB)
-
-		logger.Debugf("%v", rb)
-
-		b, err := json.Marshal(rb)
-		if err != nil {
-			panic(err)
-		}
-
-		Debug("agentid : " +Klevr_agent_id_get())
-		result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
-
-		err2 := json.Unmarshal(result, &Body)
-		if err2 != nil{
-			logger.Error(err2)
-		}
-
-		primaryinfo, _ := json.Marshal(Body.Agent.Primary)
-
-		logger.Debugf("%v", Body.Agent.Primary)
-		Primary_ip = Body.Agent.Primary.IP
-
-		err3 := ioutil.WriteFile(Klevr_primary_info, primaryinfo, os.FileMode(0644))
-		if err3 != nil {
-			fmt.Println(err3)
-			//return
-		}
-
-}
-
-func test() {
-	Debug(Primary_ip)
-	Debug(Local_ip_add)
-	if Primary_ip == Local_ip_add  {
-		Debug("I am primary")
-	} else {
-		Debug("I am secondary")
+	b, err := json.Marshal(rb)
+	if err != nil {
+		logger.Error(err)
 	}
+
+	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
+
+	err2 := json.Unmarshal(result, &Body)
+	if err2 != nil{
+		logger.Error(err2)
+	}
+
+	logger.Debugf("%v", Body.Agent.Primary)
+	Primary_ip = Body.Agent.Primary.IP
 }
 
 /*
@@ -629,45 +525,27 @@ in: body.me, body.agent.nodes, body.task
 out: body.me, body.task
  */
 func TaskManagement(){
-	uri := Klevr_manager + "/agents/testkey"
+	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+
+	getbody := communicator.Get_Json_http(uri)
+
+	err2 := json.Unmarshal(getbody, &Body)
+	if err2 != nil{
+		logger.Error(err2)
+	}
+
+	if Check_primary() {
+
+	}
 
 	rb := &common.Body{}
 
-	rb.Me.IP = Local_ip_add
-	rb.Me.Port = 8080
-	rb.Me.Version = AGENT_VERSION
+	SendMe(rb)
 
-	disk := DiskUsage("/")
-
-	memory, _ := memory.Get()
-
-	rb.Me.Resource.Core = runtime.NumCPU()
-	rb.Me.Resource.Memory = int(memory.Total/MB)
-	rb.Me.Resource.Disk = int(disk.All/MB)
-
-	if Check_primary() == "true"{
+	if Check_primary(){
 		logger.Debugf("I am Primary")
 	} else {
-		time, err := ioutil.ReadFile(Primary_alivecheck)
-		if err != nil{
-			logger.Debugf("%v", err)
-		}
 
-		alivecheck := binary.BigEndian.Uint64(time)
-
-		agent := common.Agent{}
-		agent.AgentKey = "testkey"
-		agent.IsActive = ping
-		agent.LastAliveCheckTime = int64(alivecheck)
-		agent.Core = runtime.NumCPU()
-		agent.Memory = int(memory.Total/MB)
-		agent.Disk = int(disk.All/MB)
-
-		logger.Debugf("I am Secondary")
-		logger.Debugf("%v", int64(alivecheck))
-
-
-		rb.Agent.Nodes = append(rb.Agent.Nodes, agent)
 	}
 
 	logger.Debugf("%v", rb.Agent.Nodes)
@@ -686,6 +564,14 @@ out: body.me, body.agent.primary
  */
 func PrimaryStatusReport(){
 
+}
+
+func master(){
+	logger.Debug("master task")
+}
+
+func agent(){
+	logger.Debug("agent task")
 }
 
 func main() {
@@ -718,18 +604,34 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
+
+	if Check_primary() == "true"{
+		s := gocron.NewScheduler()
+		s.Every(1).Seconds().Do(master)
+
+		go func() {
+			<-s.Start()
+		}()
+	} else {
+		s := gocron.NewScheduler()
+		s.Every(1).Seconds().Do(agent)
+
+		go func() {
+			<-s.Start()
+		}()
+	}
 	/// Scheduler
-	s := gocron.NewScheduler()
-	//s.Every(1).Seconds().Do(Get)
-	s.Every(2).Seconds().Do(test)
+	//s := gocron.NewScheduler()
+	//s.Every(1).Seconds().Do(Ping)
+	//s.Every(2).Seconds().Do(test)
 	//s.Every(1).Seconds().Do(TaskManagement)
 
 	//	s.Every(1).Seconds().Do(Turn _on)
 	//s.Every(2).Seconds().Do(RnR)
 
-	go func() {
-		<-s.Start()
-	}()
+	//go func() {
+	//	<-s.Start()
+	//}()
 
 	///// Http listen for host info get
 	//http.HandleFunc("/info", func(w http.ResponseWriter, req *http.Request) {

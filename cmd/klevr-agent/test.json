@@ -1,0 +1,15 @@
+{
+  "primary": {
+    "ip": "192.168.1.2"
+  },
+  "secondary": [
+    {
+      "ip": "192.168.1.1",
+      "isalive": true
+    },
+    {
+      "ip": "",
+      "isalive": false
+    }
+  ]
+}
