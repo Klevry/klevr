@@ -70,13 +70,13 @@ func Get_http(uri, api_key_string string) string {
 	return http_body_buffer
 }
 
-func Get_Json_http(url string) []byte{
+func Get_Json_http(url string, api string) []byte{
 	var body []byte
 
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
-	req.Header.Add("X-AGENT-KEY", "testkey")
+	req.Header.Add("X-AGENT-KEY", api)
 	req.Header.Add("X-ZONE-ID", "8282")
 	req.Header.Add("X-API-KEY", "wnskslxptmxmrPwjd123")
 

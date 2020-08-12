@@ -77,6 +77,7 @@ var Result_buffer string
 var Body common.Body
 var Primary_alivecheck_time int64
 var ping bool
+var Nodes []common.Agent
 
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
@@ -472,6 +473,22 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Disk = int(disk.All/MB)
 }
 
+func GetPrimary(uri string) common.Primary{
+	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+
+	json.Unmarshal(result, &Body)
+
+	return Body.Agent.Primary
+}
+
+func GetNodes(uri string) []common.Agent{
+	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+
+	json.Unmarshal(result, &Body)
+
+	return Body.Agent.Nodes
+}
+
 /*
 in: body.me
 out: body.me, body.agent.primary
@@ -511,7 +528,7 @@ func TaskManagement(){
 
 	PingToMaster()
 
-	getbody := communicator.Get_Json_http(uri)
+	getbody := communicator.Get_Json_http(uri, Klevr_agent_id_get())
 
 	err2 := json.Unmarshal(getbody, &Body)
 	if err2 != nil{
@@ -523,12 +540,13 @@ func TaskManagement(){
 
 	SendMe(rb)
 
+	rb.Agent.Nodes = GetNodes(uri)
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
 	b, err := json.Marshal(rb)
 	if err != nil {
-		panic(err)
+		logger.Error(err)
 	}
 
 	communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
@@ -539,6 +557,8 @@ in: body.me, body.agent.primary
 out: body.me, body.agent.primary
  */
 func PrimaryStatusReport(){
+	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+
 	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
 	if err != nil{
 		logger.Error(err)
@@ -547,18 +567,15 @@ func PrimaryStatusReport(){
 	var alive agent.AliveCheck
 	json.Unmarshal(alivecheck, &alive)
 
+	rb := &common.Body{}
+
+	SendMe(rb)
+	rb.Agent.Primary = GetPrimary(uri)
+
 	if alive.IsActive{
 
 	}
 
-}
-
-func master(){
-	logger.Debug("master task")
-}
-
-func slave(){
-	logger.Debug("agent task")
 }
 
 func main() {
@@ -594,7 +611,7 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(master)
+		//s.Every(1).Seconds().Do(master)
 
 		go func() {
 			<-s.Start()
@@ -602,7 +619,7 @@ func main() {
 	} else {
 		s := gocron.NewScheduler()
 		s.Every(1).Seconds().Do(PingToMaster)
-		s.Every(1).Seconds().Do(slave)
+		//s.Every(1).Seconds().Do(slave)
 
 		go func() {
 			<-s.Start()
