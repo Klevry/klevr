@@ -528,19 +528,11 @@ func TaskManagement(){
 
 	PingToMaster()
 
-	getbody := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-
-	err2 := json.Unmarshal(getbody, &Body)
-	if err2 != nil{
-		logger.Error(err2)
-	}
-
-
 	rb := &common.Body{}
 
 	SendMe(rb)
 
-	rb.Agent.Nodes = GetNodes(uri)
+	rb.Agent.Nodes = GetNodes(Klevr_manager + "/agents/handshake")
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
@@ -611,7 +603,7 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		//s.Every(1).Seconds().Do(master)
+		s.Every(1).Seconds().Do(TaskManagement)
 
 		go func() {
 			<-s.Start()
@@ -619,6 +611,8 @@ func main() {
 	} else {
 		s := gocron.NewScheduler()
 		s.Every(1).Seconds().Do(PingToMaster)
+		s.Every(1).Seconds().Do(TaskManagement)
+
 		//s.Every(1).Seconds().Do(slave)
 
 		go func() {
