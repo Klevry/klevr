@@ -461,7 +461,7 @@ func PingToMaster(){
 func SendMe(body *common.Body) {
 	body.Me.IP = Local_ip_add
 	body.Me.IP = Local_ip_add
-	body.Me.Port = 8080
+	body.Me.Port = 18800
 	body.Me.Version = AGENT_VERSION
 
 	disk := DiskUsage("/")
@@ -532,16 +532,16 @@ func TaskManagement(){
 
 	SendMe(rb)
 
-	rb.Agent.Nodes = GetNodes(Klevr_manager + "/agents/handshake")
+	rb.Agent.Nodes = GetNodes(uri)
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
-	b, err := json.Marshal(rb)
-	if err != nil {
-		logger.Error(err)
-	}
+	//b, err := json.Marshal(rb)
+	//if err != nil {
+	//	logger.Error(err)
+	//}
 
-	communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
+	//communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
 }
 
 /*
