@@ -572,9 +572,9 @@ func PrimaryStatusReport(){
 
 func printprimary(){
 	if(Check_primary() == "true"){
-		logger.Debugf("I am Primary")
+		logger.Debugf("-----------I am Primary")
 	} else {
-		logger.Debugf("I am Secondary")
+		logger.Debugf("-----------I am Secondary")
 	}
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
