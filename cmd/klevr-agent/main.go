@@ -508,7 +508,7 @@ func HandShake(){
 		logger.Error(err)
 	}
 
-	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
+	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 	err2 := json.Unmarshal(result, &Body)
 	if err2 != nil{
