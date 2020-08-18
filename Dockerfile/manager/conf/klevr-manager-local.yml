@@ -11,7 +11,7 @@ klevr:
         port: 8090
         encryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
         transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
-        statusUpdateCycle: 10 #seconds
+        statusUpdateCycle: 60 #seconds
     agent:
         callCycle: 10 #seconds
         logLevel: INFO

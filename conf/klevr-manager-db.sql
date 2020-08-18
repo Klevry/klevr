@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `AGENTS` (
   `CPU` int(11) DEFAULT NULL,
   `MEMORY` int(11) DEFAULT NULL,
   `DISK` int(11) DEFAULT NULL,
+  `VERSION` varchar(45) NULL COMMENT '에이전트 버전',
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
 /*!40101 SET character_set_client = @saved_cs_client */;
