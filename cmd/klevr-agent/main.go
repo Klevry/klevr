@@ -580,8 +580,8 @@ func main() {
 	//	Check_package("docker")
 	//}
 	//
-	///// Checks env. for baremetal to Hypervisor provisioning
-	//Get_provisionig_script()
+	/// Checks env. for baremetal to Hypervisor provisioning
+	Get_provisionig_script()
 	//
 	///// Set up the Task & configuration directory
 	//Set_basement()
