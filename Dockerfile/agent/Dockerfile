@@ -1,6 +1,5 @@
 FROM ubuntu:focal
-<<<<<<< HEAD
-LABEL version=0.3
+LABEL version=0.1.4
 
 RUN apt-get update -y && apt-get install -y ssh
 #RUN mkdir -p root/.ssh/ && \
@@ -10,9 +9,7 @@ RUN apt-get update -y && apt-get install -y ssh
 #        UserKnownHostsFile /dev/null \n '\
 #    > config
 
-=======
-LABEL version=0.1.4
->>>>>>> 3285330a9d39ab7dcabd3163d9231cdc8b4a76e2
+
 COPY ./klevr  /
 COPY ./entrypoint.sh  /
 
