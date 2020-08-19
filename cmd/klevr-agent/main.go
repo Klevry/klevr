@@ -508,7 +508,7 @@ func HandShake(){
 		logger.Error(err)
 	}
 
-	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get())
+	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 	err2 := json.Unmarshal(result, &Body)
 	if err2 != nil{
@@ -570,6 +570,15 @@ func PrimaryStatusReport(){
 
 }
 
+func printprimary(){
+	if(Check_primary() == "true"){
+		logger.Debugf("-----------I am Primary")
+	} else {
+		logger.Debugf("-----------I am Secondary")
+	}
+	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
+}
+
 func main() {
 	/// check the cli command with required options
 	Check_variable()
@@ -580,8 +589,8 @@ func main() {
 	//	Check_package("docker")
 	//}
 	//
-	///// Checks env. for baremetal to Hypervisor provisioning
-	//Get_provisionig_script()
+	/// Checks env. for baremetal to Hypervisor provisioning
+	Get_provisionig_script()
 	//
 	///// Set up the Task & configuration directory
 	//Set_basement()
@@ -603,15 +612,15 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(TaskManagement)
+		s.Every(1).Seconds().Do(printprimary)
 
 		go func() {
 			<-s.Start()
 		}()
 	} else {
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(PingToMaster)
-		s.Every(1).Seconds().Do(TaskManagement)
+		//s.Every(1).Seconds().Do(PingToMaster)
+		s.Every(1).Seconds().Do(printprimary)
 
 		//s.Every(1).Seconds().Do(slave)
 
