@@ -1,5 +1,5 @@
 FROM ubuntu:focal
-LABEL version=0.3
+LABEL version=0.1.4
 COPY ./klevr  /
 COPY ./entrypoint.sh  /
 
@@ -12,5 +12,4 @@ ENV K_ZONE_ID ""
 # Entrypoint for startup
 ENTRYPOINT /entrypoint.sh
 
-EXPOSE  8080
-
+EXPOSE 18800
