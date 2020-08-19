@@ -1,5 +1,14 @@
 FROM ubuntu:focal
 LABEL version=0.3
+
+RUN apt-get update -y && apt-get install -y ssh
+#RUN mkdir -p root/.ssh/ && \
+#    cd root/.ssh && \
+#    echo $'Host * \n\
+#        StrictHostKeyChecking no \n\
+#        UserKnownHostsFile /dev/null \n '\
+#    > config
+
 COPY ./klevr  /
 COPY ./entrypoint.sh  /
 
