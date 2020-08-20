@@ -50,7 +50,7 @@ var Primary_communication_result = "/tmp/communication_result.stmp"
 var Prov_script = "https://raw.githubusercontent.com/Klevry/klevr/master/scripts"
 var Klevr_primary_info = "/tmp/klevr_primary_info"
 var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
-var Command = "/tmp/command"
+var Command = "/data/klevry/command"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
