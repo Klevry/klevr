@@ -91,7 +91,7 @@ func Command_checker(cmd, msg string) (string, error) {
 	chk_command.Stderr = &stderr
 	err := chk_command.Run()
 	if err != nil {
-		log.Printf(msg)
+		logger.Debugf("%v", err)
 		//		panic(msg)
 	}
 	Result_buffer = out.String()
@@ -204,11 +204,12 @@ func Get_provisionig_script() {
 	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
 	Get_script_arr := strings.Split(strings.Replace(Get_script, "\n\n", "\n", -1), "\n")
 	println("%%%%%%%%%%%%%%%%%%%: ", len(Get_script_arr))
+
 	for i := 0; i < len(Get_script_arr); i++ {
 		if len(Get_script_arr[i]) > 1 {
 			fin_arr := strings.Split(Get_script_arr[i], ",")
 			// println("::::::::::::::::::: eval "+fin_arr[0], fin_arr[1])
-			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
+			_, err := Command_checker(fin_arr[0], fin_arr[1])
 			if err != nil {
 				os.Exit(1)
 			}
