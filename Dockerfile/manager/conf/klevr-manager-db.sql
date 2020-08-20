@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS `AGENTS` (
   `CPU` int(11) DEFAULT NULL,
   `MEMORY` int(11) DEFAULT NULL,
   `DISK` int(11) DEFAULT NULL,
+  `VERSION` varchar(45) NULL COMMENT '에이전트 버전',
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS `AGENT_GROUPS` (
   PRIMARY KEY (`ID`),
   UNIQUE KEY `UNQ_01` (`USER_ID`,`PLATFORM`,`GROUP_NAME`),
   KEY `IDX_01` (`USER_ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -78,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '그룹 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`API_KEY`)
+  PRIMARY KEY (`GROUP_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='인증 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -92,13 +93,36 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
 CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트의 group ID',
   `AGENT_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 ID',
-  `LAST_ACCESS_TIME` timestamp NULL DEFAULT NULL COMMENT '에이전트가 마지막으로 엑세스한 타임스탬프',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`GROUP_ID`,`AGENT_ID`),
   UNIQUE KEY `GROUP_ID_UNIQUE` (`GROUP_ID`)
+  UNIQUE KEY `AGENT_ID_UNIQUE` (`AGENT_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Primary 에이전트 관리 테이블\n그룹별 하나의 primary 에이전트를 관리한다.';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `TASKS`
+--
+
+-- DROP TABLE IF EXISTS `TASKS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `TASKS` (
+  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `TYPE` varchar(45) NOT NULL,
+  `COMMAND` varchar(200) NOT NULL,
+  `ZONE_ID` bigint(20) unsigned NOT NULL,
+  `AGENT_KEY` varchar(45) NOT NULL,
+  `EXE_AGENT_KEY` varchar(45) DEFAULT NULL,
+  `STATUS` varchar(45) NOT NULL,
+  `PARAMS` text DEFAULT NULL,
+  `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `DELETED_AT` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -125,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-07-30 11:19:00
+-- Dump completed on 2020-08-04 16:40:22
 
 CREATE USER 'klevr'@'%' identified by 'klevr';
 
