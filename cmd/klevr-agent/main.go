@@ -50,6 +50,7 @@ var Primary_communication_result = "/tmp/communication_result.stmp"
 var Prov_script = "https://raw.githubusercontent.com/Klevry/klevr/master/scripts"
 var Klevr_primary_info = "/tmp/klevr_primary_info"
 var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
+var Command = "/tmp/command"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
@@ -580,10 +581,24 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
+func commandKube(){
+	command, err := ioutil.ReadFile(Command)
+	if err != nil{
+		logger.Error(err)
+	}
+	logger.Debugf("%v", string(command))
+	com := exec.Command("sh", "-c", string(command))
+
+	err2 := com.Run()
+	if err2 != nil{
+		logger.Debugf("%v", err2)
+	}
+}
+
 func main() {
 	/// check the cli command with required options
 	Check_variable()
-
+	commandKube()
 	///// Requirement package check
 	//if Platform_type == "baremetal" {
 	//	Check_package("curl")
@@ -591,7 +606,7 @@ func main() {
 	//}
 	//
 	/// Checks env. for baremetal to Hypervisor provisioning
-	Get_provisionig_script()
+	//Get_provisionig_script()
 	//
 	///// Set up the Task & configuration directory
 	//Set_basement()
@@ -614,6 +629,7 @@ func main() {
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
 		s.Every(1).Seconds().Do(printprimary)
+		s.Every(10).Seconds().Do(commandKube)
 
 		go func() {
 			<-s.Start()
@@ -622,7 +638,7 @@ func main() {
 		s := gocron.NewScheduler()
 		//s.Every(1).Seconds().Do(PingToMaster)
 		s.Every(1).Seconds().Do(printprimary)
-
+		s.Every(10).Seconds().Do(commandKube)
 		//s.Every(1).Seconds().Do(slave)
 
 		go func() {
