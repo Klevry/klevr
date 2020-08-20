@@ -23,7 +23,7 @@ type CustomHeader struct {
 type Body struct {
 	Me    Me        `json:"me"`
 	Agent BodyAgent `json:"agent"`
-	Task  []task    `json:"task"`
+	Task  []Task    `json:"task"`
 }
 
 // Me requester
@@ -72,7 +72,7 @@ type Resource struct {
 }
 
 // Task tasks
-type task struct {
+type Task struct {
 	ID       uint64                 `json:"id"`
 	Type     TaskType               `json:"taskType"`
 	Command  string                 `json:"command"`
@@ -113,9 +113,9 @@ const (
 )
 
 // NewTask constructor for task struct
-func NewTask(id uint64, taskType TaskType, command string, agentKey string, status string, params map[string]interface{}) *task {
+func NewTask(id uint64, taskType TaskType, command string, agentKey string, status string, params map[string]interface{}) *Task {
 	if taskType == COMMAND || taskType == INLINE {
-		return &task{
+		return &Task{
 			ID:       id,
 			Type:     taskType,
 			Command:  command,
