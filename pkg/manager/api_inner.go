@@ -154,3 +154,16 @@ func (api *API) getGroup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 }
+
+func (api *API) addTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params string) *Tasks {
+	task := &Tasks{
+		Type:     string(taskType),
+		Command:  command,
+		ZoneId:   zoneID,
+		AgentKey: agentKey,
+		Params:   params,
+		Status:   string(common.DELIVERED),
+	}
+
+	return tx.insertTask(task)
+}

@@ -227,3 +227,15 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 		common.PanicForUpdate("updated", cnt, 1)
 	}
 }
+
+func (tx *Tx) insertTask(t *Tasks) *Tasks {
+	cnt, err := tx.Insert(t)
+
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
+	}
+
+	return t
+}

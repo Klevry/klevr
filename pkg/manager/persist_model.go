@@ -59,6 +59,20 @@ type TaskLock struct {
 	LockDate   time.Time
 }
 
+type Tasks struct {
+	Id          uint64 `xorm:"PK"`
+	Type        string
+	Command     string
+	ZoneId      uint64
+	AgentKey    string
+	ExeAgentKey string
+	Status      string
+	Params      string
+	CreatedAt   time.Time `xorm:"created"`
+	UpdatedAt   time.Time `xorm:"updated"`
+	DeletedAt   time.Time
+}
+
 func (tl *TaskLock) expired() bool {
 	// if tl.LockDate.Unix() > time.Now().UTC().Add()
 	return true
