@@ -596,17 +596,25 @@ func getCommand(){
 
 	filenum := len(com)
 
+
+
 	for i:=0; i<filenum-1; i++{
-		logger.Debugf("%d-----%s", i, com[i])
 		num := strconv.Itoa(i)
-		writeFile(Commands+num, com[i])
+
+		if(com[i] == string(readFile(Commands+num))){
+			logger.Debugf("same command")
+		} else {
+			logger.Debugf("%d-----%s", i, com[i])
+			writeFile(Commands+num, com[i])
+		}
 	}
 
 	for i:=0; i<filenum-1; i++{
 		num := strconv.Itoa(i)
 		command := readFile(Commands+num)
 
-		execute := SSH_provbee + string(command)
+		execute := SSH_provbee + string(command)[1:len(string(command))-1]
+		//logger.Debugf(execute)
 		exe := exec.Command("sh", "-c", execute)
 		errExe := exe.Run()
 		if errExe != nil{
