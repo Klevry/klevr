@@ -56,7 +56,7 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 var Klevr_tmp_manager = "localhost:8090"
 var Cluster_info = "/tmp/cluster_info"
-var SSH_provbee = "ssh provbee-service /usr/local/bin/"
+var SSH_provbee = "ssh provbee-service "
 var Commands = "/tmp/command"
 
 
