@@ -604,10 +604,7 @@ func getCommand(){
 
 	for i:=0; i<filenum-1; i++{
 		num := strconv.Itoa(i)
-		command, err := ioutil.ReadFile(Commands+num)
-		if err != nil{
-			logger.Error(err)
-		}
+		command := readFile(Commands+num)
 
 		execute := SSH_provbee + string(command)
 		exe := exec.Command("sh", "-c", execute)
