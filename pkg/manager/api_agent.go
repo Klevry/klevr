@@ -37,6 +37,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/{agentKey}", api.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", api.checkPrimaryInfo)
 	registURI(agent, GET, "/commands/init", api.getInitCommand)
+	registURI(agent, POST, "/zones/init", api.receiveInitResult)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -96,6 +97,48 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	context.Set(r, common.CustomHeaderName, h)
 
 	return h
+}
+
+func (api *API) receiveInitResult(w http.ResponseWriter, r *http.Request) {
+	ch := common.GetCustomHeader(r)
+	tx := GetDBConn(r)
+
+	var requestBody common.Body
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	tasks := requestBody.Task
+
+	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
+	len := len(*tasks)
+
+	if len > 0 {
+		for _, t := range *tasks {
+			tx.updateTask(&Tasks{
+				Id:          t.ID,
+				ExeAgentKey: t.AgentKey,
+				Status:      t.Status,
+			})
+		}
+	}
 }
 
 func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
