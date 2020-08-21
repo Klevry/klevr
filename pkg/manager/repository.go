@@ -239,3 +239,16 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 
 	return t
 }
+
+func (tx *Tx) updateTask(t *Tasks) {
+	cnt, err := tx.Where("ID = ?", t.Id).
+		Cols("EXE_AGENT_KEY", "STATUS").
+		Update(t)
+	logger.Debugf("Updated TASK(%d) : %v", cnt, t)
+
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, 1)
+	}
+}
