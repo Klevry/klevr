@@ -145,7 +145,7 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(r)
 
-	req, err := http.NewRequest("GET", "https://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue", nil)
+	req, err := http.NewRequest("GET", "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue", nil)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "Internel server error")
 	}
