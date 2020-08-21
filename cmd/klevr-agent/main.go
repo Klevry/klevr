@@ -614,7 +614,7 @@ func getCommand(){
 		command := readFile(Commands+num)
 
 		execute := SSH_provbee + string(command)[1:len(string(command))-1]
-		//logger.Debugf(execute)
+		logger.Debugf(execute)
 		exe := exec.Command("sh", "-c", execute)
 		errExe := exe.Run()
 		if errExe != nil{
