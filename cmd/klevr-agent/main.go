@@ -646,7 +646,6 @@ func deleteFile(path string){
 func main() {
 	/// check the cli command with required options
 	Check_variable()
-	getCommand()
 	///// Requirement package check
 	//if Platform_type == "baremetal" {
 	//	Check_package("curl")
