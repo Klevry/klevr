@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `klevr` /*!40100 DEFAULT CHARACTER SET utf8 */;
-USE `klevr`;
 -- MariaDB dump 10.17  Distrib 10.4.13-MariaDB, for osx10.15 (x86_64)
 --
 -- Host: 127.0.0.1    Database: klevr
@@ -21,10 +19,10 @@ USE `klevr`;
 -- Table structure for table `AGENTS`
 --
 
--- DROP TABLE IF EXISTS `AGENTS`;
+DROP TABLE IF EXISTS `AGENTS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `AGENTS` (
+CREATE TABLE `AGENTS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '에이전트 ID',
   `AGENT_KEY` varchar(45) DEFAULT NULL COMMENT '에이전트 고유 식별 키 (향후 unique 키로 만들어야 함 - 현재는 개발중)',
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 그룹 ID',
@@ -41,19 +39,19 @@ CREATE TABLE IF NOT EXISTS `AGENTS` (
   `CPU` int(11) DEFAULT NULL,
   `MEMORY` int(11) DEFAULT NULL,
   `DISK` int(11) DEFAULT NULL,
-  `VERSION` varchar(45) NULL COMMENT '에이전트 버전',
+  `VERSION` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `AGENT_GROUPS`
 --
 
--- DROP TABLE IF EXISTS `AGENT_GROUPS`;
+DROP TABLE IF EXISTS `AGENT_GROUPS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `AGENT_GROUPS` (
+CREATE TABLE `AGENT_GROUPS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '그룹 ID',
   `GROUP_NAME` varchar(200) NOT NULL COMMENT '그룹 이름',
   `USER_ID` bigint(20) unsigned NOT NULL COMMENT '사용자 ID',
@@ -64,17 +62,17 @@ CREATE TABLE IF NOT EXISTS `AGENT_GROUPS` (
   PRIMARY KEY (`ID`),
   UNIQUE KEY `UNQ_01` (`USER_ID`,`PLATFORM`,`GROUP_NAME`),
   KEY `IDX_01` (`USER_ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
+) ENGINE=InnoDB AUTO_INCREMENT=8283 DEFAULT CHARSET=utf8 COMMENT='agent 그룹 관리 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `API_AUTHENTICATIONS`
 --
 
--- DROP TABLE IF EXISTS `API_AUTHENTICATIONS`;
+DROP TABLE IF EXISTS `API_AUTHENTICATIONS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
+CREATE TABLE `API_AUTHENTICATIONS` (
   `API_KEY` varchar(64) NOT NULL COMMENT 'API key',
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '그룹 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
@@ -87,16 +85,18 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
 -- Table structure for table `PRIMARY_AGENTS`
 --
 
--- DROP TABLE IF EXISTS `PRIMARY_AGENTS`;
+DROP TABLE IF EXISTS `PRIMARY_AGENTS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
+CREATE TABLE `PRIMARY_AGENTS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트의 group ID',
   `AGENT_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`GROUP_ID`,`AGENT_ID`)
+  PRIMARY KEY (`GROUP_ID`,`AGENT_ID`),
+  UNIQUE KEY `GROUP_ID_UNIQUE` (`GROUP_ID`),
+  UNIQUE KEY `AGENT_ID_UNIQUE` (`AGENT_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Primary 에이전트 관리 테이블\n그룹별 하나의 primary 에이전트를 관리한다.';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -104,10 +104,10 @@ CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
 -- Table structure for table `TASKS`
 --
 
--- DROP TABLE IF EXISTS `TASKS`;
+DROP TABLE IF EXISTS `TASKS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `TASKS` (
+CREATE TABLE `TASKS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `TYPE` varchar(45) NOT NULL,
   `COMMAND` varchar(200) NOT NULL,
@@ -127,10 +127,10 @@ CREATE TABLE IF NOT EXISTS `TASKS` (
 -- Table structure for table `TASK_LOCK`
 --
 
--- DROP TABLE IF EXISTS `TASK_LOCK`;
+DROP TABLE IF EXISTS `TASK_LOCK`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
+CREATE TABLE `TASK_LOCK` (
   `TASK` varchar(45) NOT NULL COMMENT 'lock을 잡은 task 명',
   `INSTANCE_ID` varchar(45) NOT NULL COMMENT 'lock을 잡은 인스턴스 ID',
   `LOCK_DATE` timestamp NULL DEFAULT NULL COMMENT 'lock이 걸린 일시',
@@ -147,8 +147,4 @@ CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-08-04 16:40:22
-
-CREATE USER 'klevr'@'%' identified by 'klevr';
-
-GRANT ALL PRIVILEGES ON klevr.* to `klevr`@`%`;
+-- Dump completed on 2020-08-20 20:28:42
