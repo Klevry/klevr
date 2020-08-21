@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
 	"os/exec"
+	"strconv"
 	"strings"
 	//"bytes"
 	//"crypto/sha1"
@@ -50,12 +51,13 @@ var Primary_communication_result = "/tmp/communication_result.stmp"
 var Prov_script = "https://raw.githubusercontent.com/Klevry/klevr/master/scripts"
 var Klevr_primary_info = "/tmp/klevr_primary_info"
 var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
-var Command = "/data/klevry/command"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 var Klevr_tmp_manager = "localhost:8090"
 var Cluster_info = "/tmp/cluster_info"
+var SSH_provbee = "ssh provbee-service /usr/local/bin/"
+var Commands = "/tmp/command"
 
 
 var Klevr_agent_id_string string
@@ -78,8 +80,6 @@ var Result_buffer string
 var Body common.Body
 var Primary_alivecheck_time int64
 var ping bool
-var Nodes []common.Agent
-
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
 //
@@ -475,21 +475,21 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Disk = int(disk.All/MB)
 }
 
-func GetPrimary(uri string) common.Primary{
-	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-
-	json.Unmarshal(result, &Body)
-
-	return Body.Agent.Primary
-}
-
-func GetNodes(uri string) []common.Agent{
-	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-
-	json.Unmarshal(result, &Body)
-
-	return Body.Agent.Nodes
-}
+//func GetPrimary(uri string) common.Primary{
+//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+//
+//	json.Unmarshal(result, &Body)
+//
+//	return Body.Agent.Primary
+//}
+//
+//func GetNodes(uri string) []common.Agent{
+//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+//
+//	json.Unmarshal(result, &Body)
+//
+//	return Body.Agent.Nodes
+//}
 
 /*
 in: body.me
@@ -526,7 +526,7 @@ in: body.me, body.agent.nodes, body.task
 out: body.me, body.task
  */
 func TaskManagement(){
-	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	PingToMaster()
 
@@ -534,7 +534,7 @@ func TaskManagement(){
 
 	SendMe(rb)
 
-	rb.Agent.Nodes = GetNodes(uri)
+	//rb.Agent.Nodes = GetNodes(uri)
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
@@ -551,7 +551,7 @@ in: body.me, body.agent.primary
 out: body.me, body.agent.primary
  */
 func PrimaryStatusReport(){
-	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
 	if err != nil{
@@ -564,7 +564,7 @@ func PrimaryStatusReport(){
 	rb := &common.Body{}
 
 	SendMe(rb)
-	rb.Agent.Primary = GetPrimary(uri)
+	//rb.Agent.Primary = GetPrimary(uri)
 
 	if alive.IsActive{
 
@@ -581,24 +581,75 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
-func commandKube(){
-	command, err := ioutil.ReadFile(Command)
+func getCommand(){
+	uri := Klevr_manager + "/agents/commands/init"
+
+	result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+
+	err := json.Unmarshal(result, &Body)
 	if err != nil{
 		logger.Error(err)
 	}
-	logger.Debugf("%v", string(command))
-	com := exec.Command("sh", "-c", string(command))
 
-	err2 := com.Run()
-	if err2 != nil{
-		logger.Debugf("%v", err2)
+	coms := Body.Task[0].Command
+	com := strings.Split(coms, "\n")
+
+	filenum := len(com)
+
+	for i:=0; i<filenum-1; i++{
+		logger.Debugf("%d-----%s", i, com[i])
+		num := strconv.Itoa(i)
+		writeFile(Commands+num, com[i])
+	}
+
+	for i:=0; i<filenum-1; i++{
+		num := strconv.Itoa(i)
+		command, err := ioutil.ReadFile(Commands+num)
+		if err != nil{
+			logger.Error(err)
+		}
+
+		execute := SSH_provbee + string(command)
+		exe := exec.Command("sh", "-c", execute)
+		errExe := exe.Run()
+		if errExe != nil{
+			logger.Error(errExe)
+		} else {
+			deleteFile(Commands+num)
+		}
+	}
+
+}
+
+func writeFile(path string, data string) {
+	d, _ := json.MarshalIndent(data, "", "  ")
+	err := ioutil.WriteFile(path, d, os.FileMode(0644))
+	if err != nil{
+		logger.Error(err)
+	}
+}
+
+func readFile(path string) []byte{
+	data, err := ioutil.ReadFile(path)
+	if err != nil{
+		logger.Error(err)
+	}
+
+	return data
+}
+
+
+func deleteFile(path string){
+	err := os.Remove(path)
+	if err != nil {
+		logger.Error(err)
 	}
 }
 
 func main() {
 	/// check the cli command with required options
 	Check_variable()
-	commandKube()
+	getCommand()
 	///// Requirement package check
 	//if Platform_type == "baremetal" {
 	//	Check_package("curl")
@@ -628,8 +679,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(printprimary)
-		s.Every(10).Seconds().Do(commandKube)
+		s.Every(5).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
@@ -638,7 +689,7 @@ func main() {
 		s := gocron.NewScheduler()
 		//s.Every(1).Seconds().Do(PingToMaster)
 		s.Every(1).Seconds().Do(printprimary)
-		s.Every(10).Seconds().Do(commandKube)
+		//s.Every(1).Seconds().Do(getCommand)
 		//s.Every(1).Seconds().Do(slave)
 
 		go func() {
