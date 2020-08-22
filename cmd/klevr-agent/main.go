@@ -56,7 +56,7 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 var Klevr_tmp_manager = "localhost:8090"
 var Cluster_info = "/tmp/cluster_info"
-var SSH_provbee = "ssh provbee-service "
+var SSH_provbee = "ssh provbee-service /usr/local/bin/"
 var Commands = "/tmp/command"
 
 
@@ -614,13 +614,13 @@ func getCommand(){
 		command := readFile(Commands+num)
 
 		execute := SSH_provbee + string(command)[1:len(string(command))-1]
-		//logger.Debugf(execute)
+		logger.Debugf(execute)
 		exe := exec.Command("sh", "-c", execute)
 		errExe := exe.Run()
 		if errExe != nil{
 			logger.Error(errExe)
 		} else {
-			deleteFile(Commands+num)
+			//deleteFile(Commands+num)
 		}
 	}
 
