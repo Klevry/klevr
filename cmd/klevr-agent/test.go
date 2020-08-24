@@ -42,6 +42,7 @@ func test(){
 		if errExe != nil{
 			logger.Error(errExe)
 		} else {
+			exe.Wait()
 			deleteFile1(Path+num)
 		}
 	}
