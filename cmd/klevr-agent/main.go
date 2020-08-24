@@ -620,6 +620,7 @@ func getCommand(){
 		if errExe != nil{
 			logger.Error(errExe)
 		} else {
+			exe.Wait()
 			deleteFile(Commands+num)
 		}
 	}
