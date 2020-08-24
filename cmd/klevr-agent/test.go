@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"github.com/NexClipper/logger"
-	"github.com/jasonlvhit/gocron"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -75,10 +74,11 @@ func deleteFile1(path string){
 
 
 func main(){
-	s := gocron.NewScheduler()
-	s.Every(1).Seconds().Do(test)
-
-	go func() {
-		<-s.Start()
-	}()
+	//s := gocron.NewScheduler()
+	//s.Every(1).Seconds().Do(test)
+	//
+	//go func() {
+	//	<-s.Start()
+	//}()
+	test()
 }
