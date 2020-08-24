@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
+
 	//"bytes"
 	//"crypto/sha1"
 	//"encoding/base64"
@@ -80,6 +82,8 @@ var Result_buffer string
 var Body common.Body
 var Primary_alivecheck_time int64
 var ping bool
+var doOnce sync.Once
+
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
 //
@@ -581,6 +585,7 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
+
 func getCommand(){
 	uri := Klevr_manager + "/agents/commands/init"
 
@@ -595,8 +600,6 @@ func getCommand(){
 	com := strings.Split(coms, "\n")
 
 	filenum := len(com)
-
-
 
 	for i:=0; i<filenum-1; i++{
 		num := strconv.Itoa(i)
@@ -625,6 +628,29 @@ func getCommand(){
 		}
 	}
 
+	doOnce.Do(func() {
+		logger.Debugf("----------------test")
+		primaryInit(coms, "done")
+	})
+
+}
+
+func primaryInit(command string, status string){
+	uri := Klevr_manager + "/agents/zones/init"
+
+	rb := &common.Body{}
+
+	SendMe(rb)
+
+	rb.Task[0].Command = command
+	rb.Task[0].Status = status
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 }
 
 func writeFile(path string, data string) {
@@ -650,6 +676,7 @@ func deleteFile(path string){
 	if err != nil {
 		logger.Error(err)
 	}
+
 }
 
 func main() {
@@ -684,8 +711,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(10).Seconds().Do(printprimary)
-		s.Every(10).Seconds().Do(getCommand)
+		s.Every(5).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
