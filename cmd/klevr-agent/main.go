@@ -684,8 +684,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(5).Seconds().Do(printprimary)
-		s.Every(5).Seconds().Do(getCommand)
+		s.Every(10).Seconds().Do(printprimary)
+		s.Every(10).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
