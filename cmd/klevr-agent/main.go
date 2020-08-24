@@ -620,7 +620,8 @@ func getCommand(){
 		if errExe != nil{
 			logger.Error(errExe)
 		} else {
-			//deleteFile(Commands+num)
+			exe.Wait()
+			deleteFile(Commands+num)
 		}
 	}
 
@@ -683,8 +684,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(5).Seconds().Do(printprimary)
-		s.Every(5).Seconds().Do(getCommand)
+		s.Every(10).Seconds().Do(printprimary)
+		s.Every(10).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
