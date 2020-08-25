@@ -3,6 +3,7 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -35,6 +36,8 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", api.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", api.checkPrimaryInfo)
+	registURI(agent, GET, "/commands/init", api.getInitCommand)
+	registURI(agent, POST, "/zones/init", api.receiveInitResult)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -94,6 +97,87 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	context.Set(r, common.CustomHeaderName, h)
 
 	return h
+}
+
+func (api *API) receiveInitResult(w http.ResponseWriter, r *http.Request) {
+	ch := common.GetCustomHeader(r)
+	tx := GetDBConn(r)
+
+	var requestBody common.Body
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	tasks := requestBody.Task
+
+	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
+	len := len(*tasks)
+
+	if len > 0 {
+		for _, t := range *tasks {
+			tx.updateTask(&Tasks{
+				Id:          t.ID,
+				ExeAgentKey: t.AgentKey,
+				Status:      t.Status,
+			})
+		}
+	}
+}
+
+func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
+	ch := common.GetCustomHeader(r)
+	tx := GetDBConn(r)
+
+	req, err := http.NewRequest("GET", "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue", nil)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "Internel server error")
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "Internel server error")
+	}
+	defer res.Body.Close()
+
+	body, _ := ioutil.ReadAll(res.Body)
+	command := string(body)
+	param := make(map[string]interface{})
+	param["script"] = command
+
+	jsonParam, _ := json.Marshal(param)
+
+	task := api.addTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, string(jsonParam))
+	logger.Debug("created task : %v", task)
+
+	// response 데이터 생성
+	rb := &common.Body{}
+	rb.Task = make([]common.Task, 1)
+	rb.Task[0] = *common.NewTask(task.Id, common.TaskType(task.Type), command, task.AgentKey, task.Status, nil)
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {

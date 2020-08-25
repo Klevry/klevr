@@ -79,8 +79,7 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '그룹 ID',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`API_KEY`),
-  UNIQUE KEY `GROUP_ID_UNIQUE` (`GROUP_ID`)
+  PRIMARY KEY (`GROUP_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='인증 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -94,13 +93,34 @@ CREATE TABLE IF NOT EXISTS `API_AUTHENTICATIONS` (
 CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
   `GROUP_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트의 group ID',
   `AGENT_ID` bigint(20) unsigned NOT NULL COMMENT '에이전트 ID',
-  `LAST_ACCESS_TIME` timestamp NULL DEFAULT NULL COMMENT '에이전트가 마지막으로 엑세스한 타임스탬프',
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`GROUP_ID`,`AGENT_ID`),
-  UNIQUE KEY `GROUP_ID_UNIQUE` (`GROUP_ID`)
+  PRIMARY KEY (`GROUP_ID`,`AGENT_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Primary 에이전트 관리 테이블\n그룹별 하나의 primary 에이전트를 관리한다.';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `TASKS`
+--
+
+-- DROP TABLE IF EXISTS `TASKS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `TASKS` (
+  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `TYPE` varchar(45) NOT NULL,
+  `COMMAND` varchar(200) NOT NULL,
+  `ZONE_ID` bigint(20) unsigned NOT NULL,
+  `AGENT_KEY` varchar(45) NOT NULL,
+  `EXE_AGENT_KEY` varchar(45) DEFAULT NULL,
+  `STATUS` varchar(45) NOT NULL,
+  `PARAMS` text DEFAULT NULL,
+  `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `DELETED_AT` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
