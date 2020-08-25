@@ -699,6 +699,8 @@ func deleteFile(path string){
 }
 
 func main() {
+	common.InitLogger(common.NewLoggerEnv())
+
 	/// check the cli command with required options
 	Check_variable()
 	///// Requirement package check
