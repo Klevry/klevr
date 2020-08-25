@@ -1,4 +1,4 @@
-docker_version="latest"
+docker_version="chopa2"
 
 hello:
 	#
@@ -13,7 +13,8 @@ require:
 	go get -u
 #	curl -sL bit.ly/go_req | bash
 build: require
-	GOOS=linux GOARCH=amd64 go build -o ./Docker/klevr-manager ./main.go
+	go build -o ./Docker/klevr-manager ./main.go
+	#GOOS=linux GOARCH=amd64 go build -o ./Docker/klevr-manager ./main.go
 run:
 	go run ./main.go -config ../../conf/klevr-manager-local.yml
 login:
