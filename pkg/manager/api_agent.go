@@ -164,6 +164,7 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	jsonParam, _ := json.Marshal(param)
 
 	task := api.addTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, string(jsonParam))
+	logger.Debug("created task : %v", task)
 
 	// response 데이터 생성
 	rb := &common.Body{}

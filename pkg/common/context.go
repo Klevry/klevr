@@ -1,5 +1,7 @@
 package common
 
+var immutableStore = make(map[string]interface{})
+var mutableStore = make(map[string]interface{})
 var store = make(map[string]interface{})
 
 // ContextPut put value with key
