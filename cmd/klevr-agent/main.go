@@ -619,8 +619,8 @@ func getCommand(){
 			logger.Debugf("%d-----%s", i, com[i])
 			writeFile(Commands+num, com[i])
 
-			//execute := SSH_provbee + string(command)[1:len(string(command))-1]
-			execute := com[i]
+			execute := SSH_provbee + com[i]
+			//execute := com[i]
 
 			exe := exec.Command("sh", "-c", execute)
 			errExe := exe.Run()
