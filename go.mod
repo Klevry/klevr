@@ -30,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
-	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

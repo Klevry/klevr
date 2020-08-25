@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
+
 	//"bytes"
 	//"crypto/sha1"
 	//"encoding/base64"
@@ -80,6 +82,8 @@ var Result_buffer string
 var Body common.Body
 var Primary_alivecheck_time int64
 var ping bool
+var doOnce sync.Once
+
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
 //
@@ -581,6 +585,7 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
+
 func getCommand(){
 	uri := Klevr_manager + "/agents/commands/init"
 
@@ -591,40 +596,80 @@ func getCommand(){
 		logger.Error(err)
 	}
 
+	id := Body.Task[0].ID
 	coms := Body.Task[0].Command
 	com := strings.Split(coms, "\n")
+	//logger.Debugf("%v", string(result))
 
 	filenum := len(com)
-
-
 
 	for i:=0; i<filenum-1; i++{
 		num := strconv.Itoa(i)
 
-		if(com[i] == string(readFile(Commands+num))){
+		var read string
+
+		err := json.Unmarshal(readFile(Commands+num), &read)
+		if err != nil{
+			logger.Error(err)
+		}
+
+		if(com[i] == read){
 			logger.Debugf("same command")
 		} else {
 			logger.Debugf("%d-----%s", i, com[i])
 			writeFile(Commands+num, com[i])
+
+			execute := SSH_provbee + com[i]
+			//execute := com[i]
+
+			exe := exec.Command("sh", "-c", execute)
+			errExe := exe.Run()
+			if errExe != nil{
+				logger.Error(errExe)
+			} else {
+				exe.Wait()
+
+			}
+
+
+			logger.Debugf("====%d=====%s", id, coms)
+			//
+			//doOnce.Do(func() {
+			//	logger.Debugf("----------------test")
+			//	primaryInit(Body, coms, "done")
+			//})
 		}
 	}
 
-	for i:=0; i<filenum-1; i++{
-		num := strconv.Itoa(i)
-		command := readFile(Commands+num)
 
-		execute := SSH_provbee + string(command)[1:len(string(command))-1]
-		logger.Debugf(execute)
-		exe := exec.Command("sh", "-c", execute)
-		errExe := exe.Run()
-		if errExe != nil{
-			logger.Error(errExe)
-		} else {
-			exe.Wait()
-			deleteFile(Commands+num)
-		}
+
+
+
+}
+
+func primaryInit(bod common.Body, command string, status string){
+	uri := Klevr_manager + "/agents/zones/init"
+
+	rb := &common.Body{}
+
+	SendMe(rb)
+
+	rb.Task = make([]common.Task, 1)
+	rb.Task[0].ID = bod.Task[0].ID
+	rb.Task[0].AgentKey = bod.Task[0].AgentKey
+	rb.Task[0].Command = command
+	rb.Task[0].Status = status
+	rb.Task[0].Params = bod.Task[0].Params
+	rb.Task[0].Result = bod.Task[0].Result
+	rb.Task[0].Type = bod.Task[0].Type
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		logger.Error(err)
 	}
 
+	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+	logger.Debugf(string(result))
 }
 
 func writeFile(path string, data string) {
@@ -650,6 +695,7 @@ func deleteFile(path string){
 	if err != nil {
 		logger.Error(err)
 	}
+
 }
 
 func main() {
@@ -684,8 +730,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(10).Seconds().Do(printprimary)
-		s.Every(10).Seconds().Do(getCommand)
+		s.Every(5).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
