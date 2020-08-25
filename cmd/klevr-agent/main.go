@@ -596,8 +596,10 @@ func getCommand(){
 		logger.Error(err)
 	}
 
+	id := Body.Task[0].ID
 	coms := Body.Task[0].Command
 	com := strings.Split(coms, "\n")
+	//logger.Debugf("%v", string(result))
 
 	filenum := len(com)
 
@@ -618,7 +620,7 @@ func getCommand(){
 			writeFile(Commands+num, com[i])
 
 			//execute := SSH_provbee + string(command)[1:len(string(command))-1]
-			execute := read
+			execute := com[i]
 
 			exe := exec.Command("sh", "-c", execute)
 			errExe := exe.Run()
@@ -626,37 +628,47 @@ func getCommand(){
 				logger.Error(errExe)
 			} else {
 				exe.Wait()
-				//primaryInit(coms, "done")
 
 			}
+
+
+			logger.Debugf("====%d=====%s", id, coms)
+			//
+			//doOnce.Do(func() {
+			//	logger.Debugf("----------------test")
+			//	primaryInit(Body, coms, "done")
+			//})
 		}
 	}
 
-	//doOnce.Do(func() {
-	//	logger.Debugf("----------------test")
-	//	primaryInit(coms, "done")
-	//})
+
 
 
 
 }
 
-func primaryInit(command string, status string){
+func primaryInit(bod common.Body, command string, status string){
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
 
 	SendMe(rb)
 
+	rb.Task = make([]common.Task, 1)
+	rb.Task[0].ID = bod.Task[0].ID
+	rb.Task[0].AgentKey = bod.Task[0].AgentKey
 	rb.Task[0].Command = command
 	rb.Task[0].Status = status
+	rb.Task[0].Params = bod.Task[0].Params
+	rb.Task[0].Result = bod.Task[0].Result
+	rb.Task[0].Type = bod.Task[0].Type
 
 	b, err := json.Marshal(rb)
 	if err != nil {
 		logger.Error(err)
 	}
 
-	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 	logger.Debugf(string(result))
 }
 
