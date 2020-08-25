@@ -604,34 +604,40 @@ func getCommand(){
 	for i:=0; i<filenum-1; i++{
 		num := strconv.Itoa(i)
 
-		if(com[i] == string(readFile(Commands+num))){
+		var read string
+
+		err := json.Unmarshal(readFile(Commands+num), &read)
+		if err != nil{
+			logger.Error(err)
+		}
+
+		if(com[i] == read){
 			logger.Debugf("same command")
 		} else {
 			logger.Debugf("%d-----%s", i, com[i])
 			writeFile(Commands+num, com[i])
+
+			//execute := SSH_provbee + string(command)[1:len(string(command))-1]
+			execute := read
+
+			exe := exec.Command("sh", "-c", execute)
+			errExe := exe.Run()
+			if errExe != nil{
+				logger.Error(errExe)
+			} else {
+				exe.Wait()
+				//primaryInit(coms, "done")
+
+			}
 		}
 	}
 
-	for i:=0; i<filenum-1; i++{
-		num := strconv.Itoa(i)
-		command := readFile(Commands+num)
+	//doOnce.Do(func() {
+	//	logger.Debugf("----------------test")
+	//	primaryInit(coms, "done")
+	//})
 
-		execute := SSH_provbee + string(command)[1:len(string(command))-1]
-		logger.Debugf(execute)
-		exe := exec.Command("sh", "-c", execute)
-		errExe := exe.Run()
-		if errExe != nil{
-			logger.Error(errExe)
-		} else {
-			exe.Wait()
-			deleteFile(Commands+num)
-		}
-	}
 
-	doOnce.Do(func() {
-		logger.Debugf("----------------test")
-		primaryInit(coms, "done")
-	})
 
 }
 
@@ -650,7 +656,8 @@ func primaryInit(command string, status string){
 		logger.Error(err)
 	}
 
-	communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+	logger.Debugf(string(result))
 }
 
 func writeFile(path string, data string) {
