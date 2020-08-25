@@ -114,3 +114,28 @@ func Post_http(url, data, api_key_string string) {
 	}
 	defer res.Body.Close()
 }
+
+func Post_Json_http(url string, data []byte, agent string, api string, zone string) []byte{
+	var body []byte
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil{
+		log.Printf("HTTP PUT Request error: ", err)
+	}
+
+	req.Header.Set("Content-Type", "json/application; charset=utf-8")
+	req.Header.Add("X-AGENT-KEY", agent)
+	req.Header.Add("X-ZONE-ID", zone)
+	req.Header.Add("X-API-KEY", api)
+
+	res, err := http.DefaultClient.Do(req)
+	if err == nil {
+		defer res.Body.Close()
+		body, _ = ioutil.ReadAll(res.Body)
+		http_body_buffer = string(body)
+		//logger.Debugf("%v", http_body_buffer)
+	} else{
+		log.Println(err)
+	}
+
+	return body
+}
