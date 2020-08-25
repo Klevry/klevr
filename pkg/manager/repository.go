@@ -227,3 +227,46 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 		common.PanicForUpdate("updated", cnt, 1)
 	}
 }
+
+func (tx *Tx) insertTask(t *Tasks) *Tasks {
+	result, err := tx.Exec("INSERT INTO `TASKS` (`id`,`type`,`command`,`zone_id`,`agent_key`,`exe_agent_key`,`status`,`params`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?)",
+		t.Id, t.Type, t.Command, t.ZoneId, t.AgentKey, t.ExeAgentKey, t.Status, t.Params, time.Now().UTC())
+	// cnt, err := tx.Insert(t)
+
+	cnt, _ := result.RowsAffected()
+
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("inserted", cnt, 1)
+	}
+
+	id, _ := result.LastInsertId()
+
+	t.Id = uint64(id)
+
+	logger.Debugf("Inserted task : %v", t)
+
+	return t
+}
+
+func (tx *Tx) updateTask(t *Tasks) {
+	cnt, err := tx.Where("ID = ?", t.Id).
+		Cols("EXE_AGENT_KEY", "STATUS").
+		Update(t)
+	logger.Debugf("Updated TASK(%d) : %v", cnt, t)
+
+	if err != nil {
+		panic(err)
+	} else if cnt != 1 {
+		common.PanicForUpdate("updated", cnt, 1)
+	}
+}
+
+func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
+	var task Tasks
+	exist := common.CheckGetQuery(tx.Where("id = ?", id).Get(&task))
+	logger.Debugf("Selected Task : %v", task)
+
+	return &task, exist
+}

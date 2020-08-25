@@ -6,7 +6,10 @@ import (
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
 	"os/exec"
+	"strconv"
 	"strings"
+	"sync"
+
 	//"bytes"
 	//"crypto/sha1"
 	//"encoding/base64"
@@ -55,6 +58,8 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
 var Klevr_tmp_manager = "localhost:8090"
 var Cluster_info = "/tmp/cluster_info"
+var SSH_provbee = "ssh provbee-service /usr/local/bin/"
+var Commands = "/tmp/command"
 
 
 var Klevr_agent_id_string string
@@ -77,7 +82,7 @@ var Result_buffer string
 var Body common.Body
 var Primary_alivecheck_time int64
 var ping bool
-var Nodes []common.Agent
+var doOnce sync.Once
 
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
@@ -91,7 +96,7 @@ func Command_checker(cmd, msg string) (string, error) {
 	chk_command.Stderr = &stderr
 	err := chk_command.Run()
 	if err != nil {
-		log.Printf(msg)
+		logger.Debugf("%v", err)
 		//		panic(msg)
 	}
 	Result_buffer = out.String()
@@ -204,11 +209,12 @@ func Get_provisionig_script() {
 	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
 	Get_script_arr := strings.Split(strings.Replace(Get_script, "\n\n", "\n", -1), "\n")
 	println("%%%%%%%%%%%%%%%%%%%: ", len(Get_script_arr))
+
 	for i := 0; i < len(Get_script_arr); i++ {
 		if len(Get_script_arr[i]) > 1 {
 			fin_arr := strings.Split(Get_script_arr[i], ",")
 			// println("::::::::::::::::::: eval "+fin_arr[0], fin_arr[1])
-			_, err := Command_checker("eval "+fin_arr[0], fin_arr[1])
+			_, err := Command_checker(fin_arr[0], fin_arr[1])
 			if err != nil {
 				os.Exit(1)
 			}
@@ -473,21 +479,21 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Disk = int(disk.All/MB)
 }
 
-func GetPrimary(uri string) common.Primary{
-	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-
-	json.Unmarshal(result, &Body)
-
-	return Body.Agent.Primary
-}
-
-func GetNodes(uri string) []common.Agent{
-	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-
-	json.Unmarshal(result, &Body)
-
-	return Body.Agent.Nodes
-}
+//func GetPrimary(uri string) common.Primary{
+//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+//
+//	json.Unmarshal(result, &Body)
+//
+//	return Body.Agent.Primary
+//}
+//
+//func GetNodes(uri string) []common.Agent{
+//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
+//
+//	json.Unmarshal(result, &Body)
+//
+//	return Body.Agent.Nodes
+//}
 
 /*
 in: body.me
@@ -524,7 +530,7 @@ in: body.me, body.agent.nodes, body.task
 out: body.me, body.task
  */
 func TaskManagement(){
-	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	PingToMaster()
 
@@ -532,7 +538,7 @@ func TaskManagement(){
 
 	SendMe(rb)
 
-	rb.Agent.Nodes = GetNodes(uri)
+	//rb.Agent.Nodes = GetNodes(uri)
 
 	logger.Debugf("%v", rb.Agent.Nodes)
 
@@ -549,7 +555,7 @@ in: body.me, body.agent.primary
 out: body.me, body.agent.primary
  */
 func PrimaryStatusReport(){
-	uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
+	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
 	if err != nil{
@@ -562,7 +568,7 @@ func PrimaryStatusReport(){
 	rb := &common.Body{}
 
 	SendMe(rb)
-	rb.Agent.Primary = GetPrimary(uri)
+	//rb.Agent.Primary = GetPrimary(uri)
 
 	if alive.IsActive{
 
@@ -579,10 +585,122 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
+
+func getCommand(){
+	uri := Klevr_manager + "/agents/commands/init"
+
+	result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+
+	err := json.Unmarshal(result, &Body)
+	if err != nil{
+		logger.Error(err)
+	}
+
+	id := Body.Task[0].ID
+	coms := Body.Task[0].Command
+	com := strings.Split(coms, "\n")
+	//logger.Debugf("%v", string(result))
+
+	filenum := len(com)
+
+	for i:=0; i<filenum-1; i++{
+		num := strconv.Itoa(i)
+
+		var read string
+
+		err := json.Unmarshal(readFile(Commands+num), &read)
+		if err != nil{
+			logger.Error(err)
+		}
+
+		if(com[i] == read){
+			logger.Debugf("same command")
+		} else {
+			logger.Debugf("%d-----%s", i, com[i])
+			writeFile(Commands+num, com[i])
+
+			execute := SSH_provbee + com[i]
+			//execute := com[i]
+
+			exe := exec.Command("sh", "-c", execute)
+			errExe := exe.Run()
+			if errExe != nil{
+				logger.Error(errExe)
+			} else {
+				exe.Wait()
+
+			}
+
+
+			logger.Debugf("====%d=====%s", id, coms)
+			//
+			//doOnce.Do(func() {
+			//	logger.Debugf("----------------test")
+			//	primaryInit(Body, coms, "done")
+			//})
+		}
+	}
+
+
+
+
+
+}
+
+func primaryInit(bod common.Body, command string, status string){
+	uri := Klevr_manager + "/agents/zones/init"
+
+	rb := &common.Body{}
+
+	SendMe(rb)
+
+	rb.Task = make([]common.Task, 1)
+	rb.Task[0].ID = bod.Task[0].ID
+	rb.Task[0].AgentKey = bod.Task[0].AgentKey
+	rb.Task[0].Command = command
+	rb.Task[0].Status = status
+	rb.Task[0].Params = bod.Task[0].Params
+	rb.Task[0].Result = bod.Task[0].Result
+	rb.Task[0].Type = bod.Task[0].Type
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
+	logger.Debugf(string(result))
+}
+
+func writeFile(path string, data string) {
+	d, _ := json.MarshalIndent(data, "", "  ")
+	err := ioutil.WriteFile(path, d, os.FileMode(0644))
+	if err != nil{
+		logger.Error(err)
+	}
+}
+
+func readFile(path string) []byte{
+	data, err := ioutil.ReadFile(path)
+	if err != nil{
+		logger.Error(err)
+	}
+
+	return data
+}
+
+
+func deleteFile(path string){
+	err := os.Remove(path)
+	if err != nil {
+		logger.Error(err)
+	}
+
+}
+
 func main() {
 	/// check the cli command with required options
 	Check_variable()
-
 	///// Requirement package check
 	//if Platform_type == "baremetal" {
 	//	Check_package("curl")
@@ -590,7 +708,7 @@ func main() {
 	//}
 	//
 	/// Checks env. for baremetal to Hypervisor provisioning
-	Get_provisionig_script()
+	//Get_provisionig_script()
 	//
 	///// Set up the Task & configuration directory
 	//Set_basement()
@@ -612,7 +730,8 @@ func main() {
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
-		s.Every(1).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(getCommand)
 
 		go func() {
 			<-s.Start()
@@ -621,7 +740,7 @@ func main() {
 		s := gocron.NewScheduler()
 		//s.Every(1).Seconds().Do(PingToMaster)
 		s.Every(1).Seconds().Do(printprimary)
-
+		//s.Every(1).Seconds().Do(getCommand)
 		//s.Every(1).Seconds().Do(slave)
 
 		go func() {
