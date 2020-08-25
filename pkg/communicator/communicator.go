@@ -30,10 +30,10 @@ func Put_http(url, data, api_key_string string) {
 	}
 }
 
-func Put_Json_http(url string, data []byte, agent string, api string, zone string) []byte{
+func Put_Json_http(url string, data []byte, agent string, api string, zone string) []byte {
 	var body []byte
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
-	if err != nil{
+	if err != nil {
 		log.Printf("HTTP PUT Request error: ", err)
 	}
 
@@ -48,7 +48,7 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 		//logger.Debugf("%v", http_body_buffer)
-	} else{
+	} else {
 		log.Println(err)
 	}
 
@@ -70,7 +70,7 @@ func Get_http(uri, api_key_string string) string {
 	return http_body_buffer
 }
 
-func Get_Json_http(url string, agent string, api string, zone string) []byte{
+func Get_Json_http(url string, agent string, api string, zone string) []byte {
 	var body []byte
 
 	req, _ := http.NewRequest("GET", url, nil)
@@ -81,11 +81,11 @@ func Get_Json_http(url string, agent string, api string, zone string) []byte{
 	req.Header.Add("X-API-KEY", api)
 
 	res, err := http.DefaultClient.Do(req)
-	if err == nil{
+	if err == nil {
 		defer res.Body.Close()
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
-	} else{
+	} else {
 		logger.Error("Server connection error: ", err)
 	}
 	return body
@@ -115,10 +115,10 @@ func Post_http(url, data, api_key_string string) {
 	defer res.Body.Close()
 }
 
-func Post_Json_http(url string, data []byte, agent string, api string, zone string) []byte{
+func Post_Json_http(url string, data []byte, agent string, api string, zone string) []byte {
 	var body []byte
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
-	if err != nil{
+	if err != nil {
 		log.Printf("HTTP PUT Request error: ", err)
 	}
 
@@ -133,7 +133,7 @@ func Post_Json_http(url string, data []byte, agent string, api string, zone stri
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 		//logger.Debugf("%v", http_body_buffer)
-	} else{
+	} else {
 		log.Println(err)
 	}
 

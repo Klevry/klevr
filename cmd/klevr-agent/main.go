@@ -61,7 +61,6 @@ var Cluster_info = "/tmp/cluster_info"
 var SSH_provbee = "ssh provbee-service /usr/local/bin/"
 var Commands = "/tmp/command"
 
-
 var Klevr_agent_id_string string
 
 var Klevr_manager string
@@ -397,8 +396,6 @@ func Docker_pull(image_name string) {
 //	return primary_latest_check
 //}
 
-
-
 /*
 =======================================================================
 */
@@ -440,7 +437,7 @@ func Check_primary() string {
 	return AM_I_PRIMARY
 }
 
-func PingToMaster(){
+func PingToMaster() {
 	timeout := time.Duration(1 * time.Second)
 
 	alive := agent.AliveCheck{}
@@ -457,7 +454,7 @@ func PingToMaster(){
 
 	m, _ := json.MarshalIndent(alive, "", "  ")
 	err2 := ioutil.WriteFile(Primary_alivecheck, m, os.FileMode(0644))
-	if err2 != nil{
+	if err2 != nil {
 		logger.Debugf("%v", err)
 	}
 
@@ -475,8 +472,8 @@ func SendMe(body *common.Body) {
 	memory, _ := memory.Get()
 
 	body.Me.Resource.Core = runtime.NumCPU()
-	body.Me.Resource.Memory = int(memory.Total/MB)
-	body.Me.Resource.Disk = int(disk.All/MB)
+	body.Me.Resource.Memory = int(memory.Total / MB)
+	body.Me.Resource.Disk = int(disk.All / MB)
 }
 
 //func GetPrimary(uri string) common.Primary{
@@ -498,8 +495,8 @@ func SendMe(body *common.Body) {
 /*
 in: body.me
 out: body.me, body.agent.primary
- */
-func HandShake(){
+*/
+func HandShake() {
 
 	uri := Klevr_manager + "/agents/handshake"
 
@@ -517,7 +514,7 @@ func HandShake(){
 	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 	err2 := json.Unmarshal(result, &Body)
-	if err2 != nil{
+	if err2 != nil {
 		logger.Error(err2)
 	}
 
@@ -528,8 +525,8 @@ func HandShake(){
 /*
 in: body.me, body.agent.nodes, body.task
 out: body.me, body.task
- */
-func TaskManagement(){
+*/
+func TaskManagement() {
 	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	PingToMaster()
@@ -553,12 +550,12 @@ func TaskManagement(){
 /*
 in: body.me, body.agent.primary
 out: body.me, body.agent.primary
- */
-func PrimaryStatusReport(){
+*/
+func PrimaryStatusReport() {
 	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 
@@ -570,14 +567,14 @@ func PrimaryStatusReport(){
 	SendMe(rb)
 	//rb.Agent.Primary = GetPrimary(uri)
 
-	if alive.IsActive{
+	if alive.IsActive {
 
 	}
 
 }
 
-func printprimary(){
-	if(Check_primary() == "true"){
+func printprimary() {
+	if Check_primary() == "true" {
 		logger.Debugf("-----------I am Primary")
 	} else {
 		logger.Debugf("-----------I am Secondary")
@@ -585,14 +582,13 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
-
-func getCommand(){
+func getCommand() {
 	uri := Klevr_manager + "/agents/commands/init"
 
 	result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 	err := json.Unmarshal(result, &Body)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 
@@ -603,17 +599,17 @@ func getCommand(){
 
 	filenum := len(com)
 
-	for i:=0; i<filenum-1; i++{
+	for i := 0; i < filenum-1; i++ {
 		num := strconv.Itoa(i)
 
 		var read string
 
 		err := json.Unmarshal(readFile(Commands+num), &read)
-		if err != nil{
+		if err != nil {
 			logger.Error(err)
 		}
 
-		if(com[i] == read){
+		if com[i] == read {
 			logger.Debugf("same command")
 		} else {
 			logger.Debugf("%d-----%s", i, com[i])
@@ -624,13 +620,12 @@ func getCommand(){
 
 			exe := exec.Command("sh", "-c", execute)
 			errExe := exe.Run()
-			if errExe != nil{
+			if errExe != nil {
 				logger.Error(errExe)
 			} else {
 				exe.Wait()
 
 			}
-
 
 			logger.Debugf("====%d=====%s", id, coms)
 			//
@@ -641,13 +636,9 @@ func getCommand(){
 		}
 	}
 
-
-
-
-
 }
 
-func primaryInit(bod common.Body, command string, status string){
+func primaryInit(bod common.Body, command string, status string) {
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
@@ -675,22 +666,21 @@ func primaryInit(bod common.Body, command string, status string){
 func writeFile(path string, data string) {
 	d, _ := json.MarshalIndent(data, "", "  ")
 	err := ioutil.WriteFile(path, d, os.FileMode(0644))
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 }
 
-func readFile(path string) []byte{
+func readFile(path string) []byte {
 	data, err := ioutil.ReadFile(path)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 
 	return data
 }
 
-
-func deleteFile(path string){
+func deleteFile(path string) {
 	err := os.Remove(path)
 	if err != nil {
 		logger.Error(err)
@@ -728,7 +718,7 @@ func main() {
 
 	HandShake()
 
-	if Check_primary() == "true"{
+	if Check_primary() == "true" {
 		s := gocron.NewScheduler()
 		s.Every(5).Seconds().Do(printprimary)
 		s.Every(5).Seconds().Do(getCommand)
