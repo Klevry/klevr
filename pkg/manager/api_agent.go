@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -145,12 +146,21 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(r)
 
-	req, err := http.NewRequest("GET", "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue", nil)
+	url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
+	logger.Debugf("%s", url)
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "Internel server error")
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	res, err := (&http.Client{Transport: tr}).Do(req)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "Internel server error")
 	}
