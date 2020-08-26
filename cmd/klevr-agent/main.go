@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
+	"github.com/jasonlvhit/gocron"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -673,28 +674,28 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
-	getCommand()
+	//getCommand()
 
 
-	//if Check_primary() == "true"{
-	//	s := gocron.NewScheduler()
-	//	s.Every(5).Seconds().Do(printprimary)
-	//	s.Every(5).Seconds().Do(getCommand)
-	//
-	//	go func() {
-	//		<-s.Start()
-	//	}()
-	//} else {
-	//	s := gocron.NewScheduler()
-	//	//s.Every(1).Seconds().Do(PingToMaster)
-	//	s.Every(1).Seconds().Do(printprimary)
-	//	//s.Every(1).Seconds().Do(getCommand)
-	//	//s.Every(1).Seconds().Do(slave)
-	//
-	//	go func() {
-	//		<-s.Start()
-	//	}()
-	//}
+	if Check_primary() == "true"{
+		s := gocron.NewScheduler()
+		s.Every(5).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(getCommand)
+
+		go func() {
+			<-s.Start()
+		}()
+	} else {
+		s := gocron.NewScheduler()
+		//s.Every(1).Seconds().Do(PingToMaster)
+		s.Every(1).Seconds().Do(printprimary)
+		//s.Every(1).Seconds().Do(getCommand)
+		//s.Every(1).Seconds().Do(slave)
+
+		go func() {
+			<-s.Start()
+		}()
+	}
 
 	http.ListenAndServe(":18800", nil)
 
