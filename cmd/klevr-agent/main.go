@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
+	"github.com/jasonlvhit/gocron"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -38,7 +39,6 @@ import (
 	//"time"
 
 	"github.com/Klevry/klevr/pkg/communicator"
-	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
@@ -56,9 +56,9 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
-var Klevr_tmp_manager = "localhost:8090"
+var Klevr_tmp_manager string
 var Cluster_info = "/tmp/cluster_info"
-var SSH_provbee = "ssh provbee-service /usr/local/bin/"
+var SSH_provbee = "ssh provbee-service "
 var Commands = "/tmp/command"
 
 
@@ -171,7 +171,7 @@ func Check_variable() string {
 		Klevr_tmp_manager = *klevr_addr
 	}
 
-	Klevr_manager = "http://" + Klevr_tmp_manager
+	Klevr_manager = Klevr_tmp_manager
 
 	// Check for the Print
 	API_key_id = *apikey
@@ -256,32 +256,6 @@ func Get_provisionig_script() {
 //	println(err)
 //}
 
-//func Secondary_scanner() {
-//	secondary_raw_file, _ := ioutil.ReadFile(Primary_communication_result)
-//	raw_string_parse := strings.Split(string(secondary_raw_file), "\n")
-//	var quee_host string
-//	for i := 1; i < len(raw_string_parse); i++ {
-//		if strings.Contains(raw_string_parse[i], "last_check") == true {
-//			var fin_res string = ""
-//			target_raw := raw_string_parse[i]
-//			strr1 := strings.Split(target_raw, "&")
-//			raw_result_split := strings.Split(strr1[1], "=")
-//
-//			Target_secondary_hosts := "http://" + raw_result_split[1] + ":18800"
-//			fin_res = communicator.Get_http(Target_secondary_hosts+"/status", "")
-//			if fin_res == "OK" {
-//				// quee_host = quee_host+"{\"hostname\":\""+raw_result_split[1]+"\", \"status\":\""+fin_res+"\"}" //for sample
-//				quee_host = quee_host + raw_result_split[1] + ":" + fin_res + "\n"
-//			}
-//		}
-//	}
-//	//      regex, _ := regexp.Compile("\n\n")
-//	//      flat_quee_host := regex.ReplaceAllString(quee_host, "\n")
-//	flat_quee_host := strings.Replace(quee_host, "\n\n", "", -1)
-//	flat_enc := base64.StdEncoding.EncodeToString([]byte(flat_quee_host))
-//	//      println("88888888888888888888888888888==",flat_enc)
-//	Hosts_alive_list(flat_enc)
-//}
 
 //func Hosts_alive_list(alive_list string) {
 //	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
@@ -479,22 +453,6 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Disk = int(disk.All/MB)
 }
 
-//func GetPrimary(uri string) common.Primary{
-//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-//
-//	json.Unmarshal(result, &Body)
-//
-//	return Body.Agent.Primary
-//}
-//
-//func GetNodes(uri string) []common.Agent{
-//	result := communicator.Get_Json_http(uri, Klevr_agent_id_get())
-//
-//	json.Unmarshal(result, &Body)
-//
-//	return Body.Agent.Nodes
-//}
-
 /*
 in: body.me
 out: body.me, body.agent.primary
@@ -596,10 +554,8 @@ func getCommand(){
 		logger.Error(err)
 	}
 
-	id := Body.Task[0].ID
 	coms := Body.Task[0].Command
 	com := strings.Split(coms, "\n")
-	//logger.Debugf("%v", string(result))
 
 	filenum := len(com)
 
@@ -627,27 +583,16 @@ func getCommand(){
 			if errExe != nil{
 				logger.Error(errExe)
 			} else {
-				exe.Wait()
+				res := primaryInit(Body, coms, "done")
+				logger.Debugf("%v", string(res))
 
 			}
 
-
-			logger.Debugf("====%d=====%s", id, coms)
-			//
-			//doOnce.Do(func() {
-			//	logger.Debugf("----------------test")
-			//	primaryInit(Body, coms, "done")
-			//})
 		}
 	}
-
-
-
-
-
 }
 
-func primaryInit(bod common.Body, command string, status string){
+func primaryInit(bod common.Body, command string, status string) []byte{
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
@@ -668,8 +613,10 @@ func primaryInit(bod common.Body, command string, status string){
 		logger.Error(err)
 	}
 
+	logger.Debugf("%v", rb)
+
 	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
-	logger.Debugf(string(result))
+	return result
 }
 
 func writeFile(path string, data string) {
@@ -729,6 +676,8 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
+	//getCommand()
+
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
