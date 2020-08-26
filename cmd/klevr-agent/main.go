@@ -583,18 +583,16 @@ func getCommand(){
 			if errExe != nil{
 				logger.Error(errExe)
 			} else {
-				exe.Wait()
-				doOnce.Do(func() {
-					logger.Debugf("----------------test")
-					primaryInit(Body, coms, "done")
-				})
+				res := primaryInit(Body, coms, "done")
+				logger.Debugf("%v", string(res))
+
 			}
 
 		}
 	}
 }
 
-func primaryInit(bod common.Body, command string, status string){
+func primaryInit(bod common.Body, command string, status string) []byte{
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
@@ -615,8 +613,10 @@ func primaryInit(bod common.Body, command string, status string){
 		logger.Error(err)
 	}
 
+	logger.Debugf("%v", rb)
+
 	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
-	logger.Debugf(string(result))
+	return result
 }
 
 func writeFile(path string, data string) {
