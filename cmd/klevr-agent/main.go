@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"github.com/Klevry/klevr/pkg/agent"
+	"github.com/jasonlvhit/gocron"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -38,7 +39,6 @@ import (
 	//"time"
 
 	"github.com/Klevry/klevr/pkg/communicator"
-	"github.com/jasonlvhit/gocron"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	//"github.com/mackerelio/go-osstat/cpu"
 	//"github.com/mackerelio/go-osstat/disk"
@@ -56,9 +56,9 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 
 //var Prov_script = "https://raw.githubusercontent.com/folimy/klevr/master/provisioning_lists"
 var Timestamp_from_Primary = "/tmp/timestamp_from_primary.stmp"
-var Klevr_tmp_manager = "localhost:8090"
+var Klevr_tmp_manager string
 var Cluster_info = "/tmp/cluster_info"
-var SSH_provbee = "ssh provbee-service /usr/local/bin/"
+var SSH_provbee = "ssh provbee-service "
 var Commands = "/tmp/command"
 
 
@@ -171,7 +171,7 @@ func Check_variable() string {
 		Klevr_tmp_manager = *klevr_addr
 	}
 
-	Klevr_manager = "http://" + Klevr_tmp_manager
+	Klevr_manager = Klevr_tmp_manager
 
 	// Check for the Print
 	API_key_id = *apikey
@@ -674,6 +674,8 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
+	//getCommand()
+
 
 	if Check_primary() == "true"{
 		s := gocron.NewScheduler()
