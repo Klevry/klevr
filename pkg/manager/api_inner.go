@@ -27,7 +27,8 @@ func (api *API) InitInner(inner *mux.Router) {
 }
 
 func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+	tx := GetDBConn(r)
+	defer tx.Rollback()
 
 	nr := &common.Request{Request: r}
 
@@ -44,12 +45,14 @@ func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.addAPIKey(auth)
+	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	var tx = GetDBConn(r)
+	defer tx.Rollback()
 
 	nr := &common.Request{Request: r}
 
@@ -66,12 +69,13 @@ func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateAPIKey(auth)
+	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+	tx := GetDBConn(r)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -91,7 +95,8 @@ func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+	tx := GetDBConn(r)
+	defer tx.Rollback()
 	var ag AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
@@ -104,6 +109,7 @@ func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
 	// logger.Debug("%v", time.Now().UTC())
 
 	tx.addAgentGroup(&ag)
+	tx.Commit()
 
 	logger.Debugf("response AgentGroup : %+v", &ag)
 

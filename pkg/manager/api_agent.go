@@ -102,6 +102,7 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 func (api *API) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(r)
+	defer tx.Rollback()
 
 	var requestBody common.Body
 
@@ -114,6 +115,7 @@ func (api *API) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	tasks := requestBody.Task
 
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+	tx.Commit()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -144,6 +146,7 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(r)
+	defer tx.Rollback()
 
 	req, err := http.NewRequest("GET", "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue", nil)
 	if err != nil {
@@ -164,6 +167,7 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	jsonParam, _ := json.Marshal(param)
 
 	task := api.addTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, string(jsonParam))
+	tx.Commit()
 	logger.Debug("created task : %v", task)
 
 	// response 데이터 생성
@@ -183,7 +187,8 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(r)
+	tx := GetDBConn(r)
+	defer tx.Rollback()
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -260,7 +265,8 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(r)
+	tx := GetDBConn(r)
+	defer tx.Rollback()
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -295,6 +301,7 @@ func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateZoneStatus(&arrAgent)
+	tx.Commit()
 
 	// TODO: 수행한 task 상태 정보 업데이트
 	// for i, task := range param.Task {
@@ -315,9 +322,10 @@ func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var conn = GetDBConn(r)
-	var param common.Body
+	tx := GetDBConn(r)
+	defer tx.Rollback()
 
+	var param common.Body
 	err := json.NewDecoder(r.Body).Decode(&param)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
@@ -328,9 +336,10 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := updateAgentAccess(conn, ch.AgentKey)
+	agent := updateAgentAccess(tx, ch.AgentKey)
+	tx.Commit()
 
-	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
+	rb.Agent.Primary = api.getPrimary(tx, ch.ZoneID, agent.Id)
 
 	b, err := json.Marshal(rb)
 	if err != nil {
