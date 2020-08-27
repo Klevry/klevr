@@ -11,6 +11,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type KlevrVariable struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Length      string `json:"length"`
+	Description string `json:"description"`
+	Example     string `json:"example"`
+}
+
 // InitInner initialize inner server API
 func (api *API) InitInner(inner *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
@@ -24,6 +32,27 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/groups/{groupID}/apikey", api.addAPIKey)
 	registURI(inner, PUT, "/groups/{groupID}/apikey", api.updateAPIKey)
 	registURI(inner, GET, "/groups/{groupID}/apikey", api.getAPIKey)
+	registURI(inner, GET, "/variables", api.getKlevrVariables)
+}
+
+func (api *API) getKlevrVariables(w http.ResponseWriter, r *http.Request) {
+	var variables []KlevrVariable
+
+	variables = append(variables, KlevrVariable{
+		Name:        "KLEVR_HOST",
+		Type:        "string",
+		Length:      "-",
+		Description: "klevr host url",
+		Example:     "echo {KLEVR_HOST} => echo http://klevr.io",
+	})
+
+	b, err := json.Marshal(&variables)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {

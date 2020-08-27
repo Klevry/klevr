@@ -1,20 +1,12 @@
 package common
 
-var immutableStore = make(map[string]interface{})
-var mutableStore = make(map[string]interface{})
-var store = make(map[string]interface{})
+import "context"
 
-// ContextPut put value with key
-func ContextPut(key string, value interface{}) {
-	store[key] = value
-}
+var (
+	// AppContext application context
+	appContext = context.Background()
+)
 
-// ContextGet get value with key
-func ContextGet(key string) interface{} {
-	return store[key]
-}
-
-// ContextGetString get value as string with key
-func ContextGetString(key string) string {
-	return (store[key]).(string)
+func GetAppContext() *context.Context {
+	return &appContext
 }

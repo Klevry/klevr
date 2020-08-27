@@ -111,8 +111,8 @@ func main() {
 				config.Klevr.Server.Port = c.Int("port")
 			}
 
-			common.ContextPut("appConfig", config)
-			common.ContextPut("cliContext", c)
+			// common.ContextPut("appConfig", config)
+			// common.ContextPut("cliContext", c)
 
 			/// Actual instance running point
 			instance, err := manager.NewKlevrManager()
