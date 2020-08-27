@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Klevry/klevr/pkg/common"
-	"github.com/gorilla/context"
 
 	"github.com/NexClipper/logger"
 	"github.com/gin-gonic/gin"
@@ -55,24 +54,24 @@ type apiDef struct {
 }
 
 // Init initialize API router
-func Init(manager *KlevrManager, db *common.DB) *API {
+func Init(ctx *common.Context) *API {
 	logger.Debug("API Init")
 
 	api := &API{
 		BaseRoutes: &Routes{},
-		DB:         db,
-		Manager:    manager,
+		DB:         CtxGetDbConn(ctx),
+		Manager:    CtxGetServer(ctx),
 	}
 
 	api.DB.ShowSQL(true)
 	// TODO: ContextLogger interface 구현하여 logger override
 	// api.DB.SetLogger(log.NewSimpleLogger(f))
 
-	manager.RootRouter.Use(api.CommonWrappingHandler(api.DB))
-	manager.RootRouter.Use(RequestInfoLoggerHandler)
+	api.Manager.RootRouter.Use(CommonWrappingHandler(ctx))
+	api.Manager.RootRouter.Use(RequestInfoLoggerHandler)
 	// baseRouter.Use(TestHandler)
 
-	api.BaseRoutes.Root = manager.RootRouter
+	api.BaseRoutes.Root = api.Manager.RootRouter
 	api.BaseRoutes.APIRoot = api.BaseRoutes.Root.PathPrefix(APIURLPrefix).Subrouter()
 
 	api.BaseRoutes.Legacy = api.BaseRoutes.APIRoot
@@ -155,17 +154,11 @@ func registURIWithQuery(r *mux.Router, method int, uri string, f func(http.Respo
 }
 
 // GetDBConn return DB connection(session) from Request context
-func GetDBConn(r *http.Request) *Tx {
-	v := context.Get(r, DBConnContextName)
-	if v == nil {
+func GetDBConn(ctx *common.Context) *Tx {
+	tx := CtxGetDbSession(ctx)
+	if tx == nil {
 		logger.Warningf("The variable in context is not DB session : %d", debug.Stack())
-		panic("DB is not exist")
-	}
-
-	tx, ok := v.(*Tx)
-	if !ok {
-		logger.Warningf("DB session not exist : %d", debug.Stack())
-		panic("DB is not exist")
+		panic("DB session is not exist")
 	}
 
 	return tx

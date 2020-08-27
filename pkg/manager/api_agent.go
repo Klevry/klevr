@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/context"
-
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
@@ -34,21 +32,23 @@ func (api *API) InitAgent(agent *mux.Router) {
 	// registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	// registURI(agent, PUT, "/:agentKey", api.receivePolling)
 
-	registURI(agent, PUT, "/handshake", api.receiveHandshake)
-	registURI(agent, PUT, "/{agentKey}", api.receivePolling)
-	registURI(agent, GET, "/reports/{agentKey}", api.checkPrimaryInfo)
-	registURI(agent, GET, "/commands/init", api.getInitCommand)
-	registURI(agent, POST, "/zones/init", api.receiveInitResult)
+	registURI(agent, PUT, "/handshake", receiveHandshake)
+	registURI(agent, PUT, "/{agentKey}", receivePolling)
+	registURI(agent, GET, "/reports/{agentKey}", checkPrimaryInfo)
+	registURI(agent, GET, "/commands/init", getInitCommand)
+	registURI(agent, POST, "/zones/init", receiveInitResult)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ch := parseCustomHeader(r)
+			ctx := CtxGetFromRequest(r)
 
 			// TODO: Support agent version 입력 추가
 
 			// APIKey 인증
-			if !authenticate(w, r, ch.ZoneID, ch.APIKey) {
+			logger.Debug(r.RequestURI)
+			if !authenticate(ctx, ch.ZoneID, ch.APIKey) {
 				return
 			}
 
@@ -71,12 +71,9 @@ func (api *API) InitAgent(agent *mux.Router) {
 	})
 }
 
-func authenticate(w http.ResponseWriter, r *http.Request, zoneID uint64, apiKey string) bool {
-	logger.Debug(r.RequestURI)
-
-	if !GetDBConn(r).existAPIKey(apiKey, zoneID) {
-		common.WriteHTTPError(401, w, nil, "authentication failed")
-		return false
+func authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
+	if !GetDBConn(ctx).existAPIKey(apiKey, zoneID) {
+		panic(common.NewHTTPError(401, "authentication failed"))
 	}
 
 	return true
@@ -95,14 +92,16 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 		Timestamp:      ts,
 	}
 
-	context.Set(r, common.CustomHeaderName, h)
+	ctx := *CtxGetFromRequest(r)
+	ctx.Put(common.CustomHeaderName, h)
 
 	return h
 }
 
-func (api *API) receiveInitResult(w http.ResponseWriter, r *http.Request) {
+func receiveInitResult(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
-	tx := GetDBConn(r)
+	tx := GetDBConn(ctx)
 
 	var requestBody common.Body
 
@@ -142,9 +141,10 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 	}
 }
 
-func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
+func getInitCommand(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
-	tx := GetDBConn(r)
+	tx := GetDBConn(ctx)
 
 	url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
 	logger.Debugf("%s", url)
@@ -171,9 +171,9 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	param := make(map[string]interface{})
 	param["script"] = command
 
-	jsonParam, _ := json.Marshal(param)
+	// jsonParam, _ := json.Marshal(param)
 
-	task := api.addTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, string(jsonParam))
+	task := AddTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, param)
 	logger.Debug("created task : %v", task)
 
 	// response 데이터 생성
@@ -190,10 +190,11 @@ func (api *API) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
+func receiveHandshake(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(r)
+	var tx = GetDBConn(ctx)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -224,7 +225,7 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// primary 조회
-	rb.Agent.Primary = api.getPrimary(tx, ch.ZoneID, agent.Id)
+	rb.Agent.Primary = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
 
 	// 접속한 agent 정보
 	me := &rb.Me
@@ -267,10 +268,11 @@ func (api *API) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
+func receivePolling(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(r)
+	var tx = GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -322,10 +324,11 @@ func (api *API) receivePolling(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
+func checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var conn = GetDBConn(r)
+	var tx = GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -338,9 +341,9 @@ func (api *API) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := updateAgentAccess(conn, ch.AgentKey)
+	agent := updateAgentAccess(tx, ch.AgentKey)
 
-	rb.Agent.Primary = api.getPrimary(conn, ch.ZoneID, agent.Id)
+	rb.Agent.Primary = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
 
 	b, err := json.Marshal(rb)
 	if err != nil {
@@ -361,20 +364,20 @@ func updateAgentAccess(tx *Tx, agentKey string) *Agents {
 	return agent
 }
 
-func (api *API) getPrimary(tx *Tx, zoneID uint64, agentID uint64) common.Primary {
+func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) common.Primary {
 	// primary agent 정보
 	groupPrimary := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
 
 	if groupPrimary.AgentId == 0 {
-		primaryAgent = api.electPrimary(zoneID, agentID, false)
+		primaryAgent = electPrimary(ctx, zoneID, agentID, false)
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
 
 		if primaryAgent.Id == 0 || !primaryAgent.IsActive {
-			primaryAgent = api.electPrimary(zoneID, agentID, true)
+			primaryAgent = electPrimary(ctx, zoneID, agentID, true)
 
 			logger.Debugf("changed primaryAgent : %+v", primaryAgent)
 		}
@@ -390,7 +393,7 @@ func (api *API) getPrimary(tx *Tx, zoneID uint64, agentID uint64) common.Primary
 }
 
 // primary agent 선출
-func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents {
+func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel bool) *Agents {
 	logger.Debugf("electPrimary for %d", zoneID)
 
 	var tx *Tx
@@ -398,7 +401,7 @@ func (api *API) electPrimary(zoneID uint64, agentID uint64, oldDel bool) *Agents
 
 	common.Block{
 		Try: func() {
-			tx = &Tx{api.DB.NewSession()}
+			tx = &Tx{CtxGetDbConn(ctx).NewSession()}
 
 			if oldDel {
 				tx.deletePrimaryAgent(zoneID)
