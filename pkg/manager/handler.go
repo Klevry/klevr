@@ -42,6 +42,7 @@ func (api *API) CommonWrappingHandler(DB *common.DB) mux.MiddlewareFunc {
 
 					// Request context에 DB session 설정
 					context.Set(r, DBConnContextName, tx)
+					context.
 
 					// 다음 핸들러로 진행
 					next.ServeHTTP(&nw, r)
