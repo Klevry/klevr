@@ -593,15 +593,17 @@ func getCommand(){
 			logger.Error(err)
 		}
 
-		if data != nil{
-			doOnce.Do(func() {
+		logger.Debugf("%v", string(data))
 
-				da := strings.Split(string(data), "\n")
-
-				logger.Debugf("%v", da[0])
-				primaryInit(Body, coms, "done", da[0])
-			})
-		}
+		//if data != nil{
+		//	doOnce.Do(func() {
+		//
+		//		da := strings.Split(string(data), "\n")
+		//
+		//		logger.Debugf("%v", da[0])
+		//		primaryInit(Body, coms, "done", da[0])
+		//	})
+		//}
 
 	}
 }
