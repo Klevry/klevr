@@ -582,29 +582,43 @@ func getCommand(){
 			errExe := exe.Run()
 			if errExe != nil{
 				logger.Error(errExe)
-			} else {
-				res := primaryInit(Body, coms, "done")
-				logger.Debugf("%v", string(res))
-
 			}
 
 		}
 	}
+
+	if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err){
+		doOnce.Do(func() {
+			data, err := ioutil.ReadFile("/tmp/grafana")
+			if err != nil{
+				logger.Error(err)
+			}
+
+
+			da := strings.Split(string(data), "\n")
+
+			logger.Debugf("%v", da[0])
+			primaryInit(Body, coms, "done", da[0])
+		})
+	}
 }
 
-func primaryInit(bod common.Body, command string, status string) []byte{
+func primaryInit(bod common.Body, command string, status string, param string) []byte{
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
 
 	SendMe(rb)
 
+	par := make(map[string]interface{})
+	par["grafana"] = param
+
 	rb.Task = make([]common.Task, 1)
 	rb.Task[0].ID = bod.Task[0].ID
 	rb.Task[0].AgentKey = bod.Task[0].AgentKey
 	rb.Task[0].Command = command
 	rb.Task[0].Status = status
-	rb.Task[0].Params = bod.Task[0].Params
+	rb.Task[0].Params = par
 	rb.Task[0].Result = bod.Task[0].Result
 	rb.Task[0].Type = bod.Task[0].Type
 
@@ -644,6 +658,7 @@ func deleteFile(path string){
 	}
 
 }
+
 
 func main() {
 	/// check the cli command with required options
