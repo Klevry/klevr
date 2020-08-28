@@ -588,18 +588,21 @@ func getCommand(){
 	}
 
 	if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err){
-		doOnce.Do(func() {
-			data, err := ioutil.ReadFile("/tmp/grafana")
-			if err != nil{
-				logger.Error(err)
-			}
+		data, err := ioutil.ReadFile("/tmp/grafana")
+		if err != nil{
+			logger.Error(err)
+		}
 
+		if data != nil{
+			doOnce.Do(func() {
 
-			da := strings.Split(string(data), "\n")
+				da := strings.Split(string(data), "\n")
 
-			logger.Debugf("%v", da[0])
-			primaryInit(Body, coms, "done", da[0])
-		})
+				logger.Debugf("%v", da[0])
+				primaryInit(Body, coms, "done", da[0])
+			})
+		}
+
 	}
 }
 
