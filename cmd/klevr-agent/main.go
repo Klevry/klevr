@@ -596,13 +596,11 @@ func getCommand(){
 		//logger.Debugf("%v", string(data))
 
 		if string(data) != ""{
-			doOnce.Do(func() {
 
 				da := strings.Split(string(data), "\n")
 
 				logger.Debugf("%v", da[0])
 				primaryInit(Body, coms, "done", da[0])
-			})
 		}
 
 	}
