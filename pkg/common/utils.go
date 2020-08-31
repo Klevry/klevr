@@ -1,17 +1,23 @@
 package common
 
+import (
+	"container/list"
+	"sync"
+)
+
 // Queue interface for Queue
 // 확장성을 위해 인터페이스를 정의하여 사용
 type Queue interface {
 	AddListener(uint32, func(*Queue))
 	Close()
+	IsClosed() bool
 	Length() uint64
 	Pop() interface{}
 	Push(interface{})
 }
 
-// queue 구현체
-type queue struct {
+// channel을 이용한 queue 구현체
+type channelQueue struct {
 	buf               chan interface{} // queue에 삽입하는 데이터를 연결하는 채널
 	current           chan *queueItem  // pointer가 가르키는 현재 데이터
 	last              *queueItem       // queue에 삽입된 마지막 데이터
@@ -28,10 +34,10 @@ type queueItem struct {
 	item interface{} // 실제 큐에 삽입된 데이터
 }
 
-// NewQueue creator for queue struct
+// NewChannelQueue creator for queue struct
 // Must call Close() method When the use of the queue is compelete.
-func NewQueue(chanBufSize uint32) *Queue {
-	q := &queue{
+func NewChannelQueue(chanBufSize uint32) *Queue {
+	q := &channelQueue{
 		buf:     make(chan interface{}, chanBufSize),
 		current: make(chan *queueItem),
 		length:  0,
@@ -71,6 +77,7 @@ func NewQueue(chanBufSize uint32) *Queue {
 
 						// 리스너 함수가 설정되고 호출 건수가 만족되면 리스너 함수를 호출한다.
 						if q.listenerRunCount != 0 && q.listenerRunCount >= q.listenerCallCount {
+							// 리스너 함수는 별도의 go routine으로 호출되므로 호출 시점의 누적 건수와 실행 시점의 누적 건수는 차이가 발생할 수 있다.
 							go q.listener(&Q)
 							q.listenerRunCount = 0
 						}
@@ -83,8 +90,9 @@ func NewQueue(chanBufSize uint32) *Queue {
 	return &Q
 }
 
-//
-func (q *queue) AddListener(callCount uint32, f func(*Queue)) {
+// AddListener callCount 건수의 데이터가 신규로 큐에 삽입되는 시점에 등록한 리스너 함수를 호출한다.
+// 리스너 함수는 별도의 go routine에서 수행되며, callCount 개수의 누적 건수가 발생할 시점에 호출되지만 비동기로 호출되므로 실행 시점의 누적 건수는 차이가 발생할 수 있다.
+func (q *channelQueue) AddListener(callCount uint32, f func(*Queue)) {
 	if callCount == 0 {
 		panic("AddListener's parameter callCount must bigger than 0")
 	}
@@ -97,12 +105,19 @@ func (q *queue) AddListener(callCount uint32, f func(*Queue)) {
 	q.listener = f
 }
 
-func (q *queue) Close() {
+// Close 큐를 종료하여 더이상 큐에 데이터를 적재하지 못하게 한다.
+// Close 후에도 이미 적재된 데이터는 Pop()을 통해 취득할 수 있다.
+func (q *channelQueue) Close() {
 	q.alive = false
 	q.buf <- nil
 }
 
-func (q *queue) Push(item interface{}) {
+// IsClosed 큐의 close 상태 여부를 반환한다.
+func (q *channelQueue) IsClosed() bool {
+	return q.alive
+}
+
+func (q *channelQueue) Push(item interface{}) {
 	if !q.alive {
 		panic("The queue has closed and can no longer be used.")
 	}
@@ -114,7 +129,7 @@ func (q *queue) Push(item interface{}) {
 	q.buf <- item
 }
 
-func (q *queue) Pop() interface{} {
+func (q *channelQueue) Pop() interface{} {
 	item := <-q.current
 
 	if item != nil {
@@ -132,6 +147,89 @@ func (q *queue) Pop() interface{} {
 	return nil
 }
 
-func (q *queue) Length() uint64 {
+func (q *channelQueue) Length() uint64 {
 	return q.length
+}
+
+// mutex를 이용한 queue 구현체
+type mutexQueue struct {
+	sync.RWMutex
+	item              *list.List
+	listener          func(*Queue)
+	listenerCallCount uint32
+	alive             bool
+}
+
+// NewMutexQueue creator for queue struct
+// Must call Close() method When the use of the queue is compelete.
+func NewMutexQueue(chanBufSize uint32) *Queue {
+	q := &mutexQueue{
+		item:  list.New(),
+		alive: true,
+	}
+
+	var Q Queue = q
+
+	return &Q
+}
+
+// AddListener callCount 건수의 데이터가 신규로 큐에 삽입되는 시점에 등록한 리스너 함수를 호출한다.
+// 리스너 함수는 별도의 go routine에서 수행되며, callCount 개수의 누적 건수가 발생할 시점에 호출되지만 비동기로 호출되므로 실행 시점의 누적 건수는 차이가 발생할 수 있다.
+func (q *mutexQueue) AddListener(callCount uint32, f func(*Queue)) {
+	if callCount == 0 {
+		panic("AddListener's parameter callCount must bigger than 0")
+	}
+
+	if f == nil {
+		panic("AddListener's parameter listener f() can not be nil")
+	}
+
+	q.listenerCallCount = callCount
+	q.listener = f
+}
+
+// Close 큐를 종료하여 더이상 큐에 데이터를 적재하지 못하게 한다.
+// Close 후에도 이미 적재된 데이터는 Pop()을 통해 취득할 수 있다.
+func (q *mutexQueue) Close() {
+	q.alive = false
+}
+
+// IsClosed 큐의 close 상태 여부를 반환한다.
+func (q *mutexQueue) IsClosed() bool {
+	return q.alive
+}
+
+func (q *mutexQueue) Push(item interface{}) {
+	q.Lock()
+	defer q.Unlock()
+
+	if !q.alive {
+		panic("The queue has closed and can no longer be used.")
+	}
+
+	if item == nil {
+		panic("Cannot insert nil into the Queue.")
+	}
+
+	q.item.PushBack(item)
+}
+
+func (q *mutexQueue) Pop() interface{} {
+	q.Lock()
+	defer q.Unlock()
+
+	item := q.item.Back()
+
+	if item != nil {
+		q.item.Remove(item)
+	}
+
+	return item.Value
+}
+
+func (q *mutexQueue) Length() uint64 {
+	q.Lock()
+	defer q.Unlock()
+
+	return uint64(q.item.Len())
 }
