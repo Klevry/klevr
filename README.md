@@ -41,7 +41,7 @@ docker-compose up -d
    * Task manager
  * **KV store([Consul](https://github.com/hashicorp/consul))**
    
-## Simple logic of asynchronous task management - (Click to Youtube)
+## Simple logic of asynchronous task management - (Click to Youtube for details)
  * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
 
 ## Requirement for use
