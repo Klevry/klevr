@@ -324,7 +324,7 @@ func getCommand() {
 	errcheck :=provcheck.Run()
 	if errcheck != nil {
 		logger.Error(errcheck)
-	}
+  }
 
 	by := readFile("/tmp/con")
 	str := strings.TrimRight(string(by), "\n")
@@ -333,7 +333,8 @@ func getCommand() {
 		result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 		err := json.Unmarshal(result, &Body)
-		if err != nil {
+
+    if err != nil {
 			logger.Error(err)
 		}
 
@@ -464,6 +465,7 @@ func main() {
 	HandShake()
 
 	if Check_primary() == "true" {
+
 		primScheduler.Every(5).Seconds().Do(printprimary)
 		primScheduler.Every(5).Seconds().Do(getCommand)
 

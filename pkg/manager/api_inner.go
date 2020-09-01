@@ -85,7 +85,7 @@ func getKlevrVariables(w http.ResponseWriter, r *http.Request) {
 
 func addAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -102,13 +102,14 @@ func addAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.addAPIKey(auth)
+	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -125,13 +126,14 @@ func updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateAPIKey(auth)
+	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func getAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -152,7 +154,7 @@ func getAPIKey(w http.ResponseWriter, r *http.Request) {
 
 func addGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 	var ag AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
@@ -165,6 +167,7 @@ func addGroup(w http.ResponseWriter, r *http.Request) {
 	// logger.Debug("%v", time.Now().UTC())
 
 	tx.addAgentGroup(&ag)
+	tx.Commit()
 
 	logger.Debugf("response AgentGroup : %+v", &ag)
 
@@ -219,19 +222,11 @@ func getGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params map[string]interface{}) *Tasks {
-	b, err := json.Marshal(params)
-	if err != nil {
-		panic(err)
-	}
-
 	task := &Tasks{
 		Type:     string(taskType),
 		Command:  command,
 		ZoneId:   zoneID,
 		AgentKey: agentKey,
-		Params: &TaskParams{
-			Params: string(b),
-		},
 		// Params:   params,
 		Status: string(common.DELIVERED),
 	}

@@ -100,7 +100,7 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 
 func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(ctx)
 
 	var requestBody common.Body
@@ -111,11 +111,10 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agent := tx.getAgentByAgentKey(ch.AgentKey)
-
 	tasks := requestBody.Task
 
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+	tx.Commit()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -127,21 +126,6 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
-
-	len := len(tasks)
-
-	if len > 0 {
-		task := tasks[0]
-		result, _ := json.Marshal(task.Params)
-
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryInit,
-			AgentId:   agent.Id,
-			GroupId:   agent.GroupId,
-			EventTime: time.Now().UTC(),
-			Result:    string(result),
-		})
-	}
 }
 
 func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
@@ -149,18 +133,10 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 
 	if len > 0 {
 		for _, t := range *tasks {
-			p, _ := json.Marshal(t.Params)
-
-			param := &TaskParams{
-				TaskId: t.ID,
-				Params: string(p),
-			}
-
 			tx.updateTask(&Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
-				Params:      param,
 			})
 		}
 	}
@@ -168,7 +144,7 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 
 func getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	ch := common.GetCustomHeader(r)
 	tx := GetDBConn(ctx)
 
 	url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
@@ -217,9 +193,10 @@ func getInitCommand(w http.ResponseWriter, r *http.Request) {
 
 func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+
+  tx := GetDBConn(ctx)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -291,20 +268,13 @@ func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
-
-	AddEvent(&KlevrEvent{
-		EventType: AgentConnect,
-		AgentId:   agent.Id,
-		GroupId:   agent.GroupId,
-		EventTime: time.Now().UTC(),
-	})
 }
 
 func receivePolling(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -339,6 +309,7 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateZoneStatus(&arrAgent)
+	tx.Commit()
 
 	// TODO: 수행한 task 상태 정보 업데이트
 	// for i, task := range param.Task {
@@ -358,11 +329,12 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 
 func checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 	var param common.Body
 
+	var param common.Body
 	err := json.NewDecoder(r.Body).Decode(&param)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
