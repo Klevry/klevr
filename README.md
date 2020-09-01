@@ -51,16 +51,14 @@ docker-compose up -d
    * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] KVM(libvirt)
- * [ ] ~~Micro K8s~~
- * [x] K3s
- * [x] ~~Consul~~
+ * [x] ~~Micro K8s~~ K3s
  * [x] Prometheus 
  * [x] Grafana
- * [x] ~~Vagrant~~
  * [ ] Halm
  * [ ] Vault(maybe)
  * [ ] ~~Packer(maybe)~~
-
+ * [x] ~~Vagrant~~
+ * [x] ~~Consul~~ 
 
 ## Description for Directories and files
 ```
