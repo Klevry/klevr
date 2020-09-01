@@ -14,6 +14,6 @@ build: require
 	env GOOS=linux GOARCH=amd64 go build -o ./Dockerfile/klevr ./main.go
 run:
 ##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
-	go run ./main.go -apiKey="wnskslxptmxmrPwjd123" -platform="linux_laptop" -manager="192.168.0.3:8090" -zoneId="8282"
+	go run ./main.go -apiKey="wnskslxptmxmrPwjd123" -platform="linux_laptop" -manager="192.168.0.11:8090" -zoneId="8282"
 
 all: build

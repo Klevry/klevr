@@ -7,9 +7,7 @@ import (
 	"github.com/Klevry/klevr/pkg/agent"
 	"github.com/jasonlvhit/gocron"
 	"os/exec"
-	"strconv"
 	"strings"
-	"sync"
 
 	//"bytes"
 	//"crypto/sha1"
@@ -18,14 +16,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/NexClipper/logger"
-	"github.com/mackerelio/go-osstat/memory"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/NexClipper/logger"
+	"github.com/mackerelio/go-osstat/memory"
 
 	//"net"
 	//"net/http"
@@ -33,6 +32,7 @@ import (
 	//"os/exec"
 	_ "regexp"
 	"runtime"
+
 	//"strconv"
 	//"strings"
 	"syscall"
@@ -61,7 +61,6 @@ var Cluster_info = "/tmp/cluster_info"
 var SSH_provbee = "ssh provbee-service "
 var Commands = "/tmp/command"
 
-
 var Klevr_agent_id_string string
 
 var Klevr_manager string
@@ -81,8 +80,8 @@ var Result_buffer string
 
 var Body common.Body
 var Primary_alivecheck_time int64
-var ping bool
-var doOnce sync.Once
+var primScheduler = gocron.NewScheduler()
+
 
 ///// Mode_debug = dev or not
 //var Mode_debug string = "dev"
@@ -256,7 +255,6 @@ func Get_provisionig_script() {
 //	println(err)
 //}
 
-
 //func Hosts_alive_list(alive_list string) {
 //	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
 //	uri := fmt.Sprint(Klevr_console + "/groups/"  + "/users/" + API_key_id + "/zones/" + Klevr_zone + "/platforms/" + Platform_type + "/aliveagent")
@@ -371,8 +369,6 @@ func Docker_pull(image_name string) {
 //	return primary_latest_check
 //}
 
-
-
 /*
 =======================================================================
 */
@@ -414,7 +410,7 @@ func Check_primary() string {
 	return AM_I_PRIMARY
 }
 
-func PingToMaster(){
+func PingToMaster() {
 	timeout := time.Duration(1 * time.Second)
 
 	alive := agent.AliveCheck{}
@@ -431,7 +427,7 @@ func PingToMaster(){
 
 	m, _ := json.MarshalIndent(alive, "", "  ")
 	err2 := ioutil.WriteFile(Primary_alivecheck, m, os.FileMode(0644))
-	if err2 != nil{
+	if err2 != nil {
 		logger.Debugf("%v", err)
 	}
 
@@ -449,15 +445,15 @@ func SendMe(body *common.Body) {
 	memory, _ := memory.Get()
 
 	body.Me.Resource.Core = runtime.NumCPU()
-	body.Me.Resource.Memory = int(memory.Total/MB)
-	body.Me.Resource.Disk = int(disk.All/MB)
+	body.Me.Resource.Memory = int(memory.Total / MB)
+	body.Me.Resource.Disk = int(disk.All / MB)
 }
 
 /*
 in: body.me
 out: body.me, body.agent.primary
- */
-func HandShake(){
+*/
+func HandShake() {
 
 	uri := Klevr_manager + "/agents/handshake"
 
@@ -475,7 +471,7 @@ func HandShake(){
 	result := communicator.Put_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 	err2 := json.Unmarshal(result, &Body)
-	if err2 != nil{
+	if err2 != nil {
 		logger.Error(err2)
 	}
 
@@ -486,8 +482,8 @@ func HandShake(){
 /*
 in: body.me, body.agent.nodes, body.task
 out: body.me, body.task
- */
-func TaskManagement(){
+*/
+func TaskManagement() {
 	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	PingToMaster()
@@ -511,12 +507,12 @@ func TaskManagement(){
 /*
 in: body.me, body.agent.primary
 out: body.me, body.agent.primary
- */
-func PrimaryStatusReport(){
+*/
+func PrimaryStatusReport() {
 	//uri := Klevr_manager + "/agents/" + Klevr_agent_id_get()
 
 	alivecheck, err := ioutil.ReadFile(Primary_alivecheck)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 
@@ -528,14 +524,14 @@ func PrimaryStatusReport(){
 	SendMe(rb)
 	//rb.Agent.Primary = GetPrimary(uri)
 
-	if alive.IsActive{
+	if alive.IsActive {
 
 	}
 
 }
 
-func printprimary(){
-	if(Check_primary() == "true"){
+func printprimary() {
+	if Check_primary() == "true" {
 		logger.Debugf("-----------I am Primary")
 	} else {
 		logger.Debugf("-----------I am Secondary")
@@ -543,68 +539,99 @@ func printprimary(){
 	logger.Debugf("Primary ip : %s, My ip : %s", Primary_ip, Local_ip_add)
 }
 
-
-func getCommand(){
+func getCommand() {
 	uri := Klevr_manager + "/agents/commands/init"
 
-	result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
-
-	err := json.Unmarshal(result, &Body)
-	if err != nil{
-		logger.Error(err)
+	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
+	errcheck :=provcheck.Run()
+	if errcheck != nil {
+		logger.Error(errcheck)
 	}
 
-	coms := Body.Task[0].Command
-	com := strings.Split(coms, "\n")
+	by := readFile("/tmp/con")
+	str := strings.TrimRight(string(by), "\n")
 
-	filenum := len(com)
+	if strings.Compare(str, "hi") == 0{
+		result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
-	for i:=0; i<filenum-1; i++{
-		num := strconv.Itoa(i)
-
-		var read string
-
-		err := json.Unmarshal(readFile(Commands+num), &read)
-		if err != nil{
+		err := json.Unmarshal(result, &Body)
+		if err != nil {
 			logger.Error(err)
 		}
 
-		if(com[i] == read){
-			logger.Debugf("same command")
-		} else {
-			logger.Debugf("%d-----%s", i, com[i])
-			writeFile(Commands+num, com[i])
+		coms := Body.Task[0].Command
+		com := strings.Split(coms, "\n")
+
+		filenum := len(com)
+
+		for i := 0; i < filenum-1; i++ {
+			// num := strconv.Itoa(i)
+
+			// var read string
+
+			// err := json.Unmarshal(readFile(Commands+num), &read)
+			// if err != nil {
+			// 	logger.Error(err)
+			// }
+
+			// if com[i] == read {
+			// 	logger.Debugf("same command")
+			// } else {
+			// 	logger.Debugf("%d-----%s", i, com[i])
+			// 	writeFile(Commands+num, com[i])
 
 			execute := SSH_provbee + com[i]
 			//execute := com[i]
 
 			exe := exec.Command("sh", "-c", execute)
 			errExe := exe.Run()
-			if errExe != nil{
+			if errExe != nil {
 				logger.Error(errExe)
-			} else {
-				res := primaryInit(Body, coms, "done")
-				logger.Debugf("%v", string(res))
+			}
 
+			// }
+		}
+
+
+		if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
+			data, err := ioutil.ReadFile("/tmp/grafana")
+			if err != nil {
+				logger.Error(err)
+			}
+
+			//logger.Debugf("%v", string(data))
+
+			if string(data) != "" {
+
+				da := strings.Split(string(data), "\n")
+
+				logger.Debugf("%v", da[0])
+				primaryInit(Body, coms, "done", da[0])
 			}
 
 		}
+
+		primScheduler.Remove(getCommand)
 	}
+
 }
 
-func primaryInit(bod common.Body, command string, status string) []byte{
+func primaryInit(bod common.Body, command string, status string, param string) []byte {
 	uri := Klevr_manager + "/agents/zones/init"
 
 	rb := &common.Body{}
 
 	SendMe(rb)
 
+	par := make(map[string]interface{})
+	par["grafana"] = param
+
 	rb.Task = make([]common.Task, 1)
 	rb.Task[0].ID = bod.Task[0].ID
 	rb.Task[0].AgentKey = bod.Task[0].AgentKey
 	rb.Task[0].Command = command
 	rb.Task[0].Status = status
-	rb.Task[0].Params = bod.Task[0].Params
+	rb.Task[0].Params = par
 	rb.Task[0].Result = bod.Task[0].Result
 	rb.Task[0].Type = bod.Task[0].Type
 
@@ -613,31 +640,34 @@ func primaryInit(bod common.Body, command string, status string) []byte{
 		logger.Error(err)
 	}
 
-	logger.Debugf("%v", rb)
+	logger.Debugf("request body : [%s]", b)
 
 	result := communicator.Post_Json_http(uri, b, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 	return result
 }
 
+func provbeeCheck(){
+
+}
+
 func writeFile(path string, data string) {
 	d, _ := json.MarshalIndent(data, "", "  ")
 	err := ioutil.WriteFile(path, d, os.FileMode(0644))
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 }
 
-func readFile(path string) []byte{
+func readFile(path string) []byte {
 	data, err := ioutil.ReadFile(path)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 
 	return data
 }
 
-
-func deleteFile(path string){
+func deleteFile(path string) {
 	err := os.Remove(path)
 	if err != nil {
 		logger.Error(err)
@@ -676,21 +706,23 @@ func main() {
 	println("Primary:", Primary_ip)
 
 	HandShake()
-	//getCommand()
 
+	if Check_primary() == "true" {
+		primScheduler.Every(5).Seconds().Do(printprimary)
+		primScheduler.Every(5).Seconds().Do(getCommand)
+		// s.Every(5).Seconds().Do(getCommand)
 
-	if Check_primary() == "true"{
-		s := gocron.NewScheduler()
-		s.Every(5).Seconds().Do(printprimary)
-		s.Every(5).Seconds().Do(getCommand)
-
+		// go func() {
+		// 	<-s.Start()
+		// }()
+		//getCommand()
 		go func() {
-			<-s.Start()
+			<-primScheduler.Start()
 		}()
 	} else {
 		s := gocron.NewScheduler()
 		//s.Every(1).Seconds().Do(PingToMaster)
-		s.Every(1).Seconds().Do(printprimary)
+		s.Every(5).Seconds().Do(printprimary)
 		//s.Every(1).Seconds().Do(getCommand)
 		//s.Every(1).Seconds().Do(slave)
 
