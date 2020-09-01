@@ -48,6 +48,49 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/groups/{groupID}/apikey", getAPIKey)
 	registURI(inner, GET, "/variables", getKlevrVariables)
 	registURI(inner, POST, "/tasks", addTask)
+	registURI(inner, GET, "/groups/{groupID}/agents", getAgents)
+}
+
+func getAgents(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	cnt, agents := tx.getAgentsByGroupId(groupID)
+	nodes := make([]common.Agent, cnt)
+
+	if cnt > 0 {
+		for i, a := range *agents {
+			nodes[i] = common.Agent{
+				AgentKey: a.AgentKey,
+				IP:       a.Ip,
+				Port:     a.Port,
+				Version:  a.Version,
+				Resource: &common.Resource{
+					Core:   a.Cpu,
+					Memory: a.Memory,
+					Disk:   a.Disk,
+				},
+			}
+		}
+	}
+
+	b, err := json.Marshal(nodes)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func addTask(w http.ResponseWriter, r *http.Request) {
