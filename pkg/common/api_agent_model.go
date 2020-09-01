@@ -1,11 +1,5 @@
 package common
 
-import (
-	"net/http"
-
-	"github.com/gorilla/context"
-)
-
 // CustomHeaderName custom header name
 const CustomHeaderName = "CTX-CUSTOM-HEADER"
 
@@ -126,8 +120,4 @@ func NewTask(id uint64, taskType TaskType, command string, agentKey string, stat
 	}
 
 	return nil
-}
-
-func GetCustomHeader(r *http.Request) *CustomHeader {
-	return context.Get(r, CustomHeaderName).(*CustomHeader)
 }
