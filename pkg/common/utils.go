@@ -8,25 +8,24 @@ import (
 // Queue interface for Queue
 // 확장성을 위해 인터페이스를 정의하여 사용
 type Queue interface {
-	AddListener(uint32, func(*Queue, ...interface{}))
+	AddListener(uint32, func(*Queue))
 	Close()
 	IsClosed() bool
 	Length() uint64
 	Pop() interface{}
 	Push(interface{})
-	ResetListenerCallCount()
 }
 
 // channel을 이용한 queue 구현체
 type channelQueue struct {
-	buf               chan interface{}             // queue에 삽입하는 데이터를 연결하는 채널
-	current           chan *queueItem              // pointer가 가르키는 현재 데이터
-	last              *queueItem                   // queue에 삽입된 마지막 데이터
-	length            uint64                       // queue에 삽입된 데이터 건수
-	alive             bool                         // queue의 종료 여부 (alive 가 false 인 경우 더 이상 queue를 사용할 수 없음)
-	listener          func(*Queue, ...interface{}) // listenerCallCount에 해당하는 데이터 건수가 쌓이 때마다 호출 되는 리스너 함수
-	listenerCallCount uint32                       // 리스너를 호출하는 기준 데이터 건수
-	listenerRunCount  uint32                       // 리스너를 기준 데이터 건수에 호출하기 위해 카운트 하는 변수
+	buf               chan interface{} // queue에 삽입하는 데이터를 연결하는 채널
+	current           chan *queueItem  // pointer가 가르키는 현재 데이터
+	last              *queueItem       // queue에 삽입된 마지막 데이터
+	length            uint64           // queue에 삽입된 데이터 건수
+	alive             bool             // queue의 종료 여부 (alive 가 false 인 경우 더 이상 queue를 사용할 수 없음)
+	listener          func(*Queue)     // listenerCallCount에 해당하는 데이터 건수가 쌓이 때마다 호출 되는 리스너 함수
+	listenerCallCount uint32           // 리스너를 호출하는 기준 데이터 건수
+	listenerRunCount  uint32           // 리스너를 기준 데이터 건수에 호출하기 위해 카운트 하는 변수
 }
 
 // queue 데이터 구현체
@@ -77,7 +76,7 @@ func NewChannelQueue(chanBufSize uint32) *Queue {
 						q.listenerRunCount++
 
 						// 리스너 함수가 설정되고 호출 건수가 만족되면 리스너 함수를 호출한다.
-						if q.listenerRunCount >= q.listenerCallCount {
+						if q.listenerRunCount != 0 && q.listenerRunCount >= q.listenerCallCount {
 							// 리스너 함수는 별도의 go routine으로 호출되므로 호출 시점의 누적 건수와 실행 시점의 누적 건수는 차이가 발생할 수 있다.
 							go q.listener(&Q)
 							q.listenerRunCount = 0
@@ -93,7 +92,7 @@ func NewChannelQueue(chanBufSize uint32) *Queue {
 
 // AddListener callCount 건수의 데이터가 신규로 큐에 삽입되는 시점에 등록한 리스너 함수를 호출한다.
 // 리스너 함수는 별도의 go routine에서 수행되며, callCount 개수의 누적 건수가 발생할 시점에 호출되지만 비동기로 호출되므로 실행 시점의 누적 건수는 차이가 발생할 수 있다.
-func (q *channelQueue) AddListener(callCount uint32, f func(*Queue, ...interface{})) {
+func (q *channelQueue) AddListener(callCount uint32, f func(*Queue)) {
 	if callCount == 0 {
 		panic("AddListener's parameter callCount must bigger than 0")
 	}
@@ -111,7 +110,6 @@ func (q *channelQueue) AddListener(callCount uint32, f func(*Queue, ...interface
 func (q *channelQueue) Close() {
 	q.alive = false
 	q.buf <- nil
-	close(q.buf)
 }
 
 // IsClosed 큐의 close 상태 여부를 반환한다.
@@ -153,23 +151,18 @@ func (q *channelQueue) Length() uint64 {
 	return q.length
 }
 
-func (q *channelQueue) ResetListenerCallCount() {
-	q.listenerCallCount = 0
-}
-
 // mutex를 이용한 queue 구현체
 type mutexQueue struct {
 	sync.RWMutex
 	item              *list.List
-	listener          func(*Queue, ...interface{})
+	listener          func(*Queue)
 	listenerCallCount uint32
-	listenerRunCount  uint32
 	alive             bool
 }
 
 // NewMutexQueue creator for queue struct
 // Must call Close() method When the use of the queue is compelete.
-func NewMutexQueue() *Queue {
+func NewMutexQueue(chanBufSize uint32) *Queue {
 	q := &mutexQueue{
 		item:  list.New(),
 		alive: true,
@@ -182,7 +175,7 @@ func NewMutexQueue() *Queue {
 
 // AddListener callCount 건수의 데이터가 신규로 큐에 삽입되는 시점에 등록한 리스너 함수를 호출한다.
 // 리스너 함수는 별도의 go routine에서 수행되며, callCount 개수의 누적 건수가 발생할 시점에 호출되지만 비동기로 호출되므로 실행 시점의 누적 건수는 차이가 발생할 수 있다.
-func (q *mutexQueue) AddListener(callCount uint32, f func(*Queue, ...interface{})) {
+func (q *mutexQueue) AddListener(callCount uint32, f func(*Queue)) {
 	if callCount == 0 {
 		panic("AddListener's parameter callCount must bigger than 0")
 	}
@@ -219,18 +212,6 @@ func (q *mutexQueue) Push(item interface{}) {
 	}
 
 	q.item.PushBack(item)
-
-	if q.listener != nil {
-		q.listenerRunCount++
-
-		// 리스너 함수가 설정되고 호출 건수가 만족되면 리스너 함수를 호출한다.
-		if q.listenerRunCount != 0 && q.listenerRunCount >= q.listenerCallCount {
-			// 리스너 함수는 별도의 go routine으로 호출되므로 호출 시점의 누적 건수와 실행 시점의 누적 건수는 차이가 발생할 수 있다.
-			var Q Queue = q
-			go q.listener(&Q)
-			q.listenerRunCount = 0
-		}
-	}
 }
 
 func (q *mutexQueue) Pop() interface{} {
@@ -241,10 +222,9 @@ func (q *mutexQueue) Pop() interface{} {
 
 	if item != nil {
 		q.item.Remove(item)
-		return item.Value
 	}
 
-	return nil
+	return item.Value
 }
 
 func (q *mutexQueue) Length() uint64 {
@@ -252,11 +232,4 @@ func (q *mutexQueue) Length() uint64 {
 	defer q.Unlock()
 
 	return uint64(q.item.Len())
-}
-
-func (q *mutexQueue) ResetListenerCallCount() {
-	q.Lock()
-	defer q.Unlock()
-
-	q.listenerCallCount = 0
 }

@@ -219,19 +219,11 @@ func getGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params map[string]interface{}) *Tasks {
-	b, err := json.Marshal(params)
-	if err != nil {
-		panic(err)
-	}
-
 	task := &Tasks{
 		Type:     string(taskType),
 		Command:  command,
 		ZoneId:   zoneID,
 		AgentKey: agentKey,
-		Params: &TaskParams{
-			Params: string(b),
-		},
 		// Params:   params,
 		Status: string(common.DELIVERED),
 	}
