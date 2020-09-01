@@ -1,11 +1,5 @@
 package common
 
-import (
-	"net/http"
-
-	"github.com/gorilla/context"
-)
-
 // CustomHeaderName custom header name
 const CustomHeaderName = "CTX-CUSTOM-HEADER"
 
@@ -97,8 +91,8 @@ type TaskStatus string
 
 // Define TaskTypes
 const (
-	COMMAND = TaskType("command") // 지정된 예약어(커맨드)
-	INLINE  = TaskType("inline")  // CLI inline 커맨드
+	RESERVED = TaskType("reserved") // 지정된 예약어(커맨드)
+	INLINE   = TaskType("inline")   // CLI inline 커맨드
 )
 
 // Define TaskStatuses
@@ -114,7 +108,7 @@ const (
 
 // NewTask constructor for task struct
 func NewTask(id uint64, taskType TaskType, command string, agentKey string, status string, params map[string]interface{}) *Task {
-	if taskType == COMMAND || taskType == INLINE {
+	if taskType == RESERVED || taskType == INLINE {
 		return &Task{
 			ID:       id,
 			Type:     taskType,
@@ -126,8 +120,4 @@ func NewTask(id uint64, taskType TaskType, command string, agentKey string, stat
 	}
 
 	return nil
-}
-
-func GetCustomHeader(r *http.Request) *CustomHeader {
-	return context.Get(r, CustomHeaderName).(*CustomHeader)
 }

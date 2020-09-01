@@ -51,6 +51,10 @@ var Primary_alivecheck = "/tmp/primary_alivecheck_timestamp"
 
 var Klevr_tmp_manager string
 var SSH_provbee = "ssh provbee-service "
+<<<<<<< HEAD
+=======
+var Commands = "/tmp/command"
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 
 var Klevr_agent_id_string string
 
@@ -67,6 +71,31 @@ var AM_I_PRIMARY string
 var Body common.Body
 var Primary_alivecheck_time int64
 var primScheduler = gocron.NewScheduler()
+<<<<<<< HEAD
+=======
+
+
+///// Mode_debug = dev or not
+//var Mode_debug string = "dev"
+//
+
+func Command_checker(cmd, msg string) (string, error) {
+	chk_command := exec.Command("sh", "-c", cmd)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	chk_command.Stdout = &out
+	chk_command.Stderr = &stderr
+	err := chk_command.Run()
+	if err != nil {
+		logger.Debugf("%v", err)
+		//		panic(msg)
+	}
+	Result_buffer = out.String()
+	Error_buffer = msg
+	return Error_buffer, err
+	return Result_buffer, err
+}
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 
 
 func Get_mac() (mac_add string) {
@@ -154,8 +183,163 @@ func Klevr_agent_id_get() string {
 	return Klevr_agent_id_string
 }
 
+<<<<<<< HEAD
+=======
+//Provisioning file download
+func Get_provisionig_script() {
+	urli := Prov_script + "/" + Platform_type
+	Get_script := communicator.Get_http(urli, Api_key_string)
+	//Command_checker(Get_script_arr, "Error: Provisioning has been failed")
+	Get_script_arr := strings.Split(strings.Replace(Get_script, "\n\n", "\n", -1), "\n")
+	println("%%%%%%%%%%%%%%%%%%%: ", len(Get_script_arr))
+
+	for i := 0; i < len(Get_script_arr); i++ {
+		if len(Get_script_arr[i]) > 1 {
+			fin_arr := strings.Split(Get_script_arr[i], ",")
+			// println("::::::::::::::::::: eval "+fin_arr[0], fin_arr[1])
+			_, err := Command_checker(fin_arr[0], fin_arr[1])
+			if err != nil {
+				os.Exit(1)
+			}
+		}
+
+	}
+}
+
+////Klevr_company Klevr_zone
+//func Alive_chk_to_mgm(fail_chk string) {
+//	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+//	uri := fmt.Sprint(Klevr_console + "/group/"  + "/user/" + API_key_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/" + Local_ip_add + "/" + now_time + "/" + fail_chk)
+//	Debug(uri) /// log output
+//	communicator.Get_http(uri, Api_key_string)
+//}
+
+//func Resource_chk_to_mgm() {
+//	uri := fmt.Sprint(Klevr_console + "/group/"  + "/user/" + API_key_id + "/zone/" + Klevr_zone + "/platform/" + Platform_type + "/hostname/" + Klevr_agent_id_string + "/hostinfo")
+//	Debug(uri) /// log output
+//	//Resource_info()
+//	communicator.Put_http(uri, System_info, Api_key_string)
+//	Debug("System_info:" + System_info) /// log output
+//}
+
+//func Resource_info() string {
+//	var si sysinfo.SysInfo
+//	si.GetSysInfo()
+//	data, err := json.Marshal(&si)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	System_info = fmt.Sprintf("%s", data)
+//	return System_info
+//}
+
+//func Primary_ack_stamping(){
+//	primary_ack_time := fmt.Sprint(time.Now().Unix())
+//        err := ioutil.WriteFile(Primary_status_file, []byte(primary_ack_time), 0644)
+//	println(err)
+//}
+
+//func Hosts_alive_list(alive_list string) {
+//	//  Hosts alive list klevr/groups/klevr-a-team/users/ralf/zones/dev/platforms/baremetal/alive_hosts
+//	uri := fmt.Sprint(Klevr_console + "/groups/"  + "/users/" + API_key_id + "/zones/" + Klevr_zone + "/platforms/" + Platform_type + "/aliveagent")
+//	Debug(uri) /// log output
+//	alive_conv := fmt.Sprintf("%s", alive_list)
+//	communicator.Put_http(uri, alive_conv, Api_key_string)
+//}
+
+//func RnR() {
+//	Check_primary()
+//	if AM_I_PRIMARY == "PRIMARY" {
+//		// Put primary alive time to stamp
+//		ack_timecheck_from_api := communicator.Get_http(Klevr_console+"/group/"+Klevr_company+"/user/"+API_key_id+"/zone/"+Klevr_zone+"/platform/"+Platform_type+"/ackprimary", Api_key_string)
+//
+//		// Write done the information about of Final result time & hostlists
+//		ioutil.WriteFile(Primary_communication_result, []byte(ack_timecheck_from_api), 0644)
+//
+//		Secondary_scanner()
+//
+//		Alive_chk_to_mgm("ok")
+//		if Platform_type == "baremetal" {
+//			//			println ("Docker_runner here - klevr_beacon_img")
+//			//Docker_runner("klevry/beacon:latest", "primary_beacon", "-p 18800:18800 -v /tmp/status:/info") // no use anymore. process has been changed to goroutin.
+//			println("Docker_runner here - klevr_taskmanager_img")
+//			println("Get_task_from_here for baremetal")
+//		} else if Platform_type == "aws" {
+//			println("Get_task_from_here for AWS")
+//		}
+//		println("Get_task_excution_from_here")
+//		Debug("I am Primary")
+//		//Resource_info() /// test
+//		Resource_chk_to_mgm()
+//	} else {
+//		/// http://192.168.1.22:18800/primaryworks
+//		// url := "http://"+Primary_ip+":18800/status"
+//		url := "http://" + Primary_ip + ":18800/primaryworks"
+//		primary_time_check := communicator.Get_http(url, Api_key_string)
+//
+//		//		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %s ]]]\n", primary_time_check)
+//		/// Duration check
+//		//		primary_time, _ := strconv.Atoi(primary_time_check)
+//		primary_time, _ := strconv.ParseInt(primary_time_check, 10, 64)
+//
+//		fmt.Printf("++++++++++++++++++++++++++++++++++++++++++++++++ %d ]]]\n", primary_time)
+//		var Host_purge_result string
+//
+//		/// Primary Last working time stamp
+//		if primary_time != 0 {
+//			ioutil.WriteFile(Timestamp_from_Primary, []byte(primary_time_check), 0644)
+//		}
+//
+//		primary_time_result, _ := ioutil.ReadFile(Timestamp_from_Primary)
+//		prim_string := string(primary_time_result)
+//		primary_int, _ := strconv.ParseInt(prim_string, 10, 64)
+//
+//		tm := time.Unix(primary_int, 0)
+//		if time.Since(tm).Minutes() > 1 {
+//			/// Delete old host via API server
+//			Host_purge_result = Primary_ip + ": Primary agent is not working!!\n"
+//		} else {
+//			//Host_purge_result = Host_purge_result+"It's ok: "+get_data+"\n"
+//			Host_purge_result = Primary_ip + ": Primary agent is working hard :) \n"
+//		}
+//
+//		println("Error check for Debug:", Host_purge_result)
+//		// Primary error checker here - 2020/6/25
+//		Debug("I am Secondary")
+//		//		Resource_info() /// test
+//		Resource_chk_to_mgm()
+//		//		Debug(aaa)
+//	}
+//}
+
+// Docker image pull
+func Docker_pull(image_name string) {
+	log.Printf("- %s docker image pulling now. Please wait...", image_name)
+	pulling_image := exec.Command("docker", "pull", image_name)
+	pulling_image.Stdout = os.Stdout
+	err := pulling_image.Run()
+	if err != nil {
+		log.Printf("- %s docker image not existed in the registry. Please check the image name or network connection.", image_name)
+		os.Exit(1)
+	} else {
+		log.Printf("- Docker image has been pulled.")
+	}
+}
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 
 
+<<<<<<< HEAD
+=======
+/*
+=======================================================================
+*/
+
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
+}
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 
 // disk usage of path/disk
 func DiskUsage(path string) (disk agent.DiskStatus) {
@@ -370,6 +554,7 @@ func getCommand() {
 			// }
 		}
 
+<<<<<<< HEAD
 
 		if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
 			data, err := ioutil.ReadFile("/tmp/grafana")
@@ -377,6 +562,15 @@ func getCommand() {
 				logger.Error(err)
 			}
 
+=======
+
+		if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
+			data, err := ioutil.ReadFile("/tmp/grafana")
+			if err != nil {
+				logger.Error(err)
+			}
+
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 			//logger.Debugf("%v", string(data))
 
 			if string(data) != "" {
@@ -424,6 +618,10 @@ func primaryInit(bod common.Body, command string, status string, param string) [
 	return result
 }
 
+func provbeeCheck(){
+
+}
+
 func writeFile(path string, data string) {
 	d, _ := json.MarshalIndent(data, "", "  ")
 	err := ioutil.WriteFile(path, d, os.FileMode(0644))
@@ -466,13 +664,29 @@ func main() {
 	if Check_primary() == "true" {
 		primScheduler.Every(5).Seconds().Do(printprimary)
 		primScheduler.Every(5).Seconds().Do(getCommand)
+<<<<<<< HEAD
 
+=======
+		// s.Every(5).Seconds().Do(getCommand)
+
+		// go func() {
+		// 	<-s.Start()
+		// }()
+		//getCommand()
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 		go func() {
 			<-primScheduler.Start()
 		}()
 	} else {
 		s := gocron.NewScheduler()
+<<<<<<< HEAD
 		s.Every(5).Seconds().Do(printprimary)
+=======
+		//s.Every(1).Seconds().Do(PingToMaster)
+		s.Every(5).Seconds().Do(printprimary)
+		//s.Every(1).Seconds().Do(getCommand)
+		//s.Every(1).Seconds().Do(slave)
+>>>>>>> 30c3f8273c4a5f95a23755fe20108410450fb3b1
 
 		go func() {
 			<-s.Start()
