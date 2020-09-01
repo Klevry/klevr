@@ -542,7 +542,7 @@ func printprimary() {
 func getCommand() {
 	uri := Klevr_manager + "/agents/commands/init"
 
-	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus > /tmp/con")
+	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
 	errcheck :=provcheck.Run()
 	if errcheck != nil {
 		logger.Error(errcheck)
@@ -613,7 +613,6 @@ func getCommand() {
 
 		primScheduler.Remove(getCommand)
 	}
-
 
 }
 
