@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
-	klevr "github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
 
 // IsDebug debugabble for all
 var IsDebug = false
+var ctx *common.Context
 
 // AgentStatusUpdateTask lock task name for agent status update
 const AgentStatusUpdateTask = "AGENT_STATUS_UPDATE"
@@ -29,7 +29,7 @@ type KlevrManager struct {
 type Config struct {
 	Server ServerInfo
 	Agent  AgentInfo
-	DB     klevr.DBInfo
+	DB     common.DBInfo
 }
 
 // ServerInfo klevr manager server info struct
@@ -87,23 +87,30 @@ func (manager *KlevrManager) Run() error {
 	}
 	defer db.Close()
 
+	ctx = common.BaseContext
+	ctx.Put(CtxServer, manager)
+	ctx.Put(CtxDbConn, db)
+
 	s := &http.Server{
 		Addr:         ":8090",
 		Handler:      manager.RootRouter,
 		ReadTimeout:  time.Duration(serverConfig.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(serverConfig.WriteTimeout) * time.Second,
-		// MaxHeaderBytes: 1 << 20,
 	}
 
-	go manager.updateAgentStatus(db, time.Duration(manager.Config.Server.StatusUpdateCycle))
+	go manager.updateAgentStatus(common.FromContext(ctx), time.Duration(manager.Config.Server.StatusUpdateCycle))
 
-	Init(manager, db)
+	Init(ctx)
 
 	return s.ListenAndServe()
 }
 
-func (manager *KlevrManager) updateAgentStatus(db *common.DB, cycle time.Duration) {
+
+
+func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.Duration) {
 	for {
+		db := CtxGetDbConn(ctx)
+
 		time.Sleep(cycle * time.Second)
 		logger.Debugf("sleep duration : %+v", cycle*time.Second)
 
