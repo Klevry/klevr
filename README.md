@@ -45,17 +45,17 @@ docker-compose up -d
  * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
 
 ## Requirement for use
- * [ ] Docker/Docker-compose/Docker-registry
+ * [x] Docker/Docker-compose/Docker-registry
    * [x] ~~Beacon~~
    * [x] Libvirt
    * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
- * [ ] Terraform of container
+ * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] KVM(libvirt)
  * [ ] ~~Micro K8s~~
  * [x] K3s
  * [x] ~~Consul~~
  * [x] Prometheus 
- * [Grafana] Prometheus 
+ * [x] Grafana
  * [x] ~~Vagrant~~
  * [ ] Halm
  * [ ] Vault(maybe)
