@@ -8,11 +8,6 @@ import (
 	"github.com/jasonlvhit/gocron"
 	"os/exec"
 	"strings"
-
-	//"bytes"
-	//"crypto/sha1"
-	//"encoding/base64"
-	//"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -26,22 +21,14 @@ import (
 	"github.com/NexClipper/logger"
 	"github.com/mackerelio/go-osstat/memory"
 
-	//"net"
-	//"net/http"
 	"os"
-	//"os/exec"
 	_ "regexp"
 	"runtime"
 
-	//"strconv"
-	//"strings"
 	"syscall"
-	//"time"
 
 	"github.com/Klevry/klevr/pkg/communicator"
 	netutil "k8s.io/apimachinery/pkg/util/net"
-	//"github.com/mackerelio/go-osstat/cpu"
-	//"github.com/mackerelio/go-osstat/disk"
 )
 
 var AGENT_VERSION = "0.0.1"
@@ -63,11 +50,9 @@ var Klevr_zone string
 var Primary_ip string
 var AM_I_PRIMARY string
 
-
 var Body common.Body
 var Primary_alivecheck_time int64
 var primScheduler = gocron.NewScheduler()
-
 
 func Get_mac() (mac_add string) {
 	interfaces, err := net.Interfaces()
@@ -153,9 +138,6 @@ func Klevr_agent_id_get() string {
 	Klevr_agent_id_string = string_parse[0]
 	return Klevr_agent_id_string
 }
-
-
-
 
 // disk usage of path/disk
 func DiskUsage(path string) (disk agent.DiskStatus) {
@@ -321,20 +303,20 @@ func getCommand() {
 	uri := Klevr_manager + "/agents/commands/init"
 
 	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
-	errcheck :=provcheck.Run()
+	errcheck := provcheck.Run()
 	if errcheck != nil {
 		logger.Error(errcheck)
-  }
+	}
 
 	by := readFile("/tmp/con")
 	str := strings.TrimRight(string(by), "\n")
 
-	if strings.Compare(str, "hi") == 0{
+	if strings.Compare(str, "hi") == 0 {
 		result := communicator.Get_Json_http(uri, Klevr_agent_id_get(), API_key_id, Klevr_zone)
 
 		err := json.Unmarshal(result, &Body)
 
-    if err != nil {
+		if err != nil {
 			logger.Error(err)
 		}
 
@@ -370,7 +352,6 @@ func getCommand() {
 
 			// }
 		}
-
 
 		if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
 			data, err := ioutil.ReadFile("/tmp/grafana")
@@ -455,7 +436,6 @@ func main() {
 
 	/// check the cli command with required options
 	Check_variable()
-
 
 	println("platform: ", Platform_type)
 	println("Local_ip_add:", Local_ip_add)
