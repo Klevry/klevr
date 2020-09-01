@@ -114,6 +114,7 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	tasks := requestBody.Task
 
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+	tx.Commit()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -194,7 +195,8 @@ func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+
+  tx := GetDBConn(ctx)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -272,7 +274,7 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -307,6 +309,7 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateZoneStatus(&arrAgent)
+	tx.Commit()
 
 	// TODO: 수행한 task 상태 정보 업데이트
 	// for i, task := range param.Task {
@@ -328,9 +331,10 @@ func checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := common.GetCustomHeader(r)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+  tx := GetDBConn(ctx)
 	var param common.Body
 
+	var param common.Body
 	err := json.NewDecoder(r.Body).Decode(&param)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
