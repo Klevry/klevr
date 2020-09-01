@@ -1,20 +1,35 @@
 package common
 
-var immutableStore = make(map[string]interface{})
-var mutableStore = make(map[string]interface{})
-var store = make(map[string]interface{})
+var (
+	BaseContext = NewContext()
+)
 
-// ContextPut put value with key
-func ContextPut(key string, value interface{}) {
-	store[key] = value
+type Context struct {
+	variables map[string]interface{}
 }
 
-// ContextGet get value with key
-func ContextGet(key string) interface{} {
-	return store[key]
+func NewContext() *Context {
+	return &Context{
+		make(map[string]interface{}),
+	}
 }
 
-// ContextGetString get value as string with key
-func ContextGetString(key string) string {
-	return (store[key]).(string)
+func FromContext(ctx *Context) *Context {
+	tMap := make(map[string]interface{})
+
+	for k, v := range ctx.variables {
+		tMap[k] = v
+	}
+
+	return &Context{
+		tMap,
+	}
+}
+
+func (c *Context) Put(key string, value interface{}) {
+	c.variables[key] = value
+}
+
+func (c *Context) Get(key string) interface{} {
+	return c.variables[key]
 }
