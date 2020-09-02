@@ -139,7 +139,7 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 			EventType: PrimaryInit,
 			AgentId:   agent.Id,
 			GroupId:   agent.GroupId,
-			EventTime: time.Now().UTC(),
+			EventTime: &JSONTime{time.Now().UTC()},
 			Result:    string(result),
 		})
 	}
@@ -298,7 +298,7 @@ func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		EventType: AgentConnect,
 		AgentId:   agent.Id,
 		GroupId:   agent.GroupId,
-		EventTime: time.Now().UTC(),
+		EventTime: &JSONTime{time.Now().UTC()},
 	})
 }
 
