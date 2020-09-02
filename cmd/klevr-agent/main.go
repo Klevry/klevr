@@ -109,13 +109,14 @@ func Check_variable() string {
 	}
 
 	Klevr_manager = Klevr_tmp_manager
+	Local_ip_add = default_ip.String()
 
 	// Check for the Print
 	API_key_id = *apikey
 	fmt.Println("Account:", API_key_id)
 	mca := Get_mac()
 	//base_info := "User Account ID + MAC address as a HW + local IP address"
-	base_info := *apikey + mca + default_ip.String()
+	base_info := *apikey + mca + Local_ip_add
 	_, err = ioutil.ReadFile(Klevr_agent_id_file)
 	if err != nil {
 		hash_create(base_info)
@@ -316,7 +317,6 @@ func getCommand() {
 
 		err := json.Unmarshal(result, &Body)
 
-		logger.Debugf("%v", string(result))
 		if err != nil {
 			logger.Error(err)
 		}
