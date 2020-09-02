@@ -316,6 +316,7 @@ func getCommand() {
 
 		err := json.Unmarshal(result, &Body)
 
+		logger.Debugf("%v", string(result))
 		if err != nil {
 			logger.Error(err)
 		}
