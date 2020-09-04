@@ -73,7 +73,7 @@ docker-compose up -d
 ├── cmd                         // Actual artifacts fpr Klevr agent & manager(webserver) 
 │   ├── klevr-agent
 │   │   ├── Makefile
-│   │   ├── agent_installer.sh  // Remote installer via curl command as a generated script by Manger
+│   │   ├── agent_installer.sh  // Remote installer via curl command as a generated script by Manager
 │   │   ├── klevr               // Actual `Klevr` agent binary
 │   │   └── main.go             // main source code of the Agent
 │   └── klevr-manager
