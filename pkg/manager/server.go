@@ -183,7 +183,7 @@ func (manager *KlevrManager) startEventHandler() {
 
 // AddEvent add klevr event for webhook
 func AddEvent(event *KlevrEvent) {
-	logger.Debugf("add event : [%+v]", event)
+	logger.Debugf("add event : [%+v]", *event)
 
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
 	hookConfig := manager.Config.Server.Webhook
@@ -226,6 +226,7 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 
 	logger.Debugf("%+v", *events)
 	logger.Debugf("%d", len(*events))
+	logger.Debugf("%s", string(b))
 
 	res, err := http.Post(url, "application/json", bytes.NewReader(b))
 
