@@ -28,4 +28,4 @@ Usage of ./klevr:
 
  * Using localhost: `./klevr -platform=baremetal -id=ralf -group="[COMPANY/TEAM]"`
 
- * Using seperated host:  `./klevr -platform=baremetal -id=ralf -webconsole=[WEBCONSOL_ADDR] `
+ * Using separated host:  `./klevr -platform=baremetal -id=ralf -webconsole=[WEBCONSOL_ADDR] `
