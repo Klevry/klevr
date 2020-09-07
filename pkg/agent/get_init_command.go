@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func getCommand(agent *KlevrAgent, s gocron.Scheduler) {
+func getCommand(agent *KlevrAgent, s *gocron.Scheduler) {
 	SSH_provbee := "ssh provbee-service "
 	uri := agent.Manager + "/agents/commands/init"
 
