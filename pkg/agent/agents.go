@@ -44,7 +44,7 @@ func (agent *KlevrAgent) startScheduler(prim string) {
 	if Check_primary(prim) == "true" {
 		primScheduler := gocron.NewScheduler()
 		primScheduler.Every(5).Seconds().Do(printprimary, prim)
-		primScheduler.Every(5).Seconds().Do(getCommand, agent, *primScheduler)
+		primScheduler.Every(5).Seconds().Do(getCommand, agent, primScheduler)
 
 		<-primScheduler.Start()
 	} else {
