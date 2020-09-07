@@ -33,8 +33,7 @@ func NewKlevrAgent() *KlevrAgent {
 func (agent *KlevrAgent) Run() {
 
 	primary_IP := HandShake(agent)
-
-	go agent.startScheduler(primary_IP)
+	agent.startScheduler(primary_IP)
 
 	http.ListenAndServe(":18800", nil)
 }
@@ -46,11 +45,15 @@ func (agent *KlevrAgent) startScheduler(prim string) {
 		primScheduler.Every(5).Seconds().Do(printprimary, prim)
 		primScheduler.Every(5).Seconds().Do(getCommand, agent, primScheduler)
 
-		<-primScheduler.Start()
+		go func() {
+			<-primScheduler.Start()
+		}()
 	} else {
 		s := gocron.NewScheduler()
 		s.Every(5).Seconds().Do(printprimary)
 
-		<-s.Start()
+		go func() {
+			<-s.Start()
+		}()
 	}
 }
