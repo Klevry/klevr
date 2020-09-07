@@ -82,11 +82,11 @@ func getCommand(agent *KlevrAgent, s *gocron.Scheduler) {
 
 				logger.Debugf("%v", da[0])
 				primaryInit(Body, coms, "done", da[0], agent)
+				s.Remove(getCommand)
 			}
 
 		}
 
-		s.Remove(getCommand)
 	}
 
 }
