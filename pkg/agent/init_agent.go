@@ -75,5 +75,5 @@ func printprimary(prim string) {
 	} else {
 		logger.Debugf("-----------I am Secondary")
 	}
-	logger.Debugf("Primary ip : %s, My ip : %s", prim, Local_ip_add)
+	logger.Debugf("Primary ip : %s, My ip : %s", prim, Local_ip_add())
 }
