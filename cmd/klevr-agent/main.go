@@ -41,15 +41,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	instance := agent.KlevrAgent{}
+	instance := agent.NewKlevrAgent()
 
 	instance.API_key = *apikey
 	instance.Platform = *platform
 	instance.Zone = *zone
 	instance.Manager = *klevr_addr
 
-	logger.Debug("platform: ", instance.API_key)
-	logger.Debug("Local_ip_add:", instance.Platform)
+	logger.Debug("platform: ", instance.Platform)
+	logger.Debug("Local_ip_add:", agent.Local_ip_add())
 	logger.Debug("Agent UniqID:", instance.AgentKey)
 
 	instance.Run()

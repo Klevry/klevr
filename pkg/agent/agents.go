@@ -21,8 +21,10 @@ type KlevrAgent struct {
 }
 
 func NewKlevrAgent() *KlevrAgent {
+	agentKey := CheckAgentKey()
+
 	instance := &KlevrAgent{
-		AgentKey: CheckAgentKey(),
+		AgentKey: agentKey,
 	}
 
 	return instance
