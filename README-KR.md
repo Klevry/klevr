@@ -30,7 +30,7 @@ docker-compose up -d
    * 프라이머리 호스트 관리 
    * 작업 관리 
    * 서비스 카탈로그 관리
-   * 개발/스테이징/프로덕션에 서비즈 전달
+   * 개발/스테이징/프로덕션에 서비스 전달
  * **도커 이미지**
    * [Webconsole](./Dockerfile/klevr_websonsole)(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
    * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
