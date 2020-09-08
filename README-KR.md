@@ -40,22 +40,25 @@ docker-compose up -d
    * 작업 관리
  * **KV store([Consul](https://github.com/hashicorp/consul))**
    
+## 비동기 작업 관리의 간단 로직 - (클릭 시 유튜브로 이동합니다.)
+ * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
+
 
 ## 사용을 위해 필요한 것
- * [ ] Docker/Docker-compose/Docker-registry
+ * [x] Docker/Docker-compose/Docker-registry
    * [x] ~~Beacon~~
    * [x] Libvirt
-   * [ ] Task manager to terraform
- * [ ] Terraform of container
+   * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] KVM(libvirt)
- * [ ] ~~Micro K8s~~
- * [ ] K3s
- * [x] ~~Consul~~
- * [ ] Prometheus 
- * [x] ~~Vagrant~~
- * [ ] Halm
+ * [x] ~~Micro K8s~~ K3s
+ * [x] Prometheus 
+ * [x] Grafana
+ * [ ] Helm
  * [ ] Vault(maybe)
- * [ ] Packer(maybe)
+ * [ ] ~~Packer(maybe)~~
+ * [x] ~~Vagrant~~
+ * [x] ~~Consul~~ 
 
 
 ## 디렉토리와 파일 설명 
