@@ -13,6 +13,7 @@ import (
 var agent_id_file = "/tmp/klevr_agent.id"
 var agent_id_string string
 
+// generate agent key
 func AgentKeyGen() (string, error) {
 
 	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)

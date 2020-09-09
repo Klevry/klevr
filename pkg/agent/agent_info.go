@@ -16,6 +16,7 @@ const (
 	GB = 1024 * MB
 )
 
+// get local ip address
 func Local_ip_add() string {
 	// get Local IP address automatically
 	default_ip, err := netutil.ChooseHostInterface()
@@ -39,6 +40,7 @@ func DiskUsage(path string) (disk DiskStatus) {
 	return
 }
 
+// send agent info to manager
 func SendMe(body *common.Body) {
 	body.Me.IP = Local_ip_add()
 	body.Me.IP = Local_ip_add()
