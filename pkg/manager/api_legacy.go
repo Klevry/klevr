@@ -122,7 +122,7 @@ func (api *API) InitLegacy(legacy *mux.Router) {
 
 // // GetPrimary company user zone platform
 // //%s/+group+"/users/"+user+"/zones/"+zone+/+group+"\/groups/"+group+"/users/"+user+"/zones/"+zone+"\/zones/"+zone+/g
-// /// Get Primary server infomation for secondary agent control
+// /// Get Primary server information for secondary agent control
 // func (api *API) GetPrimary(group, user uint64, zone, platform string) string {
 // 	api.DB.LogMode(true)
 

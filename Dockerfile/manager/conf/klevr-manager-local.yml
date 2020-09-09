@@ -9,9 +9,15 @@ log:
 klevr:
     server:
         port: 8090
+        readTimeout: 10 #seconds
+        writeTimeout: 10 #seconds
         encryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
         transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
         statusUpdateCycle: 60 #seconds
+        webhook:
+            url: "http://localhost:8080/events/klevr"
+            hookTerm: 0 #seconds (0 : each event)
+            hookCount: 0 #(0: each event)
     agent:
         callCycle: 10 #seconds
         logLevel: INFO

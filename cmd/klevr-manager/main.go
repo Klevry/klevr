@@ -84,6 +84,12 @@ func main() {
 				Usage:    "Logging level(default:debug, info, warn, error, fatal)",
 				Required: false,
 			},
+			&cli.StringFlag{
+				Name:     "webhook.url",
+				Aliases:  []string{"hook"},
+				Usage:    "WebHook URL",
+				Required: false,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			// 설정파일 반영
@@ -110,9 +116,12 @@ func main() {
 			if c.String("port") != "" {
 				config.Klevr.Server.Port = c.Int("port")
 			}
+			if c.String("webhook.url") != "" {
+				config.Klevr.Server.Webhook.Url = c.String("webhook.url")
+			}
 
-			common.ContextPut("appConfig", config)
-			common.ContextPut("cliContext", c)
+			// common.ContextPut("appConfig", config)
+			// common.ContextPut("cliContext", c)
 
 			/// Actual instance running point
 			instance, err := manager.NewKlevrManager()

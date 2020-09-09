@@ -15,7 +15,7 @@ import (
 )
 
 // CommonWrappingHandler common handler for processing standard
-func (api *API) CommonWrappingHandler(DB *common.DB) mux.MiddlewareFunc {
+func CommonWrappingHandler(ctx *common.Context) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var tx *Tx
@@ -33,15 +33,21 @@ func (api *API) CommonWrappingHandler(DB *common.DB) mux.MiddlewareFunc {
 					w.Header().Set("X-Content-Type-Options", "nosniff")
 
 					// DB session 시작
-					tx = &Tx{DB.NewSession()}
+					tx = &Tx{CtxGetDbConn(ctx).NewSession()}
 					err := tx.Begin()
 					if err != nil {
 						logger.Errorf("DB session begin error : %v", err)
 						common.Throw(err)
 					}
 
+					// request context 생성
+					rCtx := common.FromContext(ctx)
+
 					// Request context에 DB session 설정
-					context.Set(r, DBConnContextName, tx)
+					rCtx.Put(CtxDbSession, tx)
+
+					// request에 context 추가
+					context.Set(r, CtxRequestContext, rCtx)
 
 					// 다음 핸들러로 진행
 					next.ServeHTTP(&nw, r)

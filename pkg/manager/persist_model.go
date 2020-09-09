@@ -59,6 +59,33 @@ type TaskLock struct {
 	LockDate   time.Time
 }
 
+type Tasks struct {
+	Id          uint64 `xorm:"PK"`
+	Type        string
+	Command     string
+	ZoneId      uint64
+	AgentKey    string
+	ExeAgentKey string
+	Status      string
+	Params      *TaskParams `xorm:"foreignKey:Id"`
+	Logs        *TaskLogs   `xorm:"foreignKey:Id"`
+	Result      string
+	CreatedAt   time.Time `xorm:"created"`
+	UpdatedAt   time.Time `xorm:"updated"`
+	DeletedAt   time.Time
+}
+
+type TaskLogs struct {
+	TaskId    uint64 `xorm:"PK"`
+	Logs      string
+	CreatedAt time.Time `xorm:"created"`
+}
+
+type TaskParams struct {
+	TaskId uint64 `xorm:"PK"`
+	Params string
+}
+
 func (tl *TaskLock) expired() bool {
 	// if tl.LockDate.Unix() > time.Now().UTC().Add()
 	return true

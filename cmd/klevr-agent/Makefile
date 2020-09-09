@@ -19,6 +19,6 @@ build: require ## Build main.go
 
 run: ## Run main.go with some args 
 ##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
-	go run ./main.go -apiKey="apiKey" -platform="linux_laptop" -manager="192.168.15.163:8090" -zoneId="8282"
+	go run ./main.go -apiKey="wnskslxptmxmrPwjd123" -platform="linux_laptop" -manager="192.168.0.11:8090" -zoneId="8282"
 
 all: build ## Same with build

@@ -5,29 +5,177 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
 
+type KlevrVariable struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Length      string `json:"length"`
+	Description string `json:"description"`
+	Example     string `json:"example"`
+}
+
+type KlevrTask struct {
+	ID          uint64                 `json:"id"`
+	ZoneID      uint64                 `json:"zoneId"`
+	Type        common.TaskType        `json:"taskType"`
+	Command     string                 `json:"command"`
+	Params      map[string]interface{} `json:"params"`
+	CallbackURL string                 `json:"callbackUrl"`
+	Log         string                 `json:"log"`
+	Result      string                 `json:"result"`
+	Status      string                 `json:"status"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
+	AgentKey    string                 `json:"agentKey"`
+	ExeAgentKey string                 `json:"exeAgentKey"`
+}
+
 // InitInner initialize inner server API
 func (api *API) InitInner(inner *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 
-	// registURI(agent, PUT, "/handshake", api.receiveHandshake)
-	// registURI(agent, PUT, "/:agentKey", api.receivePolling)
-
-	registURI(inner, POST, "/groups", api.addGroup)
-	registURI(inner, GET, "/groups", api.getGroups)
-	registURI(inner, GET, "/groups/{groupID}", api.getGroup)
-	registURI(inner, POST, "/groups/{groupID}/apikey", api.addAPIKey)
-	registURI(inner, PUT, "/groups/{groupID}/apikey", api.updateAPIKey)
-	registURI(inner, GET, "/groups/{groupID}/apikey", api.getAPIKey)
+	registURI(inner, POST, "/groups", addGroup)
+	registURI(inner, GET, "/groups", getGroups)
+	registURI(inner, GET, "/groups/{groupID}", getGroup)
+	registURI(inner, POST, "/groups/{groupID}/apikey", addAPIKey)
+	registURI(inner, PUT, "/groups/{groupID}/apikey", updateAPIKey)
+	registURI(inner, GET, "/groups/{groupID}/apikey", getAPIKey)
+	registURI(inner, GET, "/variables", getKlevrVariables)
+	registURI(inner, POST, "/tasks", addTask)
+	registURI(inner, GET, "/groups/{groupID}/agents", getAgents)
+	registURI(inner, GET, "/groups/{groupID}/primary", getPrimaryAgent)
 }
 
-func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	primary := tx.getPrimaryAgent(groupID)
+	var agent common.Agent
+
+	if primary != nil {
+		a := tx.getAgentByID(primary.AgentId)
+
+		agent = common.Agent{
+			AgentKey: a.AgentKey,
+			IP:       a.Ip,
+			Port:     a.Port,
+			Version:  a.Version,
+			Resource: &common.Resource{
+				Core:   a.Cpu,
+				Memory: a.Memory,
+				Disk:   a.Disk,
+			},
+		}
+	}
+
+	b, err := json.Marshal(agent)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func getAgents(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	cnt, agents := tx.getAgentsByGroupId(groupID)
+	nodes := make([]common.Agent, cnt)
+
+	if cnt > 0 {
+		for i, a := range *agents {
+			nodes[i] = common.Agent{
+				AgentKey: a.AgentKey,
+				IP:       a.Ip,
+				Port:     a.Port,
+				Version:  a.Version,
+				Resource: &common.Resource{
+					Core:   a.Cpu,
+					Memory: a.Memory,
+					Disk:   a.Disk,
+				},
+			}
+		}
+	}
+
+	b, err := json.Marshal(nodes)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func addTask(w http.ResponseWriter, r *http.Request) {
+	// ctx := CtxGetFromRequest(r)
+	// var tx = GetDBConn(ctx)
+	var t KlevrTask
+
+	err := json.NewDecoder(r.Body).Decode(&t)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+}
+
+func getKlevrVariables(w http.ResponseWriter, r *http.Request) {
+	var variables []KlevrVariable
+
+	variables = append(variables, KlevrVariable{
+		Name:        "KLEVR_HOST",
+		Type:        "string",
+		Length:      "-",
+		Description: "klevr host url",
+		Example:     "echo {KLEVR_HOST} => echo http://klevr.io",
+	})
+
+	b, err := json.Marshal(&variables)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func addAPIKey(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -48,8 +196,9 @@ func (api *API) addAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func updateAPIKey(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -70,8 +219,9 @@ func (api *API) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func getAPIKey(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -90,8 +240,9 @@ func (api *API) getAPIKey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", auth.ApiKey)
 }
 
-func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func addGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
 	var ag AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
@@ -116,8 +267,9 @@ func (api *API) addGroup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) getGroups(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func getGroups(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
 
 	ags := tx.getAgentGroups()
 
@@ -130,8 +282,9 @@ func (api *API) getGroups(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *API) getGroup(w http.ResponseWriter, r *http.Request) {
-	var tx = GetDBConn(r)
+func getGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -153,4 +306,24 @@ func (api *API) getGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+func AddTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params map[string]interface{}) *Tasks {
+	b, err := json.Marshal(params)
+	if err != nil {
+		panic(err)
+	}
+
+	task := &Tasks{
+		Type:     string(taskType),
+		Command:  command,
+		ZoneId:   zoneID,
+		AgentKey: agentKey,
+		Params: &TaskParams{
+			Params: string(b),
+		},
+		Status: string(common.DELIVERED),
+	}
+
+	return tx.insertTask(task)
 }
