@@ -6,9 +6,10 @@ Klevr manager, Provbee와 통신을 하며 할당된 작업을 수행하는 Klev
 1. 에이전트 구동시 매니저에게 handshake를 보낸다. 
 1. 처음 handshake를 받은 에이전트가 primary가 된다.
 1. primary는 매니저에게 command를 받아와 provbee에게 전달한다.
-1. provbee가 명령을 수행하고 Prometheus operator를 설치한다.
-1. provbee는 설치된 grafana의 url을 agent로 전송한다.
-1. agent는 전송받은 grafana의 url을 manager로 전송한다.
+1. provbee는 명령을 수행하고 결과를 primary에게 전달한다.
+1. primary agent는 전달받은 결과값을 manager에게 전달한다
+
+> 현재는 https://github.com/NexClipper/klevr_tasks/blob/master/queuecommand 에서 명령어를 가져와서 실행하는 방식으로 개발되어있다.
 
 ### pkg
 ```shell script
