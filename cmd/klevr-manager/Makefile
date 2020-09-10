@@ -1,33 +1,19 @@
-docker_version="latest"
-
+# Make declare first
+# declare -x WEBCONSOLE="192.168.2.100:8000"
+# or use under variable
+# WEBCONSOLE=localhost:8080
 hello:
-	#
-	# You can use - init / build / run / sudo docker / all 
-	#
+	# make run/build
 
 init:
 	go mod init
-#	go mod init github.com/ralfyang
-
 require:
 	go get -u
-#	curl -sL bit.ly/go_req | bash
+
 build: require
-	#go build -o ./Docker/klevr-manager ./main.go
-	GOOS=linux GOARCH=amd64 go build -o ./Docker/klevr-manager ./main.go
+	env GOOS=linux GOARCH=amd64 go build -o ./Dockerfile/klevr ./main.go
 run:
-	go run ./main.go -config ../../conf/klevr-manager-local.yml
-login:
-	sudo sudo docker login
+##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
+	go run ./main.go -apiKey="wnskslxptmxmrPwjd123" -platform="linux_laptop" -manager="192.168.0.11:8090" -zoneId="8282"
 
-docker: login
-	cp -Rfv ../../conf/* ./Docker/conf/
-	sudo docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
-	sudo docker push klevry/klevr-manager:${docker_version}
-
-docker-compose:
-	sudo docker-compose down
-	sudo docker-compose -f ../docker-compose.yml up -d
-
-all: build docker #docker-compose
-
+all: build
