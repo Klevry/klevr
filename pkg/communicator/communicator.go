@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
@@ -16,7 +15,7 @@ var http_body_buffer string
 func Put_http(url, data, api_key_string string) {
 	req, err := http.NewRequest("PUT", url, strings.NewReader(string(data)))
 	if err != nil {
-		log.Printf("HTTP PUT Request error: %v", err)
+		logger.Errorf("HTTP PUT Request error: %v", err)
 	}
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Add("nexcloud-auth-token", api_key_string)
@@ -27,7 +26,7 @@ func Put_http(url, data, api_key_string string) {
 	if err == nil {
 		defer res.Body.Close()
 	} else {
-		log.Println(err)
+		logger.Error(err)
 	}
 }
 
@@ -35,7 +34,7 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 	var body []byte
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
-		log.Printf("HTTP PUT Request error: %v", err)
+		logger.Errorf("HTTP PUT Request error: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
@@ -48,9 +47,8 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 		defer res.Body.Close()
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
-		//logger.Debugf("%v", http_body_buffer)
 	} else {
-		log.Println(err)
+		logger.Error(err)
 	}
 
 	return body
@@ -66,7 +64,7 @@ func Get_http(uri, api_key_string string) string {
 		body, _ := ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	} else {
-		log.Printf("Server connection error: %v", err)
+		logger.Errorf("Server connection error: %v", err)
 	}
 	return http_body_buffer
 }
@@ -87,7 +85,7 @@ func Get_Json_http(url string, agent string, api string, zone string) []byte {
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	} else {
-		logger.Error("Server connection error: ", err)
+		logger.Errorf("Server connection error: ", err)
 	}
 	return body
 }
@@ -103,7 +101,7 @@ func Delete_http(uri, api_key_string string) {
 func Post_http(url, data, api_key_string string) {
 	req, err := http.NewRequest("POST", url, strings.NewReader(string(data)))
 	if err != nil {
-		log.Printf("HTTP POST Request error: %v", err)
+		logger.Errorf("HTTP POST Request error: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("nexcloud-auth-token", api_key_string)
@@ -111,7 +109,7 @@ func Post_http(url, data, api_key_string string) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 	}
 	defer res.Body.Close()
 }
@@ -120,7 +118,7 @@ func Post_Json_http(url string, data []byte, agent string, api string, zone stri
 	var body []byte
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
-		log.Printf("HTTP PUT Request error: %v", err)
+		logger.Errorf("HTTP PUT Request error: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
@@ -133,9 +131,8 @@ func Post_Json_http(url string, data []byte, agent string, api string, zone stri
 		defer res.Body.Close()
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
-		//logger.Debugf("%v", http_body_buffer)
 	} else {
-		log.Println(err)
+		logger.Error(err)
 	}
 
 	return body
