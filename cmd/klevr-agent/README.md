@@ -9,7 +9,7 @@ Klevr manager, Provbee와 통신을 하며 할당된 작업을 수행하는 Klev
 1. provbee는 명령을 수행하고 결과를 primary에게 전달한다.
 1. primary agent는 전달받은 결과값을 manager에게 전달한다
 
-> 현재는 https://github.com/NexClipper/klevr_tasks/blob/master/queuecommand 에서 명령어를 가져와서 실행하는 방식으로 개발되어있다.
+> 현재는 https://github.com/NexClipper/klevr_tasks/blob/master/queue 에서 명령어를 가져와서 실행하는 방식으로 개발되어있다.
 
 ### pkg
 ```shell script
