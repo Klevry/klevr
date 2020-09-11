@@ -8,6 +8,8 @@ import (
 )
 
 /*
+send handshake to manager
+
 in: body.me
 out: body.me, body.agent.primary
 */

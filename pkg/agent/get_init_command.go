@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// get task command from git
 func getCommand(agent *KlevrAgent, s *gocron.Scheduler) {
 	SSH_provbee := "ssh provbee-service "
 	uri := agent.Manager + "/agents/commands/init"

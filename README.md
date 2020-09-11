@@ -54,7 +54,7 @@ docker-compose up -d
  * [x] ~~Micro K8s~~ K3s
  * [x] Prometheus 
  * [x] Grafana
- * [ ] Halm
+ * [ ] Helm
  * [ ] Vault(maybe)
  * [ ] ~~Packer(maybe)~~
  * [x] ~~Vagrant~~
