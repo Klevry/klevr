@@ -1,31 +1,42 @@
 # klevr-agent
-## Kickstart
+## Introduction
+Klevr manager, Provbee와 통신을 하며 할당된 작업을 수행하는 Klevr agent
+
+## Process
+1. 에이전트 구동시 매니저에게 handshake를 보낸다. 
+1. 처음 handshake를 받은 에이전트가 primary가 된다.
+1. primary는 매니저에게 command를 받아와 provbee에게 전달한다.
+1. provbee는 명령을 수행하고 결과를 primary에게 전달한다.
+1. primary agent는 전달받은 결과값을 manager에게 전달한다
+
+> 현재는 https://github.com/NexClipper/klevr_tasks/blob/master/queue 에서 명령어를 가져와서 실행하는 방식으로 개발되어있다.
+
+### pkg
+```shell script
+.
+├── agent_info.go             // Get agents info
+├── agents.go                 // Agent main
+├── file_rwd.go               // File read, write, delete functions
+├── get_init_command.go       // Get tasks commands
+├── handshake.go              // Handshake to manager
+├── init_agent.go             // Create agentkey, initialize primary
+├── primary_init_callback.go  
+├── primary_status_report.go
+└── task_mgmt.go
 ```
-curl -sL gg.gg/klevr |bash && nohup ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId} >> /tmp/klevr_agent.log 2>&1 &
-```
-## Primary host election
-* Image click to Youtube
-   * [![Image click to Youtube](https://github.com/Klevry/klevr/blob/master/assets/primary_election_s.png)](https://youtu.be/hyMaVsCcgbA)
 
 ## How to use
-* Help
-```
-#] ./klevr -h
-Usage of ./klevr:
-  -group string
-    	Group name will be a uniq company name or team name
-  -id string
-    	Account ID from Klevr service
-  -ip string
-    	local IP address for networking (default "192.168.15.50")
-  -platform string
-    	[baremetal|aws] - Service Platform for Host build up
-  -webconsole string
-    	Klevr webconsole(server) address (URL or IP, Optional: Port) for connect (default "localhost:8080")
-  -zone string
-    	zone will be a [Dev/Stg/Prod] (default "dev-zone")
-```
+- Configuration
 
- * Using localhost: `./klevr -platform=baremetal -id=ralf -group="[COMPANY/TEAM]"`
+| parameters | description | default |
+| --- | ---- | --- | 
+| apikey | Account ID from Klevr service |  | 
+| platform | [baremetal, k8s, aws] - Service Platform for Host build up |  |
+| zoneId | Zone ID from Klevr service |  | 
+| manager | IP address from Klevr manager |  | 
 
- * Using seperated host:  `./klevr -platform=baremetal -id=ralf -webconsole=[WEBCONSOL_ADDR] `
+
+- Useage
+```shell script
+go run ./main.go -apiKey="" -platform="" -manager="" -zoneId=""
+```

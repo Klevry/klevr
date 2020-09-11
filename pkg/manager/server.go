@@ -214,14 +214,14 @@ func sendSingleEventWebHook(url string, event *KlevrEvent) {
 func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Errorf("sendEvent recorver from - %v", r)
+			logger.Errorf("sendEvent recover from - %v", r)
 		}
 	}()
 
 	b, err := json.Marshal(*events)
 	if err != nil {
 		retryFailedEvent(events, false)
-		panic("kelvr webhook event marshal error.")
+		panic("klevr webhook event marshal error.")
 	}
 
 	logger.Debugf("%+v", *events)

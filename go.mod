@@ -10,6 +10,7 @@ require (
 	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-logr/logr v0.2.1 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
@@ -17,6 +18,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/logger v1.1.0
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jasonlvhit/gocron v0.0.1
@@ -39,7 +41,7 @@ require (
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
+	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/tools v0.0.0-20200904185747-39188db58858 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
@@ -52,5 +54,5 @@ require (
 	k8s.io/klog/v2 v2.3.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
-	xorm.io/xorm v1.0.3
+	xorm.io/xorm v1.0.4
 )
