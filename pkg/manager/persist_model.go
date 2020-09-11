@@ -67,8 +67,8 @@ type Tasks struct {
 	AgentKey    string
 	ExeAgentKey string
 	Status      string
-	Params      TaskParams `xorm:"foreignKey:Id"`
-	Logs        TaskLogs   `xorm:"foreignKey:Id"`
+	Params      *TaskParams `xorm:"foreignKey:Id"`
+	Logs        *TaskLogs   `xorm:"foreignKey:Id"`
 	Result      string
 	CreatedAt   time.Time `xorm:"created"`
 	UpdatedAt   time.Time `xorm:"updated"`

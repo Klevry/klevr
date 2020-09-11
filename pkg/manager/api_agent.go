@@ -25,18 +25,28 @@ const (
 	CHeaderTimestamp      = "X-TIMESTAMP"
 )
 
+type agentAPI int
+
 // InitAgent initialize agent API
+// @title Klevr-Manager API
+// @version 1.0
+// @description
+// @contact.name mrchopa
+// @contact.email ys3gods@gmail.com
+// @BasePath /
 func (api *API) InitAgent(agent *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 
 	// registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	// registURI(agent, PUT, "/:agentKey", api.receivePolling)
 
-	registURI(agent, PUT, "/handshake", receiveHandshake)
-	registURI(agent, PUT, "/{agentKey}", receivePolling)
-	registURI(agent, GET, "/reports/{agentKey}", checkPrimaryInfo)
-	registURI(agent, GET, "/commands/init", getInitCommand)
-	registURI(agent, POST, "/zones/init", receiveInitResult)
+	agentAPI := agentAPI(0)
+
+	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
+	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
+	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
+	registURI(agent, GET, "/commands/init", agentAPI.getInitCommand)
+	registURI(agent, POST, "/zones/init", agentAPI.receiveInitResult)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -98,9 +108,9 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func receiveInitResult(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := common.GetCustomHeader(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	tx := GetDBConn(ctx)
 
 	var requestBody common.Body
@@ -110,6 +120,8 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
 		return
 	}
+
+	agent := tx.getAgentByAgentKey(ch.AgentKey)
 
 	tasks := requestBody.Task
 
@@ -126,6 +138,21 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+
+	len := len(tasks)
+
+	if len > 0 {
+		task := tasks[0]
+		result, _ := json.Marshal(task.Params)
+
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryInit,
+			AgentId:   agent.Id,
+			GroupId:   agent.GroupId,
+			EventTime: &JSONTime{time.Now().UTC()},
+			Result:    string(result),
+		})
+	}
 }
 
 func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
@@ -133,18 +160,26 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 
 	if len > 0 {
 		for _, t := range *tasks {
+			p, _ := json.Marshal(t.Params)
+
+			param := &TaskParams{
+				TaskId: t.ID,
+				Params: string(p),
+			}
+
 			tx.updateTask(&Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
+				Params:      param,
 			})
 		}
 	}
 }
 
-func getInitCommand(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := common.GetCustomHeader(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	tx := GetDBConn(ctx)
 
 	url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
@@ -191,12 +226,19 @@ func getInitCommand(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func receiveHandshake(w http.ResponseWriter, r *http.Request) {
+// ReceiveHandshake godoc
+// @Summary 에이전트의 handshake 요청을 받아 처리한다.
+// @Description 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /accounts/{id} [get]
+func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := common.GetCustomHeader(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
 
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -268,13 +310,20 @@ func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+
+	AddEvent(&KlevrEvent{
+		EventType: AgentConnect,
+		AgentId:   agent.Id,
+		GroupId:   agent.GroupId,
+		EventTime: &JSONTime{time.Now().UTC()},
+	})
 }
 
-func receivePolling(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := common.GetCustomHeader(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -327,14 +376,13 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-	ch := common.GetCustomHeader(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var param common.Body
 
-	var param common.Body
 	err := json.NewDecoder(r.Body).Decode(&param)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")

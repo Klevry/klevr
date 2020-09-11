@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `AGENTS` (
   `CPU` int(11) DEFAULT NULL,
   `MEMORY` int(11) DEFAULT NULL,
   `DISK` int(11) DEFAULT NULL,
-  `VERSION` varchar(45) NULL COMMENT '에이전트 버전',
+  `VERSION` varchar(45) DEFAULT NULL COMMENT '에이전트 버전',
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -109,18 +109,19 @@ CREATE TABLE IF NOT EXISTS `PRIMARY_AGENTS` (
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `TASKS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `TYPE` varchar(45) NOT NULL,
-  `COMMAND` varchar(200) NOT NULL,
+  `TYPE` varchar(45) NOT NULL COMMENT 'TASK 타입\nRESERVED = Klevr 고유 커맨드(기동/중지/재기동/업그레이드 등)\nINLINE = 커스텀 명령 수행',
+  `COMMAND` varchar(300) NOT NULL COMMENT 'TYPE.RESERVED = Klevr Task 예약어\nTYPE.INLINE = 스크립트 다운로드 URL',
   `ZONE_ID` bigint(20) unsigned NOT NULL,
   `AGENT_KEY` varchar(45) NOT NULL,
   `EXE_AGENT_KEY` varchar(45) DEFAULT NULL,
   `STATUS` varchar(45) NOT NULL,
-  `PARAMS` text DEFAULT NULL,
+  `CALLBACK_URL` varchar(300) DEFAULT NULL,
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
+  `RESULT` text DEFAULT NULL,
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COMMENT='TASK 수행 정보 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -136,6 +137,35 @@ CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
   `LOCK_DATE` timestamp NULL DEFAULT NULL COMMENT 'lock이 걸린 일시',
   PRIMARY KEY (`TASK`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='배치성 작업을 위해 lock을 관리하는 테이블';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `TASK_LOGS`
+--
+
+DROP TABLE IF EXISTS `TASK_LOGS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `TASK_LOGS` (
+  `TASK_ID` bigint(20) unsigned NOT NULL,
+  `LOGS` text DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`TASK_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='TASK의 수행 로그 테이블';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `TASK_PARAMS`
+--
+
+DROP TABLE IF EXISTS `TASK_PARAMS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `TASK_PARAMS` (
+  `TASK_ID` bigint(20) unsigned NOT NULL,
+  `PARAMS` text DEFAULT NULL COMMENT 'TYPE.RESERVED = 함수 argument\nTYPE.INLINE = 스크립트 변수 replace',
+  PRIMARY KEY (`TASK_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='TASK 파라미터 테이블';
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

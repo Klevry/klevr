@@ -48,6 +48,96 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/groups/{groupID}/apikey", getAPIKey)
 	registURI(inner, GET, "/variables", getKlevrVariables)
 	registURI(inner, POST, "/tasks", addTask)
+	registURI(inner, GET, "/groups/{groupID}/agents", getAgents)
+	registURI(inner, GET, "/groups/{groupID}/primary", getPrimaryAgent)
+}
+
+func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	primary := tx.getPrimaryAgent(groupID)
+	var agent common.Agent
+
+	if primary != nil {
+		a := tx.getAgentByID(primary.AgentId)
+
+		agent = common.Agent{
+			AgentKey: a.AgentKey,
+			IP:       a.Ip,
+			Port:     a.Port,
+			Version:  a.Version,
+			Resource: &common.Resource{
+				Core:   a.Cpu,
+				Memory: a.Memory,
+				Disk:   a.Disk,
+			},
+		}
+	}
+
+	b, err := json.Marshal(agent)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func getAgents(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	cnt, agents := tx.getAgentsByGroupId(groupID)
+	nodes := make([]common.Agent, cnt)
+
+	if cnt > 0 {
+		for i, a := range *agents {
+			nodes[i] = common.Agent{
+				AgentKey: a.AgentKey,
+				IP:       a.Ip,
+				Port:     a.Port,
+				Version:  a.Version,
+				Resource: &common.Resource{
+					Core:   a.Cpu,
+					Memory: a.Memory,
+					Disk:   a.Disk,
+				},
+			}
+		}
+	}
+
+	b, err := json.Marshal(nodes)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func addTask(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +175,7 @@ func getKlevrVariables(w http.ResponseWriter, r *http.Request) {
 
 func addAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -102,14 +192,13 @@ func addAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.addAPIKey(auth)
-	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 
 	nr := &common.Request{Request: r}
 
@@ -126,14 +215,13 @@ func updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateAPIKey(auth)
-	tx.Commit()
 
 	w.WriteHeader(200)
 }
 
 func getAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 
 	vars := mux.Vars(r)
 	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
@@ -154,7 +242,7 @@ func getAPIKey(w http.ResponseWriter, r *http.Request) {
 
 func addGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
-  tx := GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var ag AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
@@ -167,7 +255,6 @@ func addGroup(w http.ResponseWriter, r *http.Request) {
 	// logger.Debug("%v", time.Now().UTC())
 
 	tx.addAgentGroup(&ag)
-	tx.Commit()
 
 	logger.Debugf("response AgentGroup : %+v", &ag)
 
@@ -222,12 +309,19 @@ func getGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params map[string]interface{}) *Tasks {
+	b, err := json.Marshal(params)
+	if err != nil {
+		panic(err)
+	}
+
 	task := &Tasks{
 		Type:     string(taskType),
 		Command:  command,
 		ZoneId:   zoneID,
 		AgentKey: agentKey,
-		// Params:   params,
+		Params: &TaskParams{
+			Params: string(b),
+		},
 		Status: string(common.DELIVERED),
 	}
 

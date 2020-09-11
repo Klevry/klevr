@@ -1,7 +1,10 @@
 package manager
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -23,6 +26,7 @@ type KlevrManager struct {
 	Config     Config
 	RootRouter *mux.Router
 	InstanceID string
+	EventQueue *common.Queue
 }
 
 // Config klevr manager config struct
@@ -40,6 +44,13 @@ type ServerInfo struct {
 	EncryptionKey     string
 	TransEncKey       string
 	StatusUpdateCycle int
+	Webhook           Webhook
+}
+
+type Webhook struct {
+	Url       string
+	HookTerm  int
+	HookCount int
 }
 
 //AgentInfo klevr agent info struct
@@ -67,6 +78,7 @@ func NewKlevrManager() (*KlevrManager, error) {
 
 	instance := &KlevrManager{
 		RootRouter: router,
+		EventQueue: common.NewMutexQueue(),
 	}
 
 	instance.InstanceID = fmt.Sprintf("%v_%v", &instance, time.Now().UTC().Unix())
@@ -98,14 +110,154 @@ func (manager *KlevrManager) Run() error {
 		WriteTimeout: time.Duration(serverConfig.WriteTimeout) * time.Second,
 	}
 
+	go manager.startEventHandler()
 	go manager.updateAgentStatus(common.FromContext(ctx), time.Duration(manager.Config.Server.StatusUpdateCycle))
 
 	Init(ctx)
 
 	return s.ListenAndServe()
 }
+func (manager *KlevrManager) startEventHandler() {
+	webhookConf := manager.Config.Server.Webhook
+	url := webhookConf.Url
 
+	q := *manager.EventQueue
 
+	if url != "" {
+		var nilTime time.Time = time.Time{}
+		var cntExecutedTime time.Time
+
+		if webhookConf.HookCount > 0 {
+			q.AddListener(uint32(webhookConf.HookCount), func(q *common.Queue, args ...interface{}) {
+				var items []KlevrEvent
+				var iq = *q
+
+				logger.Debugf("event queue count : %d", iq.Length())
+
+				for iq.Length() > 0 {
+					items = append(items, *(iq.Pop().(*KlevrEvent)))
+				}
+
+				logger.Debugf("%+v", items)
+
+				sendBulkEventWebHook(url, &items)
+
+				cntExecutedTime = time.Now().UTC()
+			})
+		}
+
+		if webhookConf.HookTerm > 0 {
+			baseTime := time.Duration(webhookConf.HookTerm) * time.Second
+			sleepTime := baseTime
+
+			for {
+				logger.Debugf("Webhook sleep time : %+v", sleepTime)
+				time.Sleep(sleepTime)
+
+				if cntExecutedTime != nilTime {
+					sleepTime = baseTime - (time.Duration(int(time.Now().UTC().Sub(cntExecutedTime))) * time.Second)
+					logger.Debugf("Webhook new sleep time : %+v", sleepTime)
+					cntExecutedTime = nilTime
+					continue
+				}
+
+				var items []KlevrEvent
+
+				logger.Debugf("Webhook scheduler event count : %d", q.Length())
+
+				for q.Length() > 0 {
+					items = append(items, *(q.Pop().(*KlevrEvent)))
+				}
+
+				logger.Debugf("%+v", items)
+
+				if len(items) > 0 {
+					sendBulkEventWebHook(url, &items)
+				}
+
+				sleepTime = baseTime
+			}
+		}
+	}
+}
+
+// AddEvent add klevr event for webhook
+func AddEvent(event *KlevrEvent) {
+	logger.Debugf("add event : [%+v]", *event)
+
+	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
+	hookConfig := manager.Config.Server.Webhook
+
+	logger.Debugf("hookConfig : [%+v]", hookConfig)
+
+	if hookConfig.Url == "" {
+		return
+	}
+
+	if hookConfig.HookCount <= 1 && hookConfig.HookTerm < 1 {
+		go sendSingleEventWebHook(hookConfig.Url, event)
+	} else {
+		q := *manager.EventQueue
+		q.Push(event)
+	}
+}
+
+func sendSingleEventWebHook(url string, event *KlevrEvent) {
+	var arr = []KlevrEvent{*event}
+
+	logger.Debugf("%+v", *event)
+	logger.Debugf("%d", len(arr))
+
+	sendBulkEventWebHook(url, &arr)
+}
+
+func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("sendEvent recover from - %v", r)
+		}
+	}()
+
+	b, err := json.Marshal(*events)
+	if err != nil {
+		retryFailedEvent(events, false)
+		panic("klevr webhook event marshal error.")
+	}
+
+	logger.Debugf("%+v", *events)
+	logger.Debugf("%d", len(*events))
+	logger.Debugf("%s", string(b))
+
+	res, err := http.Post(url, "application/json", bytes.NewReader(b))
+
+	if err != nil {
+		logger.Warningf("Klevr event webhook send failed - %+v", err)
+		retryFailedEvent(events, true)
+	}
+
+	defer func() {
+		if res != nil {
+			res.Body.Close()
+		}
+	}()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		logger.Warningf("Klevr event webhook send failed - read response body failed - %+v", err)
+		retryFailedEvent(events, true)
+	}
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		logger.Warningf("Klevr event webhook send failed - status code : [%d], response body : [%s]", res.StatusCode, body)
+		retryFailedEvent(events, true)
+	}
+
+	logger.Debugf("sendEventWebHook - statusCode : [%d], body : [%s]", res.StatusCode, body)
+}
+
+func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
+
+}
 
 func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.Duration) {
 	for {

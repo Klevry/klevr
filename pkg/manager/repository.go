@@ -229,15 +229,16 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 }
 
 func (tx *Tx) insertTask(t *Tasks) *Tasks {
-	result, err := tx.Exec("INSERT INTO `TASKS` (`id`,`type`,`command`,`zone_id`,`agent_key`,`exe_agent_key`,`status`,`params`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?)",
-		t.Id, t.Type, t.Command, t.ZoneId, t.AgentKey, t.ExeAgentKey, t.Status, t.Params, time.Now().UTC())
-	// cnt, err := tx.Insert(t)
-
-	cnt, _ := result.RowsAffected()
+	result, err := tx.Exec("INSERT INTO `TASKS` (`id`,`type`,`command`,`zone_id`,`agent_key`,`exe_agent_key`,`status`,`updated_at`) VALUES (?,?,?,?,?,?,?,?)",
+		t.Id, t.Type, t.Command, t.ZoneId, t.AgentKey, t.ExeAgentKey, t.Status, time.Now().UTC())
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
+	}
+
+	cnt, _ := result.RowsAffected()
+
+	if cnt != 1 {
 		common.PanicForUpdate("inserted", cnt, 1)
 	}
 
@@ -246,6 +247,19 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	t.Id = uint64(id)
 
 	logger.Debugf("Inserted task : %v", t)
+
+	if t.Params.Params != "" {
+		t.Params.TaskId = t.Id
+
+		cnt, err = tx.Insert(t.Params)
+		if err != nil {
+			panic(err)
+		}
+
+		if cnt != 1 {
+			common.PanicForUpdate("inserted", cnt, 1)
+		}
+	}
 
 	return t
 }

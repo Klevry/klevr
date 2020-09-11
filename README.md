@@ -22,41 +22,43 @@ docker-compose up -d
 ## Features
  * **[Agent](./agent/)**
    * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
-   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon
+   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon, Helm chart
    * Metric data aggregate & delivery
   * **[Web console](./webconsole/)**
    * Host pool management
    * Resource management
    * Primary host management 
-   * Task management 
-   * Service catalog management
-   * Service delivery to Dev./Stg./Prod.
+   * Task management(To be)
+   * Service catalog management(To be)
+   * Service delivery to Dev./Stg./Prod.(To be)
  * **Docker images**
    * [Webconsole](./Dockerfile/klevr_websonsole)(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
    * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
    * [Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
-   * Prometheus(Container monitoring)
-   * Metric crawler
+   * Prometheus operator(Service discovery)
+   * ProvBee(nexclipper/provbee)
+   * ~~Metric crawler~~
    * Task manager
  * **KV store([Consul](https://github.com/hashicorp/consul))**
    
+## Simple logic of asynchronous task management - (Click to Youtube for details)
+ * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
 
 ## Requirement for use
- * [ ] Docker/Docker-compose/Docker-registry
+ * [x] Docker/Docker-compose/Docker-registry
    * [x] ~~Beacon~~
    * [x] Libvirt
-   * [ ] Task manager to terraform
- * [ ] Terraform of container
+   * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] KVM(libvirt)
- * [ ] ~~Micro K8s~~
- * [ ] K3s
- * [x] ~~Consul~~
- * [ ] Prometheus 
- * [x] ~~Vagrant~~
- * [ ] Halm
+ * [x] ~~Micro K8s~~ K3s
+ * [x] Prometheus 
+ * [x] Grafana
+ * [ ] Helm
  * [ ] Vault(maybe)
- * [ ] Packer(maybe)
-
+ * [ ] ~~Packer(maybe)~~
+ * [x] ~~Vagrant~~
+ * [x] ~~Consul~~ 
 
 ## Description for Directories and files
 ```
@@ -65,13 +67,13 @@ docker-compose up -d
 ├── docker-compose.yml          // Kickstarter: Bootstraping by docker-compose
 ├── Dockerfile                  // Directory for docker image build
 │   ├── libvirt
-│   └── manager                 // Actual binary file of manager will be move to this linke directory for the docker build
+│   └── manager                 // Actual binary file of manager will be move to this link directory for the docker build
 ├── assets
 │   └── [Images & Contents]
 ├── cmd                         // Actual artifacts fpr Klevr agent & manager(webserver) 
 │   ├── klevr-agent
 │   │   ├── Makefile
-│   │   ├── agent_installer.sh  // Remote installer via curl command as a generated script by Manger
+│   │   ├── agent_installer.sh  // Remote installer via curl command as a generated script by Manager
 │   │   ├── klevr               // Actual `Klevr` agent binary
 │   │   └── main.go             // main source code of the Agent
 │   └── klevr-manager
@@ -79,7 +81,7 @@ docker-compose up -d
 │       ├── Makefile
 │       └── main.go             // main source code of the Manager
 ├── conf
-│   ├── Dump20200720.sql        // Database for Manager initialinzing & running
+│   ├── Dump20200720.sql        // Database for Manager initializing & running
 │   └── klevr-manager-local.yml // Config file for Manager running
 ├── pkg
 │   ├── common                  // 'common' package directory
@@ -107,4 +109,3 @@ docker-compose up -d
     └── [Provisioning scripts]
 
 ```
-- test
