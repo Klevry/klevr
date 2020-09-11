@@ -14,7 +14,7 @@ func testCommand() Command {
 			return nil, nil
 		},
 		// 커맨드 중지 시 복구 로직 구현
-		Recorver: func(param *map[string]interface{}) (interface{}, error) {
+		Recover: func(param *map[string]interface{}) (interface{}, error) {
 			return nil, nil
 		},
 	}
