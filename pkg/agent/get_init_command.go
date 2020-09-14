@@ -20,7 +20,7 @@ func getCommand(agent *KlevrAgent, s *gocron.Scheduler) {
 	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
 	errcheck := provcheck.Run()
 	if errcheck != nil {
-		logger.Error(errcheck)
+		logger.Errorf("provbee-service is not running: %v", errcheck)
 	}
 
 	by := readFile("/tmp/con")
@@ -72,7 +72,7 @@ func getCommand(agent *KlevrAgent, s *gocron.Scheduler) {
 		if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
 			data, err := ioutil.ReadFile("/tmp/grafana")
 			if err != nil {
-				logger.Error(err)
+				logger.Errorf("/tmp/grafana is not exist: %v", err)
 			}
 
 			//logger.Debugf("%v", string(data))
