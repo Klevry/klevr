@@ -3,11 +3,13 @@ package agent
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/NexClipper/logger"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/NexClipper/logger"
 )
 
 var agent_id_file = "/tmp/klevr_agent.id"
@@ -51,7 +53,12 @@ func CheckAgentKey() string {
 			logger.Error(err)
 		}
 
-		writeFile(agent_id_file, key)
+		// writeFile(agent_id_file, key)
+
+		err = ioutil.WriteFile(agent_id_file, []byte(key), os.FileMode(0644))
+		if err != nil {
+			logger.Error(err)
+		}
 
 		agent_id_string = key
 	}
@@ -59,22 +66,14 @@ func CheckAgentKey() string {
 	return agent_id_string
 }
 
-func Check_primary(prim string) string {
-	var ami string
-
+func Check_primary(prim string) bool {
 	if prim == Local_ip_add() {
-		ami = "true"
-	} else if prim != Local_ip_add() {
-		ami = "false"
-	}
-	return ami
-}
+		logger.Debug("I am Primary")
 
-func printprimary(prim string) {
-	if Check_primary(prim) == "true" {
-		logger.Debugf("-----------I am Primary")
+		return true
 	} else {
-		logger.Debugf("-----------I am Secondary")
+		logger.Debug("I am Secondary")
+
+		return false
 	}
-	logger.Debugf("Primary ip : %s, My ip : %s", prim, Local_ip_add())
 }

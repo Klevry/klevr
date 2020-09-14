@@ -8,14 +8,10 @@ import (
 	"github.com/NexClipper/logger"
 )
 
-/*
-send handshake to manager
+func (agent *KlevrAgent) tempHealthCheck() {
+	uri := agent.Manager + "/agents/" + agent.AgentKey + "/tempHeartBeat"
 
-in: body.me
-out: body.me, body.agent.primary
-*/
-func HandShake(agent *KlevrAgent) string {
-	uri := agent.Manager + "/agents/handshake"
+	logger.Debugf(agent.AgentKey)
 
 	rb := &common.Body{}
 
@@ -31,15 +27,15 @@ func HandShake(agent *KlevrAgent) string {
 	// put in & get out
 	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
 
-	var Body common.Body
-	err2 := json.Unmarshal(result, &Body)
-	if err2 != nil {
-		logger.Error(err2)
+	if len(result) > 0 {
+		var Body common.Body
+		err2 := json.Unmarshal(result, &Body)
+		if err2 != nil {
+			logger.Error(err2)
+		}
+
+		if Body.Me.Deleted {
+			agent.scheduler.Remove(agent.tempHealthCheck)
+		}
 	}
-
-	logger.Debugf("%v", Body)
-	primary := Body.Agent.Primary.IP
-	agent.schedulerInterval = Body.Me.CallCycle
-
-	return primary
 }

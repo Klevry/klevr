@@ -29,6 +29,7 @@ type Me struct {
 	Version   string `json:"version"`
 	CallCycle int    `json:"callCycle"`
 	LogLevel  string `json:"logLevel"`
+	Deleted   bool   `json:"deleted"`
 	Resource
 }
 

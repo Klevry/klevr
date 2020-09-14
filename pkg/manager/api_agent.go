@@ -47,6 +47,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
 	registURI(agent, GET, "/commands/init", agentAPI.getInitCommand)
 	registURI(agent, POST, "/zones/init", agentAPI.receiveInitResult)
+	registURI(agent, ANY, "/{agentKey}/tempHeartBeat", agentAPI.tempHeartBeat)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -106,6 +107,41 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	ctx.Put(common.CustomHeaderName, h)
 
 	return h
+}
+
+func (api *agentAPI) tempHeartBeat(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	tx := GetDBConn(ctx)
+
+	var requestBody common.Body
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	paramAgent := requestBody.Me
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	agent := tx.getAgentByAgentKey(ch.AgentKey)
+
+	if agent.Id == 0 && agent.AgentKey == "" {
+		rb.Me.Deleted = true
+	} else {
+		upsertAgent(tx, agent, ch, &paramAgent)
+	}
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {

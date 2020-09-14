@@ -35,6 +35,7 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
 		logger.Errorf("HTTP PUT Request error: %v", err)
+		panic(err)
 	}
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
@@ -47,6 +48,8 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 		defer res.Body.Close()
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
+
+		logger.Debugf("response : [%+v]", res)
 	} else {
 		logger.Error(err)
 	}
