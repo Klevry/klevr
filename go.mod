@@ -49,7 +49,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	k8s.io/apimachinery v0.19.0
+	k8s.io/apimachinery v0.19.1
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.3.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect

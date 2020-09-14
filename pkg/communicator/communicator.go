@@ -85,7 +85,7 @@ func Get_Json_http(url string, agent string, api string, zone string) []byte {
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	} else {
-		logger.Errorf("Server connection error: ", err)
+		logger.Errorf("Server connection error: %v", err)
 	}
 	return body
 }
