@@ -1,19 +1,34 @@
-# Make declare first
-# declare -x WEBCONSOLE="192.168.2.100:8000"
-# or use under variable
-# WEBCONSOLE=localhost:8080
-hello:
-	# make run/build
+docker_version="latest"
 
-init:
+.PHONY: help init require build run login docker docker-compose all
+
+help: ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+init: ## Run "go mod init"
 	go mod init
-require:
+
+require: ## Check go requirement
 	go get -u
-
+#	curl -sL bit.ly/go_req | bash
 build: require
-	env GOOS=linux GOARCH=amd64 go build -o ./Dockerfile/klevr ./main.go
-run:
-##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
-	go run ./main.go -apiKey="wnskslxptmxmrPwjd123" -platform="linux_laptop" -manager="192.168.0.11:8090" -zoneId="8282"
+	#go build -o ./Docker/klevr-manager ./main.go
+	GOOS=linux GOARCH=amd64 go build -o ./Docker/klevr-manager ./main.go
 
-all: build
+run: ## Run main.go with klevr-manager-local.yaml
+	go run ./main.go -config ../../conf/klevr-manager-local.yml
+
+login: ## Login to DockerHub.io
+	sudo docker login
+
+docker: login ## Build docker image and push to repo
+	cp -Rfv ../../conf/* ./Docker/conf/
+	sudo docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
+	sudo docker push klevry/klevr-manager:${docker_version}
+
+docker-compose: ## Up docker-compose (There is no docker-compose yet.)
+	sudo docker-compose down
+	sudo docker-compose -f ../docker-compose.yml up -d
+
+all: build docker ## Do 'build', 'docker' proccess in make
+
