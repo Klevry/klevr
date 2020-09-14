@@ -36,7 +36,7 @@ type queueItem struct {
 }
 
 // NewChannelQueue creator for queue struct
-// Must call Close() method When the use of the queue is compelete.
+// Must call Close() method When the use of the queue is complete.
 func NewChannelQueue(chanBufSize uint32) *Queue {
 	q := &channelQueue{
 		buf:     make(chan interface{}, chanBufSize),
@@ -168,7 +168,7 @@ type mutexQueue struct {
 }
 
 // NewMutexQueue creator for queue struct
-// Must call Close() method When the use of the queue is compelete.
+// Must call Close() method When the use of the queue is complete.
 func NewMutexQueue() *Queue {
 	q := &mutexQueue{
 		item:  list.New(),
