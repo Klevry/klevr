@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/NexClipper/logger"
 	"github.com/kelseyhightower/envconfig"
@@ -119,6 +120,22 @@ func main() {
 			if c.String("webhook.url") != "" {
 				config.Klevr.Server.Webhook.Url = c.String("webhook.url")
 			}
+
+			var level logger.Level
+			switch strings.ToLower(config.Log.Level) {
+			case "debug":
+				level = 0
+			case "info":
+				level = 1
+			case "warn", "warning":
+				level = 2
+			case "error":
+				level = 3
+			case "fatal":
+				level = 4
+			}
+
+			logger.SetLevel(level)
 
 			// common.ContextPut("appConfig", config)
 			// common.ContextPut("cliContext", c)

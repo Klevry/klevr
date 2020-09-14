@@ -94,7 +94,6 @@ func (manager *KlevrManager) Run() error {
 
 	db, err := manager.Config.DB.Connect()
 	if err != nil {
-		logger.Debug("gggg")
 		logger.Fatal("Database connect failed : ", err)
 	}
 	defer db.Close()

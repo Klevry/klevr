@@ -27,3 +27,5 @@ klevr:
         maxOpenConns: 10
         maxIdleConns: 5
         maxConnLifeTime: 1
+        showSql: true
+        logLevel: debug
