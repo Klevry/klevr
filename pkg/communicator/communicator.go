@@ -97,7 +97,11 @@ func Delete_http(uri, api_key_string string) {
 	req, _ := http.NewRequest("DELETE", uri, nil)
 	req.Header.Add("nexcloud-auth-token", api_key_string)
 	req.Header.Add("cache-control", "no-cache")
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 	defer res.Body.Close()
 }
 
