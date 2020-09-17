@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/NexClipper/logger"
@@ -36,8 +37,9 @@ func HandShake(agent *KlevrAgent) string {
 		logger.Error(err2)
 	}
 
-	logger.Debugf("%v", Body.Agent.Primary)
+	logger.Debugf("%v", Body)
 	primary := Body.Agent.Primary.IP
+	agent.schedulerInterval = Body.Me.CallCycle
 
 	return primary
 }

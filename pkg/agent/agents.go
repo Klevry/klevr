@@ -1,9 +1,12 @@
 package agent
 
 import (
-	"github.com/jasonlvhit/gocron"
 	"net/http"
+
+	"github.com/jasonlvhit/gocron"
 )
+
+const defaultSchedulerInterval int = 5
 
 type DiskStatus struct {
 	All  uint64 `json:"all"`
@@ -12,12 +15,15 @@ type DiskStatus struct {
 }
 
 type KlevrAgent struct {
-	API_key  string
-	Platform string
-	Zone     string
-	Manager  string
-	AgentKey string
-	Version  string
+	API_key           string
+	Platform          string
+	Zone              string
+	Manager           string
+	AgentKey          string
+	Version           string
+	schedulerInterval int
+	initialized       bool
+	scheduler         *gocron.Scheduler
 }
 
 func NewKlevrAgent() *KlevrAgent {
@@ -39,21 +45,27 @@ func (agent *KlevrAgent) Run() {
 }
 
 func (agent *KlevrAgent) startScheduler(prim string) {
+	var scheduleFunc interface{}
 
-	if Check_primary(prim) == "true" {
-		primScheduler := gocron.NewScheduler()
-		primScheduler.Every(5).Seconds().Do(printprimary, prim)
-		primScheduler.Every(5).Seconds().Do(getCommand, agent, primScheduler)
+	if Check_primary(prim) {
+		var interval int
+		if interval = agent.schedulerInterval; interval <= 0 {
+			interval = defaultSchedulerInterval
+		}
 
-		go func() {
-			<-primScheduler.Start()
-		}()
+		go getCommand(agent)
+
+		scheduleFunc = agent.tempHealthCheck
 	} else {
-		s := gocron.NewScheduler()
-		s.Every(5).Seconds().Do(printprimary)
-
-		go func() {
-			<-s.Start()
-		}()
+		scheduleFunc = PrimaryStatusReport
 	}
+
+	s := gocron.NewScheduler()
+	s.Every(5).Seconds().Do(scheduleFunc)
+
+	agent.scheduler = s
+
+	go func() {
+		<-s.Start()
+	}()
 }

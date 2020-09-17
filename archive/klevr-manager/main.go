@@ -417,7 +417,7 @@ func run() int {
 	println("Service port:", Service_port)
 	println("Target API Server:", ConsulURL)
 	err := http.ListenAndServe(":"+Service_port, r)
-	log.Printf("Web-console operation error: ", err.Error)
+	log.Printf("Web-console operation error: %v", err)
 
 	return 1
 }

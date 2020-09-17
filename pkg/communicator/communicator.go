@@ -35,6 +35,7 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
 		logger.Errorf("HTTP PUT Request error: %v", err)
+		panic(err)
 	}
 
 	req.Header.Set("Content-Type", "json/application; charset=utf-8")
@@ -47,6 +48,8 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 		defer res.Body.Close()
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
+
+		logger.Debugf("response : [%+v]", res)
 	} else {
 		logger.Error(err)
 	}
@@ -85,7 +88,7 @@ func Get_Json_http(url string, agent string, api string, zone string) []byte {
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 	} else {
-		logger.Errorf("Server connection error: ", err)
+		logger.Errorf("Server connection error: %v", err)
 	}
 	return body
 }
@@ -94,7 +97,11 @@ func Delete_http(uri, api_key_string string) {
 	req, _ := http.NewRequest("DELETE", uri, nil)
 	req.Header.Add("nexcloud-auth-token", api_key_string)
 	req.Header.Add("cache-control", "no-cache")
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 	defer res.Body.Close()
 }
 
