@@ -2,8 +2,13 @@ FROM golang:1.15.2
 
 WORKDIR /go/src/app
 
+COPY . .
+
+RUN pwd
+RUN ls -al
+
 RUN cd cmd/klevr-agent
-RUN make build
+RUN make build ./
 RUN cd ../..
 
 RUN cd cmd/klevr-manager
