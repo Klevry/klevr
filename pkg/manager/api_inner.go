@@ -73,10 +73,12 @@ func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		a := tx.getAgentByID(primary.AgentId)
 
 		agent = common.Agent{
-			AgentKey: a.AgentKey,
-			IP:       a.Ip,
-			Port:     a.Port,
-			Version:  a.Version,
+			AgentKey:           a.AgentKey,
+			IsActive:           a.IsActive,
+			LastAliveCheckTime: a.LastAliveCheckTime.Unix(),
+			IP:                 a.Ip,
+			Port:               a.Port,
+			Version:            a.Version,
 			Resource: &common.Resource{
 				Core:   a.Cpu,
 				Memory: a.Memory,
@@ -116,10 +118,12 @@ func getAgents(w http.ResponseWriter, r *http.Request) {
 	if cnt > 0 {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
-				AgentKey: a.AgentKey,
-				IP:       a.Ip,
-				Port:     a.Port,
-				Version:  a.Version,
+				AgentKey:           a.AgentKey,
+				IsActive:           a.IsActive,
+				LastAliveCheckTime: a.LastAliveCheckTime.Unix(),
+				IP:                 a.Ip,
+				Port:               a.Port,
+				Version:            a.Version,
 				Resource: &common.Resource{
 					Core:   a.Cpu,
 					Memory: a.Memory,

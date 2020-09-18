@@ -42,15 +42,15 @@ require (
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/zcalusic/sysinfo v0.0.0-20200228145645-a159d7cc708b
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200909081042-eff7692f9009 // indirect
+	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
 	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20200913032122-97363e29fc9b // indirect
+	golang.org/x/tools v0.0.0-20200915201639-f4cefd1cb5ba // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	k8s.io/apimachinery v0.19.1
+	k8s.io/apimachinery v0.19.2
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.3.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
