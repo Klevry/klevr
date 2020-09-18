@@ -1,0 +1,13 @@
+FROM golang:1.15.2
+
+WORKDIR /go/src/app
+
+RUN cd cmd/klevr-agent
+RUN make build
+RUN cd ../..
+
+RUN cd cmd/klevr-manager
+RUN make build
+RUN cd ../..
+
+CMD ["echo", "build complete"]
