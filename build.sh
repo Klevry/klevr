@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd /go/src/app
-
 cd cmd/klevr-agent
 make build
 cd ../..
