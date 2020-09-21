@@ -2,6 +2,7 @@ version: '3'
 services: 
     klevr-manager:
         image: ${KLEVR_IMAGE}
+        container_name: dev_klevr-manager
         ports:
            - "8090:8090"
         volumes:
