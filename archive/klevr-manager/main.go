@@ -82,7 +82,7 @@ func Set_param() string {
 
 //company user zone platform
 //%s/+group+"/users/"+user+"/zones/"+zone+/+group+"\/groups/"+group+"/users/"+user+"/zones/"+zone+"\/zones/"+zone+/g
-/// Get Primary server infomation for secondary agent control
+/// Get Primary server information for secondary agent control
 func Get_primary(group, user, zone, platform string) string {
 	Primary_info = communicator.Get_http(ConsulURL+"/v1/kv/klevr/groups/"+group+"/users/"+user+"/zones/"+zone+"/platforms/"+platform+"/primarys?raw=1", API_key_string)
 	if len(Primary_info) == 0 {
@@ -417,7 +417,7 @@ func run() int {
 	println("Service port:", Service_port)
 	println("Target API Server:", ConsulURL)
 	err := http.ListenAndServe(":"+Service_port, r)
-	log.Printf("Web-console operation error: ", err.Error)
+	log.Printf("Web-console operation error: %v", err)
 
 	return 1
 }

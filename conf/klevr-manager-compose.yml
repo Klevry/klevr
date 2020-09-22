@@ -15,7 +15,7 @@ klevr:
         transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
         statusUpdateCycle: 60 #seconds
         webhook:
-            url: "http://localhost:8080/events/klevr"
+            url: "http://nexclipper-server:8080/events/klevr"
             hookTerm: 0 #seconds (0 : each event)
             hookCount: 0 #(0: each event)
     agent:
@@ -27,3 +27,5 @@ klevr:
         maxOpenConns: 10
         maxIdleConns: 5
         maxConnLifeTime: 1
+        showSql: false
+        logLevel: warn

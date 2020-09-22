@@ -25,18 +25,29 @@ const (
 	CHeaderTimestamp      = "X-TIMESTAMP"
 )
 
+type agentAPI int
+
 // InitAgent initialize agent API
+// @title Klevr-Manager API
+// @version 1.0
+// @description
+// @contact.name mrchopa
+// @contact.email ys3gods@gmail.com
+// @BasePath /
 func (api *API) InitAgent(agent *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 
 	// registURI(agent, PUT, "/handshake", api.receiveHandshake)
 	// registURI(agent, PUT, "/:agentKey", api.receivePolling)
 
-	registURI(agent, PUT, "/handshake", receiveHandshake)
-	registURI(agent, PUT, "/{agentKey}", receivePolling)
-	registURI(agent, GET, "/reports/{agentKey}", checkPrimaryInfo)
-	registURI(agent, GET, "/commands/init", getInitCommand)
-	registURI(agent, POST, "/zones/init", receiveInitResult)
+	agentAPI := agentAPI(0)
+
+	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
+	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
+	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
+	registURI(agent, GET, "/commands/init", agentAPI.getInitCommand)
+	registURI(agent, POST, "/zones/init", agentAPI.receiveInitResult)
+	registURI(agent, ANY, "/{agentKey}/tempHeartBeat", agentAPI.tempHeartBeat)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -98,7 +109,51 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func receiveInitResult(w http.ResponseWriter, r *http.Request) {
+// TempHeartBeat godoc
+// @Summary (MVP1을 위한 임시 제공 API)에이전트의 주기적인 상태체크를 처리한다.
+// @Description 에이전트의 상태 체크를 위해 primary agent가 지속적으로 호출하여 status를 갱신한다.
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /agents/{agentKey}/tempHeartBeat [get]
+// @Param Request.Body json common.Body.Me true "agent 정보"
+// @Success 200 {object} common.Body "common.Body.Me.deleted=true 인 경우 agent polling이 중지된다."
+func (api *agentAPI) tempHeartBeat(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	tx := GetDBConn(ctx)
+
+	var requestBody common.Body
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	paramAgent := requestBody.Me
+
+	// response 데이터 생성
+	rb := &common.Body{}
+
+	agent := tx.getAgentByAgentKey(ch.AgentKey)
+
+	if agent.Id == 0 && agent.AgentKey == "" {
+		rb.Me.Deleted = true
+	} else {
+		upsertAgent(tx, agent, ch, &paramAgent)
+	}
+
+	b, err := json.Marshal(rb)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	tx := GetDBConn(ctx)
@@ -115,7 +170,12 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 
 	tasks := requestBody.Task
 
+	for _, t := range tasks {
+		t.Result.Params = t.Params
+	}
+
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
+	tx.Commit()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -138,7 +198,7 @@ func receiveInitResult(w http.ResponseWriter, r *http.Request) {
 			EventType: PrimaryInit,
 			AgentId:   agent.Id,
 			GroupId:   agent.GroupId,
-			EventTime: time.Now().UTC(),
+			EventTime: &JSONTime{time.Now().UTC()},
 			Result:    string(result),
 		})
 	}
@@ -151,22 +211,17 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 		for _, t := range *tasks {
 			p, _ := json.Marshal(t.Params)
 
-			param := &TaskParams{
-				TaskId: t.ID,
-				Params: string(p),
-			}
-
 			tx.updateTask(&Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
-				Params:      param,
+				Result:      string(p),
 			})
 		}
 	}
 }
 
-func getInitCommand(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) getInitCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	tx := GetDBConn(ctx)
@@ -215,11 +270,21 @@ func getInitCommand(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func receiveHandshake(w http.ResponseWriter, r *http.Request) {
+// ReceiveHandshake godoc
+// @Summary 에이전트의 handshake 요청을 받아 처리한다.
+// @Description 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /agents/handshake [get]
+// @Param Request.Body json common.Body.Me true "agent 정보"
+// @Success 200 {object} common.Body
+func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+
+	tx := GetDBConn(ctx)
 	var requestBody common.Body
 	var paramAgent common.Me
 
@@ -296,15 +361,15 @@ func receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		EventType: AgentConnect,
 		AgentId:   agent.Id,
 		GroupId:   agent.GroupId,
-		EventTime: time.Now().UTC(),
+		EventTime: &JSONTime{time.Now().UTC()},
 	})
 }
 
-func receivePolling(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -339,6 +404,7 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx.updateZoneStatus(&arrAgent)
+	tx.Commit()
 
 	// TODO: 수행한 task 상태 정보 업데이트
 	// for i, task := range param.Task {
@@ -356,11 +422,11 @@ func receivePolling(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
+func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
-	var tx = GetDBConn(ctx)
+	tx := GetDBConn(ctx)
 	var param common.Body
 
 	err := json.NewDecoder(r.Body).Decode(&param)

@@ -42,6 +42,7 @@ func CommonWrappingHandler(ctx *common.Context) mux.MiddlewareFunc {
 
 					// request context 생성
 					rCtx := common.FromContext(ctx)
+
 					// Request context에 DB session 설정
 					rCtx.Put(CtxDbSession, tx)
 

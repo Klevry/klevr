@@ -5,6 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NexClipper/logger"
+
+	"xorm.io/xorm/log"
+
 	"xorm.io/xorm/names"
 
 	_ "github.com/go-sql-driver/mysql" //justifying
@@ -23,6 +27,8 @@ type DBInfo struct {
 	MaxIdleConns    int
 	MaxConnLifeTime int
 	InitScriptPath  string
+	ShowSql         bool
+	LogLevel        string
 }
 
 type DB struct {
@@ -45,6 +51,24 @@ func (info *DBInfo) Connect() (*DB, error) {
 	db.SetConnMaxLifetime(time.Duration(info.MaxConnLifeTime) * time.Second)
 
 	db.SetTableMapper(CustomTableNameMapper{})
+
+	db.ShowSQL(info.ShowSql)
+
+	switch strings.ToLower(info.LogLevel) {
+	case "debug":
+		db.SetLogLevel(log.LOG_DEBUG)
+	case "info":
+		db.SetLogLevel(log.LOG_INFO)
+	case "warn":
+		db.SetLogLevel(log.LOG_WARNING)
+	case "error":
+		db.SetLogLevel(log.LOG_ERR)
+	default:
+		db.SetLogLevel(log.LOG_OFF)
+	}
+
+	logger.Infof("DB log lever : [%s]", info.LogLevel)
+	logger.Infof("DB show sql : [%v]", info.ShowSql)
 
 	return &DB{db}, err
 }

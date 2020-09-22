@@ -1,22 +1,21 @@
 docker_version="latest"
 
-hello:
-	#
-	# You can use - build / run / docker / all
-	#
-require:
+.PHONY: help require build run login docker all
+
+help: ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+require: ## Check go env requirement
 	go get -u
-#	curl -sL bit.ly/go_req | bash
-build: require
+build: require ##Build Go with require process
 	go build -o ./beacon ./main.go
-run:
+run: ##Run main.go
 	go run ./main.go
-login:
+login: ##Loin in to DockerHub.io
 	docker login
 
-docker: login
+docker: login ##Build Docker image and Push to docker repo
 	docker build -t klevry/beacon:${docker_version} ./ --no-cache
 	docker push klevry/beacon:${docker_version}
 
-all: build docker
+all: build docker ##Build go, Docker image and push
 

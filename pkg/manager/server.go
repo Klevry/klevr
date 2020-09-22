@@ -94,7 +94,6 @@ func (manager *KlevrManager) Run() error {
 
 	db, err := manager.Config.DB.Connect()
 	if err != nil {
-		logger.Debug("gggg")
 		logger.Fatal("Database connect failed : ", err)
 	}
 	defer db.Close()
@@ -117,7 +116,6 @@ func (manager *KlevrManager) Run() error {
 
 	return s.ListenAndServe()
 }
-
 func (manager *KlevrManager) startEventHandler() {
 	webhookConf := manager.Config.Server.Webhook
 	url := webhookConf.Url
@@ -184,7 +182,7 @@ func (manager *KlevrManager) startEventHandler() {
 
 // AddEvent add klevr event for webhook
 func AddEvent(event *KlevrEvent) {
-	logger.Debugf("add event : [%+v]", event)
+	logger.Debugf("add event : [%+v]", *event)
 
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
 	hookConfig := manager.Config.Server.Webhook
@@ -215,18 +213,19 @@ func sendSingleEventWebHook(url string, event *KlevrEvent) {
 func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Errorf("sendEvent recorver from - %v", r)
+			logger.Errorf("sendEvent recover from - %v", r)
 		}
 	}()
 
 	b, err := json.Marshal(*events)
 	if err != nil {
 		retryFailedEvent(events, false)
-		panic("kelvr webhook event marshal error.")
+		panic("klevr webhook event marshal error.")
 	}
 
 	logger.Debugf("%+v", *events)
 	logger.Debugf("%d", len(*events))
+	logger.Debugf("%s", string(b))
 
 	res, err := http.Post(url, "application/json", bytes.NewReader(b))
 
@@ -263,7 +262,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.D
 	for {
 		db := CtxGetDbConn(ctx)
 
-		time.Sleep(cycle * time.Second)
+		time.Sleep(cycle / 2 * time.Second)
 		logger.Debugf("sleep duration : %+v", cycle*time.Second)
 
 		tx := &Tx{db.NewSession()}
@@ -287,18 +286,8 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.D
 						len := len(*agents)
 						ids := make([]uint64, len)
 
-						eventTime := time.Now().UTC()
-
 						for i := 0; i < len; i++ {
-							agent := (*agents)[i]
-							ids[i] = agent.Id
-
-							AddEvent(&KlevrEvent{
-								EventType: AgentDisconnect,
-								AgentId:   agent.Id,
-								GroupId:   agent.GroupId,
-								EventTime: eventTime,
-							})
+							ids[i] = (*agents)[i].Id
 						}
 
 						tx.updateAgentStatus(ids)

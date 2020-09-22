@@ -38,9 +38,9 @@ type CommandWrapper struct {
 // Command 종류별로 구현해야 하는 커맨드 struct.
 // 사용자는 필요한 Command를 추가로 생성해야 한다.
 type Command struct {
-	Name     string
-	Run      func(*map[string]interface{}) (interface{}, error)
-	Recorver func(*map[string]interface{}) (interface{}, error)
+	Name    string
+	Run     func(*map[string]interface{}) (interface{}, error)
+	Recover func(*map[string]interface{}) (interface{}, error)
 }
 
 // TaskResult task 수행 결과 struct
