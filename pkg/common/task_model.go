@@ -25,18 +25,27 @@ const (
 )
 
 type Task struct {
-	ID             uint64
-	AgentKey       string
-	ExeAgentKey    string
-	TotalStepCount int
-	CurrentStep    int
-	HasRecover     bool
+	ID                uint64     // TASK ID
+	TaskType          TaskType   // Task 수행 타입
+	AgentKey          string     // Task가 수행될 에이전트 key
+	ExeAgentKey       string     // 실제 task가 수행된 에이전트 key
+	ExeAgentChangable bool       // Task를 수행할 에이전트 변동 가능 여부
+	TotalStepCount    int        // 전체 task step 수
+	CurrentStep       int        // 현재 진행중인 task step 번호 (대기 or 실행중)
+	HasRecover        bool       // recover step 존재 여부
+	Parameter         string     // Task 실행 파라미터(JSON)
+	Steps             []Step     // Task 실행 step
+	Callback          string     // Task 완료 결과를 전달받을 URL(Klevr manager 외의 별도 등록 서버)
+	Result            string     // Task 수행 결과물
+	Status            TaskStatus // Task 상태
 }
 
-type Command struct {
+type Step struct {
+	ID          uint64      // TASK STEP ID
+	CommandType CommandType // 커맨드 타입
+	Command     string      // inline script 또는 예약어
 }
 
 type Step struct {
 	ID uint64
-	
 }
