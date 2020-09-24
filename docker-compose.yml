@@ -1,34 +1,24 @@
 version: '3'
 services: 
-   klevr-db:
-      image: mariadb
-      restart: always
-#      volumes:
-#         - ./data/mariadb:/var/lib/mysql
-      environment:
-         - MYSQL_ROOT_PASSWORD=root
-      healthcheck:
-         test: "/usr/bin/mysql --user=root --password=root --execute \"show databases;\""
-         interval: 3s
-         timeout: 1s
-         retries: 10
-      ports:
-         - "3306:3306"
-
-   klevr-manager:
-      image: klevry/klevr-manager:latest
-      ports: 
-         - "8090:8090"
-      depends_on: 
-         - klevr-db
-      links:
-         - klevr-db
-      command:
-         - bash
-         - -c
-         - |
-            chmod +x /init-db.sh
-            /init-db.sh root root klevr-db 3306 klevr ./conf/klevr-manager-db.sql
-            chmod +x /wait-for-it.sh
-            /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
-            /klevr-manager -c ./conf/klevr-manager-compose.yml
+    klevr-manager:
+        image: ${MODULE_IMAGE}
+        container_name: dev_klevr-manager
+        ports:
+           - "8090:8090"
+        volumes:
+           - ./db_backup:/nexclipper
+        environment:
+           LOG_LOGPATH: "/nexclipper/klevr_log/klevr-manager.log"
+           LOG_MAXSIZe: 5
+           LOG_MAXBACKUPS: 10
+           LOG_MAXAGE: 10
+           KLEVR_DB_URL: "${KLEVR_DB_USER}:${KLEVR_DB_PASSWD}@tcp(${KLEVR_DB_URL}:${KLEVR_DB_PORT})/klevr?charset=utf8mb4&parseTime=True&loc=Local"
+           KLEVR_DB_LOGLEVEL: "warn"
+           KLEVR_DB_SHOWSQL: "false"
+           KLEVR_SERVER_STATUSUPDATECYCLE: 30
+        command:
+           - bash
+           - -c
+           - |
+              /init-db.sh ${KLEVR_DB_USER} ${KLEVR_DB_PASSWD} ${KLEVR_DB_URL} ${KLEVR_DB_PORT} klevr ./conf/klevr-manager-db.sql /nexclipper
+              /klevr-manager -c ./conf/klevr-manager-compose.yml -hook "${NEXCLIPPER_INNER_URL}/events/klevr"

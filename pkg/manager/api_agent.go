@@ -109,6 +109,15 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
+// TempHeartBeat godoc
+// @Summary (MVP1을 위한 임시 제공 API)에이전트의 주기적인 상태체크를 처리한다.
+// @Description 에이전트의 상태 체크를 위해 primary agent가 지속적으로 호출하여 status를 갱신한다.
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /agents/{agentKey}/tempHeartBeat [get]
+// @Param Request.Body json common.Body.Me true "agent 정보"
+// @Success 200 {object} common.Body "common.Body.Me.deleted=true 인 경우 agent polling이 중지된다."
 func (api *agentAPI) tempHeartBeat(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
@@ -161,6 +170,10 @@ func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 
 	tasks := requestBody.Task
 
+	for _, t := range tasks {
+		t.Result.Params = t.Params
+	}
+
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
 	tx.Commit()
 
@@ -198,16 +211,11 @@ func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
 		for _, t := range *tasks {
 			p, _ := json.Marshal(t.Params)
 
-			param := &TaskParams{
-				TaskId: t.ID,
-				Params: string(p),
-			}
-
 			tx.updateTask(&Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
-				Params:      param,
+				Result:      string(p),
 			})
 		}
 	}
@@ -268,7 +276,9 @@ func (api *agentAPI) getInitCommand(w http.ResponseWriter, r *http.Request) {
 // @Tags agents
 // @Accept json
 // @Produce json
-// @Router /accounts/{id} [get]
+// @Router /agents/handshake [get]
+// @Param Request.Body json common.Body.Me true "agent 정보"
+// @Success 200 {object} common.Body
 func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)

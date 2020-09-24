@@ -262,7 +262,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.D
 	for {
 		db := CtxGetDbConn(ctx)
 
-		time.Sleep(cycle * time.Second)
+		time.Sleep(cycle / 2 * time.Second)
 		logger.Debugf("sleep duration : %+v", cycle*time.Second)
 
 		tx := &Tx{db.NewSession()}

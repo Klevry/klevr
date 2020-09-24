@@ -71,19 +71,28 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
-	cnt, err := tx.Table(&Agents{}).
-		Join("INNER", "PRIMARY_AGENTS", "AGENTS.ID = PRIMARY_AGENTS.AGENT_ID").
-		Where("AGENTS.IS_ACTIVE = ?", true).And("AGENTS.LAST_ACCESS_TIME < ?", before).
-		Cols("AGENTS.ID").FindAndCount(&agents)
+	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID").Find(&agents)
 	if err != nil {
 		panic(err)
 	}
+
+	cnt := int64(len(agents))
+	// cnt, err := tx.Table(&Agents{}).
+	// 	Join("INNER", "PRIMARY_AGENTS", "AGENTS.ID = PRIMARY_AGENTS.AGENT_ID").
+	// 	Where("AGENTS.IS_ACTIVE = ?", true).And("AGENTS.LAST_ACCESS_TIME < ?", before).
+	// 	Cols("AGENTS.ID").FindAndCount(&agents)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	logger.Debugf("getAgentsForInactive count : %d, agents : %+v", cnt, &agents)
 
 	return cnt, &agents
 }
 
 func (tx *Tx) updateAgentStatus(ids []uint64) {
 	cnt, err := tx.Table(new(Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": false})
+	logger.Debugf("Status updated Agent(%d) : [%+v]", cnt, ids)
 
 	if err != nil {
 		panic(err)
@@ -150,8 +159,23 @@ func (tx *Tx) addAgent(a *Agents) {
 }
 
 func (tx *Tx) updateAgent(a *Agents) {
-	cnt, err := tx.Where("id = ?", a.Id).Update(a)
-	logger.Debugf("Updated Agent(%d) : %v", cnt, a)
+	cnt, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
+		"CPU":                   a.Cpu,
+		"DISK":                  a.Disk,
+		"ENC_KEY":               a.EncKey,
+		"HMAC_KEY":              a.HmacKey,
+		"IP":                    a.Ip,
+		"IS_ACTIVE":             a.IsActive,
+		"LAST_ACCESS_TIME":      a.LastAccessTime,
+		"LAST_ALIVE_CHECK_TIME": a.LastAliveCheckTime,
+		"MEMORY":                a.Memory,
+		"PORT":                  a.Port,
+		"VERSION":               a.Version,
+		"UPDATED_AT":            time.Now().UTC(),
+	})
+	// cnt, err := tx.Where("id = ?", a.Id).Update(a)
+	logger.Debugf("Updated Agent - id : [%d], agentKey : [%s], isActive : [%v], lastAccessTime : [%v]", a.Id, a.AgentKey, a.IsActive, a.LastAccessTime)
+	// logger.Debugf("Updated Agent(%d) : %v", cnt, a)
 
 	if err != nil {
 		panic(err)

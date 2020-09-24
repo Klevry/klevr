@@ -19,16 +19,16 @@ run: ## Run main.go with klevr-manager-local.yaml
 	go run ./main.go -config ../../conf/klevr-manager-local.yml
 
 login: ## Login to DockerHub.io
-	sudo docker login
+	docker login
 
 docker: login ## Build docker image and push to repo
 	cp -Rfv ../../conf/* ./Docker/conf/
-	sudo docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
-	sudo docker push klevry/klevr-manager:${docker_version}
+	docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
+	docker push klevry/klevr-manager:${docker_version}
 
 docker-compose: ## Up docker-compose (There is no docker-compose yet.)
-	sudo docker-compose down
-	sudo docker-compose -f ../docker-compose.yml up -d
+	docker-compose down
+	docker-compose -f ../docker-compose.yml up -d
 
 all: build docker ## Do 'build', 'docker' proccess in make
 
