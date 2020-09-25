@@ -1,5 +1,9 @@
 CREATE DATABASE  IF NOT EXISTS `klevr` /*!40100 DEFAULT CHARACTER SET utf8 */;
 USE `klevr`;
+
+CREATE USER 'klevr'@'%' identified by 'klevr';
+GRANT ALL PRIVILEGES ON klevr.* to `klevr`@`%`;
+
 -- MariaDB dump 10.17  Distrib 10.4.13-MariaDB, for osx10.15 (x86_64)
 --
 -- Host: 127.0.0.1    Database: klevr
@@ -179,6 +183,17 @@ CREATE TABLE IF NOT EXISTS `TASK_PARAMS` (
 
 -- Dump completed on 2020-08-04 16:40:22
 
-CREATE USER 'klevr'@'%' identified by 'klevr';
-
-GRANT ALL PRIVILEGES ON klevr.* to `klevr`@`%`;
+CREATE TABLE IF NOT EXISTS `TASK_DETAIL` (
+  `TASK_ID` BIGINT UNSIGNED NOT NULL,
+  `CRON` VARCHAR(45) NULL COMMENT 'TASK 타입이 iteration일 경우 반복 실행 cron 주기',
+  `UNTIL_RUN` TIMESTAMP NULL COMMENT 'TASK 타입이 iteration일 경우 실행 기한',
+  `TIMEOUT` VARCHAR(45) NULL COMMENT 'TASK 실행 timeout 시간 (seconds)',
+  `EXE_AGENT_CHANGEABLE` VARCHAR(45) NULL COMMENT 'TASK를 수행할 에이전트 변동 가능 여부',
+  `TOTAL_STEP_COUNT` INT NULL COMMENT '전체 TASK STEP 수',
+  `CURRENT_STEP` INT NULL COMMENT '현재 진행중인 TASK STEP 번호 (대기 or 실행중)',
+  `HAS_RECOVER` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'RECOVER STEP 존재 여부',
+  `PARAMETER` TEXT NULL COMMENT 'TASK 실행 파라미터(JSON)',
+  `CALLBACK_URL` VARCHAR(300) NULL COMMENT 'TASK 완료 결과를 전달받을 URL(Klevr manager 외의 별도 등록 서버)',
+  `RESULT` TEXT NULL COMMENT 'TASK 수행 결과물',
+  PRIMARY KEY (`TASK_ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT = 'TASK 실행 상세 정보 테이블';

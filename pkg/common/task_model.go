@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // TaskType for Task struct
 type TaskType string
 
@@ -25,19 +27,26 @@ const (
 )
 
 type Task struct {
-	ID                uint64     // TASK ID
-	TaskType          TaskType   // Task 수행 타입
-	AgentKey          string     // Task가 수행될 에이전트 key
-	ExeAgentKey       string     // 실제 task가 수행된 에이전트 key
-	ExeAgentChangable bool       // Task를 수행할 에이전트 변동 가능 여부
-	TotalStepCount    int        // 전체 task step 수
-	CurrentStep       int        // 현재 진행중인 task step 번호 (대기 or 실행중)
-	HasRecover        bool       // recover step 존재 여부
-	Parameter         string     // Task 실행 파라미터(JSON)
-	Steps             []Step     // Task 실행 step
-	Callback          string     // Task 완료 결과를 전달받을 URL(Klevr manager 외의 별도 등록 서버)
-	Result            string     // Task 수행 결과물
-	Status            TaskStatus // Task 상태
+	ID                 uint64     // TASK ID
+	TaskType           TaskType   // Task 수행 타입
+	Schedule           time.Time  // Task가 수행될 일정
+	Cron               string     // Task 타입이 iteration일 경우 반복 실행 cron 주기
+	UntilRun           time.Time  // Task 타입이 iteration일 경우 실행 기한
+	Timeout            uint       // Task 실행 timeout 시간(seconds)
+	AgentKey           string     // Task가 수행될 에이전트 key
+	ExeAgentKey        string     // 실제 task가 수행된 에이전트 key
+	ExeAgentChangEable bool       // Task를 수행할 에이전트 변동 가능 여부
+	TotalStepCount     int        // 전체 task step 수
+	CurrentStep        int        // 현재 진행중인 task step 번호 (대기 or 실행중)
+	HasRecover         bool       // recover step 존재 여부
+	Parameter          string     // Task 실행 파라미터(JSON)
+	Steps              []Step     // Task 실행 step
+	CallbackUrl        string     // Task 완료 결과를 전달받을 URL(Klevr manager 외의 별도 등록 서버)
+	Result             string     // Task 수행 결과물
+	Status             TaskStatus // Task 상태
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeletedAt          time.Time
 }
 
 type Step struct {
