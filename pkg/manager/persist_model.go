@@ -59,16 +59,42 @@ type TaskLock struct {
 	LockDate   time.Time
 }
 
+// TaskType for Task struct
+type TaskType string
+
+// TaskStatus for Task struct
+type TaskStatus string
+
+type CommandType string
+
+const (
+	AtOnce    = TaskType("atOnce")    // 한번만 실행
+	Iteration = TaskType("iteration") // 반복 수행(with condition)
+	LongTerm  = TaskType("longTerm")  // 장기간 수행
+)
+
+const (
+	Complete = TaskStatus("complete") // Task 수행 완료
+)
+
+// Define TaskTypes
+const (
+	RESERVED = CommandType("reserved") // 지정된 예약어(커맨드)
+	INLINE   = CommandType("inline")   // CLI inline 커맨드
+)
+
 type Tasks struct {
 	Id          uint64 `xorm:"PK"`
-	Type        string
-	Command     string
 	ZoneId      uint64
+	Name        string
+	TaskType    TaskType
+	Schedule    time.Time
 	AgentKey    string
 	ExeAgentKey string
-	Status      string
-	Params      *TaskParams `xorm:"foreignKey:Id"`
-	Logs        *TaskLogs   `xorm:"foreignKey:Id"`
+	Status      TaskStatus
+	TaskDetail  *TaskDetail  `xorm:"foreignKey:Id"`
+	TaskSteps   *[]TaskSteps `xorm:"foreignKey:Id"`
+	Logs        *TaskLogs    `xorm:"foreignKey:Id"`
 	Result      string
 	CreatedAt   time.Time `xorm:"created"`
 	UpdatedAt   time.Time `xorm:"updated"`
@@ -76,14 +102,33 @@ type Tasks struct {
 }
 
 type TaskLogs struct {
-	TaskId    uint64 `xorm:"PK"`
-	Logs      string
-	CreatedAt time.Time `xorm:"created"`
+	TaskId uint64 `xorm:"PK"`
+	Logs   string
 }
 
-type TaskParams struct {
-	TaskId uint64 `xorm:"PK"`
-	Params string
+type TaskSteps struct {
+	TaskId          uint64 `xorm:"PK"`
+	CommandName     string
+	CommandType     CommandType
+	ReservedCommand string
+	InlineScript    string
+	IsRecover       bool
+}
+
+type TaskDetail struct {
+	TaskId             uint64 `xorm:"PK"`
+	Cron               string
+	UntilRun           time.Time
+	Timeout            uint
+	ExeAgentChangeable bool
+	TotalStepCount     uint
+	CurrentStep        uint
+	HasRecover         bool
+	Parameter          string
+	CallbackUrl        string
+	Result             string
+	FailedStep         uint
+	IsFailedRecover    bool
 }
 
 func (tl *TaskLock) expired() bool {

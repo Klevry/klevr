@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `TASK_LOCK` (
 -- Table structure for table `TASK_LOGS`
 --
 
-DROP TABLE IF EXISTS `TASK_LOGS`;
+-- DROP TABLE IF EXISTS `TASK_LOGS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `TASK_LOGS` (
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS `TASK_LOGS` (
 -- Table structure for table `TASK_PARAMS`
 --
 
-DROP TABLE IF EXISTS `TASK_PARAMS`;
+-- ROP TABLE IF EXISTS `TASK_PARAMS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `TASK_PARAMS` (
