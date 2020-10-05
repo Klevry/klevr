@@ -15,7 +15,7 @@ import (
 
 // get task command from git
 func getCommand(agent *KlevrAgent) {
-	SSH_provbee := "ssh provbee-service "
+	//SSH_provbee := "ssh provbee-service "
 	uri := agent.Manager + "/agents/commands/init"
 
 	var loop = true
@@ -65,8 +65,8 @@ func getCommand(agent *KlevrAgent) {
 				// 	logger.Debugf("%d-----%s", i, com[i])
 				// 	writeFile(Commands+num, com[i])
 
-				execute := SSH_provbee + com[i]
-				//execute := com[i]
+				//execute := SSH_provbee + com[i]
+				execute := com[i]
 
 				exe := exec.Command("sh", "-c", execute)
 				errExe := exe.Run()
