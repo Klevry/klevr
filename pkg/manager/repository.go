@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"xorm.io/builder"
+
 	"github.com/pkg/errors"
 
 	"github.com/Klevry/klevr/pkg/common"
@@ -253,8 +255,8 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 }
 
 func (tx *Tx) insertTask(t *Tasks) *Tasks {
-	result, err := tx.Exec("INSERT INTO `TASKS` (`id`,`type`,`command`,`zone_id`,`agent_key`,`exe_agent_key`,`status`,`updated_at`) VALUES (?,?,?,?,?,?,?,?)",
-		t.Id, t.Type, t.Command, t.ZoneId, t.AgentKey, t.ExeAgentKey, t.Status, time.Now().UTC())
+	result, err := tx.Exec("INSERT INTO `TASKS` (`zone_id`,`name`,`task_type`,`schedule`,`agent_key`,`exe_agent_key`,`status`) VALUES (?,?,?,?,?,?,?)",
+		t.ZoneId, t.Name, t.TaskType, t.Schedule, t.AgentKey, t.ExeAgentKey, t.Status)
 
 	if err != nil {
 		panic(err)
@@ -272,16 +274,36 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 
 	logger.Debugf("Inserted task : %v", t)
 
-	if t.Params.Params != "" {
-		t.Params.TaskId = t.Id
+	if t.TaskDetail != nil {
+		t.TaskDetail.TaskId = t.Id
 
-		cnt, err = tx.Insert(t.Params)
+		cnt, err = tx.Insert(t.TaskDetail)
 		if err != nil {
 			panic(err)
 		}
 
 		if cnt != 1 {
 			common.PanicForUpdate("inserted", cnt, 1)
+		}
+	}
+
+	taskStepLen := int64(len(t.TaskSteps))
+
+	if t.TaskSteps != nil && taskStepLen > 0 {
+		for i, ts := range t.TaskSteps {
+			ts.TaskId = t.Id
+
+			logger.Debugf("TaskStep %d : [%+v]", i, ts)
+			logger.Debugf("%v, %v", ((t.TaskSteps)[i]), ts)
+		}
+
+		cnt, err = tx.Insert(t.TaskSteps)
+		if err != nil {
+			panic(err)
+		}
+
+		if cnt != taskStepLen {
+			common.PanicForUpdate("inserted", cnt, taskStepLen)
 		}
 	}
 
@@ -302,9 +324,92 @@ func (tx *Tx) updateTask(t *Tasks) {
 }
 
 func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
+	var rTask RetriveTask
 	var task Tasks
-	exist := common.CheckGetQuery(tx.Where("id = ?", id).Get(&task))
-	logger.Debugf("Selected Task : %v", task)
+
+	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
+	stmt = stmt.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
+
+	exist := common.CheckGetQuery(stmt.Where("TASKS.ID = ?", id).Get(&rTask))
+	logger.Debugf("Selected Task : %v", rTask)
+
+	var steps []*TaskSteps
+
+	err := tx.Where("TASK_ID = ?", id).Find(&steps)
+	if err != nil {
+		panic(err)
+	}
+
+	task = rTask.Tasks
+	task.TaskDetail = &rTask.TaskDetail
+	task.Logs = &rTask.TaskLogs
+	task.TaskSteps = steps
 
 	return &task, exist
+}
+
+func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string, taskNames []string) (*[]Tasks, bool) {
+	var tasks []Tasks
+
+	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
+
+	// condition 추가
+	if statuses != nil {
+		stmt = stmt.And(builder.In("STATUS", statuses))
+	}
+	if agentKeys != nil {
+		stmt = stmt.And(builder.In("AGENT_KEY", agentKeys))
+	}
+	if taskNames != nil {
+		stmt = stmt.And(builder.In("NAME", taskNames))
+	}
+
+	cnt, err := stmt.FindAndCount(&tasks)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Selected Tasks : %d", cnt)
+
+	return &tasks, cnt > 0
+}
+
+func (tx *Tx) cancelTask(id uint64) bool {
+	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE ID = ? AND STATUS IN (?, ?)",
+		common.Canceled, id, common.Scheduled, common.WaitPolling)
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, _ := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	if cnt == 0 {
+		return false
+	}
+
+	return true
+}
+
+// Task 부가 데이터 삭제
+func (tx *Tx) purgeTask(id uint64) {
+	cnt, err := tx.Where("TASK_ID = ?").Delete(&TaskDetail{})
+	if err != nil {
+		panic(err)
+	}
+	if cnt != 1 {
+		common.PanicForUpdate("deleted", cnt, 1)
+	}
+
+	cnt, err = tx.Where("TASK_ID = ?").Delete(&TaskLogs{})
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
+	if err != nil {
+		panic(err)
+	}
 }

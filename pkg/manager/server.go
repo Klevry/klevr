@@ -111,7 +111,7 @@ func (manager *KlevrManager) Run() error {
 
 	go manager.startEventHandler()
 	go manager.updateAgentStatus(common.FromContext(ctx), time.Duration(manager.Config.Server.StatusUpdateCycle))
-
+	// go manager.update
 	Init(ctx)
 
 	return s.ListenAndServe()
@@ -254,6 +254,7 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	logger.Debugf("sendEventWebHook - statusCode : [%d], body : [%s]", res.StatusCode, body)
 }
 
+// TODO: event 발송 실패 재처리 구현
 func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
 
 }

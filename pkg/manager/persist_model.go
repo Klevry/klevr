@@ -2,6 +2,8 @@ package manager
 
 import (
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
 )
 
 // AgentGroups model for AGENT_GROUPS
@@ -59,45 +61,30 @@ type TaskLock struct {
 	LockDate   time.Time
 }
 
-// TaskType for Task struct
-type TaskType string
+type RetriveTask struct {
+	Tasks      `xorm:"extends"`
+	TaskDetail `xorm:"extends"`
+	TaskLogs   `xorm:"extends"`
+}
 
-// TaskStatus for Task struct
-type TaskStatus string
-
-type CommandType string
-
-const (
-	AtOnce    = TaskType("atOnce")    // 한번만 실행
-	Iteration = TaskType("iteration") // 반복 수행(with condition)
-	LongTerm  = TaskType("longTerm")  // 장기간 수행
-)
-
-const (
-	Complete = TaskStatus("complete") // Task 수행 완료
-)
-
-// Define TaskTypes
-const (
-	RESERVED = CommandType("reserved") // 지정된 예약어(커맨드)
-	INLINE   = CommandType("inline")   // CLI inline 커맨드
-)
+func (RetriveTask) TableName() string {
+	return "TASKS"
+}
 
 type Tasks struct {
 	Id          uint64 `xorm:"PK"`
 	ZoneId      uint64
 	Name        string
-	TaskType    TaskType
+	TaskType    common.TaskType
 	Schedule    time.Time
 	AgentKey    string
 	ExeAgentKey string
-	Status      TaskStatus
-	TaskDetail  *TaskDetail  `xorm:"foreignKey:Id"`
-	TaskSteps   *[]TaskSteps `xorm:"foreignKey:Id"`
-	Logs        *TaskLogs    `xorm:"foreignKey:Id"`
-	Result      string
-	CreatedAt   time.Time `xorm:"created"`
-	UpdatedAt   time.Time `xorm:"updated"`
+	Status      common.TaskStatus
+	TaskDetail  *TaskDetail  `xorm:"-"`
+	TaskSteps   []*TaskSteps `xorm:"-"`
+	Logs        *TaskLogs    `xorm:"-"`
+	CreatedAt   time.Time    `xorm:"created"`
+	UpdatedAt   time.Time    `xorm:"updated"`
 	DeletedAt   time.Time
 }
 
@@ -107,9 +94,11 @@ type TaskLogs struct {
 }
 
 type TaskSteps struct {
-	TaskId          uint64 `xorm:"PK"`
+	Id              uint64 `xorm:"PK"`
+	Seq             int
+	TaskId          uint64
 	CommandName     string
-	CommandType     CommandType
+	CommandType     common.CommandType
 	ReservedCommand string
 	InlineScript    string
 	IsRecover       bool
@@ -129,6 +118,7 @@ type TaskDetail struct {
 	Result             string
 	FailedStep         uint
 	IsFailedRecover    bool
+	ShowLog            bool
 }
 
 func (tl *TaskLock) expired() bool {

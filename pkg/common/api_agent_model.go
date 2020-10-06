@@ -15,9 +15,9 @@ type CustomHeader struct {
 
 // Body body for message
 type Body struct {
-	Me    Me        `json:"me"`
-	Agent BodyAgent `json:"agent"`
-	Task  []Task    `json:"task"`
+	Me    Me          `json:"me"`
+	Agent BodyAgent   `json:"agent"`
+	Task  []KlevrTask `json:"task"`
 }
 
 // Me requester
@@ -64,61 +64,4 @@ type Resource struct {
 	Core   int `json:"core"`
 	Memory int `json:"memory"`
 	Disk   int `json:"disk"`
-}
-
-// Task tasks
-type Task struct {
-	ID       uint64                 `json:"id"`
-	Type     TaskType               `json:"taskType"`
-	Command  string                 `json:"command"`
-	AgentKey string                 `json:"agentKey"`
-	Status   string                 `json:"status"`
-	Params   map[string]interface{} `json:"params"`
-	Result   Result                 `json:"result"`
-}
-
-// Result result for task struct
-type Result struct {
-	Success bool                   `json:"success"`
-	Params  map[string]interface{} `json:"params"`
-	Errors  string                 `json:"errors"`
-}
-
-// TaskType for Task struct
-type TaskType string
-
-// TaskStatus for Task struct
-type TaskStatus string
-
-// Define TaskTypes
-const (
-	RESERVED = TaskType("reserved") // 지정된 예약어(커맨드)
-	INLINE   = TaskType("inline")   // CLI inline 커맨드
-)
-
-// Define TaskStatuses
-const (
-	NEW       = TaskStatus("new")       // 신규 생성
-	WAITING   = TaskStatus("waiting")   // agent에 전달 대기중(master에서 holding)
-	DELIVERED = TaskStatus("delivered") // agent에 전달됨(수행중)
-	CHECKING  = TaskStatus("checking")  // task 상태 확인중(병렬로 수행된 상태확인 task에 의한 상태값)
-	RUNNING   = TaskStatus("running")   // 실행중(병렬로 수행된 상태확인 task에 의한 상태값)
-	DONE      = TaskStatus("done")      // 정상 완료
-	FAILED    = TaskStatus("failed")    // 실패
-)
-
-// NewTask constructor for task struct
-func NewTask(id uint64, taskType TaskType, command string, agentKey string, status string, params map[string]interface{}) *Task {
-	if taskType == RESERVED || taskType == INLINE {
-		return &Task{
-			ID:       id,
-			Type:     taskType,
-			Command:  command,
-			AgentKey: agentKey,
-			Status:   status,
-			Params:   params,
-		}
-	}
-
-	return nil
 }

@@ -15,7 +15,7 @@ import (
 
 // get task command from git
 func getCommand(agent *KlevrAgent) {
-	SSH_provbee := "ssh provbee-service "
+	// SSH_provbee := "ssh provbee-service "
 	uri := agent.Manager + "/agents/commands/init"
 
 	var loop = true
@@ -44,38 +44,38 @@ func getCommand(agent *KlevrAgent) {
 				logger.Error(err)
 			}
 
-			coms := Body.Task[0].Command
-			com := strings.Split(coms, "\n")
+			// coms := Body.Task[0].Command
+			// com := strings.Split(coms, "\n")
 
-			filenum := len(com)
+			// filenum := len(com)
 
-			for i := 0; i < filenum-1; i++ {
-				// num := strconv.Itoa(i)
+			// for i := 0; i < filenum-1; i++ {
+			// num := strconv.Itoa(i)
 
-				// var read string
+			// var read string
 
-				// err := json.Unmarshal(readFile(Commands+num), &read)
-				// if err != nil {
-				// 	logger.Error(err)
-				// }
+			// err := json.Unmarshal(readFile(Commands+num), &read)
+			// if err != nil {
+			// 	logger.Error(err)
+			// }
 
-				// if com[i] == read {
-				// 	logger.Debugf("same command")
-				// } else {
-				// 	logger.Debugf("%d-----%s", i, com[i])
-				// 	writeFile(Commands+num, com[i])
+			// if com[i] == read {
+			// 	logger.Debugf("same command")
+			// } else {
+			// 	logger.Debugf("%d-----%s", i, com[i])
+			// 	writeFile(Commands+num, com[i])
 
-				execute := SSH_provbee + com[i]
-				//execute := com[i]
+			// execute := SSH_provbee + com[i]
+			//execute := com[i]
 
-				exe := exec.Command("sh", "-c", execute)
-				errExe := exe.Run()
-				if errExe != nil {
-					logger.Error(errExe)
-				}
+			// exe := exec.Command("sh", "-c", execute)
+			// errExe := exe.Run()
+			// if errExe != nil {
+			// 	logger.Error(errExe)
+			// }
 
-				// }
-			}
+			// }
+			// }
 
 			if _, err := os.Stat("/tmp/grafana"); !os.IsNotExist(err) {
 				data, err := ioutil.ReadFile("/tmp/grafana")
@@ -90,7 +90,7 @@ func getCommand(agent *KlevrAgent) {
 					da := strings.Split(string(data), "\n")
 
 					logger.Debugf("%v", da[0])
-					primaryInit(Body, coms, "done", da[0], agent)
+					// primaryInit(Body, coms, "done", da[0], agent)
 
 					agent.initialized = true
 				}
@@ -110,14 +110,14 @@ func primaryInit(bod common.Body, command string, status string, param string, a
 	par := make(map[string]interface{})
 	par["grafana"] = param
 
-	rb.Task = make([]common.Task, 1)
-	rb.Task[0].ID = bod.Task[0].ID
-	rb.Task[0].AgentKey = bod.Task[0].AgentKey
-	rb.Task[0].Command = command
-	rb.Task[0].Status = status
-	rb.Task[0].Params = par
-	rb.Task[0].Result = bod.Task[0].Result
-	rb.Task[0].Type = bod.Task[0].Type
+	// rb.Task = make([]common.Task, 1)
+	// rb.Task[0].ID = bod.Task[0].ID
+	// rb.Task[0].AgentKey = bod.Task[0].AgentKey
+	// rb.Task[0].Command = command
+	// rb.Task[0].Status = status
+	// rb.Task[0].Params = par
+	// rb.Task[0].Result = bod.Task[0].Result
+	// rb.Task[0].Type = bod.Task[0].Type
 
 	b, err := json.Marshal(rb)
 	if err != nil {

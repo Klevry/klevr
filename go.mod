@@ -55,5 +55,6 @@ require (
 	k8s.io/klog/v2 v2.3.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
+	xorm.io/builder v0.3.7
 	xorm.io/xorm v1.0.5
 )

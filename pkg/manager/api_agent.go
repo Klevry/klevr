@@ -1,10 +1,8 @@
 package manager
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -45,9 +43,9 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
-	registURI(agent, GET, "/commands/init", agentAPI.getInitCommand)
-	registURI(agent, POST, "/zones/init", agentAPI.receiveInitResult)
-	registURI(agent, ANY, "/{agentKey}/tempHeartBeat", agentAPI.tempHeartBeat)
+	// registURI(agent, GET, "/commands/init", agentAPI.getInitCommand)
+	// registURI(agent, POST, "/zones/init", agentAPI.receiveInitResult)
+	// registURI(agent, ANY, "/{agentKey}/tempHeartBeat", agentAPI.tempHeartBeat)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -166,13 +164,13 @@ func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agent := tx.getAgentByAgentKey(ch.AgentKey)
+	// agent := tx.getAgentByAgentKey(ch.AgentKey)
 
 	tasks := requestBody.Task
 
-	for _, t := range tasks {
-		t.Result.Params = t.Params
-	}
+	// for _, t := range tasks {
+	// 	t.Result.Params = t.Parameter
+	// }
 
 	UpdateTaskStatus(tx, ch.ZoneID, &tasks)
 	tx.Commit()
@@ -191,83 +189,83 @@ func (api *agentAPI) receiveInitResult(w http.ResponseWriter, r *http.Request) {
 	len := len(tasks)
 
 	if len > 0 {
-		task := tasks[0]
-		result, _ := json.Marshal(task.Params)
+		// task := tasks[0]
 
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryInit,
-			AgentId:   agent.Id,
-			GroupId:   agent.GroupId,
-			EventTime: &JSONTime{time.Now().UTC()},
-			Result:    string(result),
-		})
+		// AddEvent(&KlevrEvent{
+		// 	EventType: PrimaryInit,
+		// 	AgentKey:  agent.AgentKey,
+		// 	GroupID:   agent.GroupId,
+		// 	EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		// 	Result:    task.Result,
+		// })
 	}
 }
 
-func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.Task) {
+func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
 	len := len(*tasks)
 
 	if len > 0 {
 		for _, t := range *tasks {
-			p, _ := json.Marshal(t.Params)
 
 			tx.updateTask(&Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
-				Result:      string(p),
+				TaskDetail: &TaskDetail{
+					Result: t.Result,
+				},
 			})
 		}
 	}
 }
 
 func (api *agentAPI) getInitCommand(w http.ResponseWriter, r *http.Request) {
-	ctx := CtxGetFromRequest(r)
-	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
-	tx := GetDBConn(ctx)
+	// ctx := CtxGetFromRequest(r)
+	// ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	// tx := GetDBConn(ctx)
 
-	url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
-	logger.Debugf("%s", url)
+	// url := "http://raw.githubusercontent.com/NexClipper/klevr_tasks/master/queue"
+	// logger.Debugf("%s", url)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "Internel server error")
-	}
+	// req, err := http.NewRequest("GET", url, nil)
+	// if err != nil {
+	// 	common.WriteHTTPError(500, w, err, "Internel server error")
+	// }
 
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
+	// tr := &http.Transport{
+	// 	TLSClientConfig: &tls.Config{
+	// 		InsecureSkipVerify: true,
+	// 	},
+	// }
 
-	res, err := (&http.Client{Transport: tr}).Do(req)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "Internel server error")
-	}
-	defer res.Body.Close()
+	// res, err := (&http.Client{Transport: tr}).Do(req)
+	// if err != nil {
+	// 	common.WriteHTTPError(500, w, err, "Internel server error")
+	// }
+	// defer res.Body.Close()
 
-	body, _ := ioutil.ReadAll(res.Body)
-	command := string(body)
-	param := make(map[string]interface{})
-	param["script"] = command
+	// body, _ := ioutil.ReadAll(res.Body)
+	// command := string(body)
+	// param := make(map[string]interface{})
+	// param["script"] = command
 
-	// jsonParam, _ := json.Marshal(param)
+	// // jsonParam, _ := json.Marshal(param)
 
-	task := AddTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, param)
-	logger.Debug("created task : %v", task)
+	// task := AddTask(tx, common.INLINE, "INIT", ch.ZoneID, ch.AgentKey, param)
+	// logger.Debug("created task : %v", task)
 
-	// response 데이터 생성
-	rb := &common.Body{}
-	rb.Task = make([]common.Task, 1)
-	rb.Task[0] = *common.NewTask(task.Id, common.TaskType(task.Type), command, task.AgentKey, task.Status, nil)
+	// // response 데이터 생성
+	// rb := &common.Body{}
+	// rb.Task = make([]common.Task, 1)
+	// rb.Task[0] = *common.NewTask(task.Id, common.TaskType(task.Type), command, task.AgentKey, task.Status, nil)
 
-	b, err := json.Marshal(rb)
-	if err != nil {
-		panic(err)
-	}
+	// b, err := json.Marshal(rb)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", b)
+	// w.WriteHeader(200)
+	// fmt.Fprintf(w, "%s", b)
 }
 
 // ReceiveHandshake godoc
@@ -315,7 +313,8 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// primary 조회
-	rb.Agent.Primary = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
+	var oldPrimaryAgentKey string
+	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
 
 	// 접속한 agent 정보
 	me := &rb.Me
@@ -327,26 +326,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	// Primary agent인 경우 node 정보 추가
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		cnt, agents := tx.getAgentsByGroupId(ch.ZoneID)
-		nodes := make([]common.Agent, cnt)
-
-		if cnt > 0 {
-			for i, a := range *agents {
-				nodes[i] = common.Agent{
-					AgentKey: a.AgentKey,
-					IP:       a.Ip,
-					Port:     a.Port,
-					Version:  a.Version,
-					Resource: &common.Resource{
-						Core:   a.Cpu,
-						Memory: a.Memory,
-						Disk:   a.Disk,
-					},
-				}
-			}
-
-			rb.Agent.Nodes = nodes
-		}
+		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
 	}
 
 	b, err := json.Marshal(rb)
@@ -359,10 +339,28 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	AddEvent(&KlevrEvent{
 		EventType: AgentConnect,
-		AgentId:   agent.Id,
-		GroupId:   agent.GroupId,
-		EventTime: &JSONTime{time.Now().UTC()},
+		AgentKey:  agent.AgentKey,
+		GroupID:   agent.GroupId,
+		EventTime: &common.JSONTime{Time: time.Now().UTC()},
 	})
+
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		})
+	}
+
+	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryRetire,
+			AgentKey:  oldPrimaryAgentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		})
+	}
 }
 
 func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
@@ -441,7 +439,12 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	// agent access 정보 갱신
 	agent := updateAgentAccess(tx, ch.AgentKey)
 
-	rb.Agent.Primary = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
+	var oldPrimaryAgentKey string
+	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
+
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
+	}
 
 	b, err := json.Marshal(rb)
 	if err != nil {
@@ -450,6 +453,49 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		})
+	}
+
+	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryRetire,
+			AgentKey:  oldPrimaryAgentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		})
+	}
+}
+
+func getNodes(tx *Tx, zoneID uint64) []common.Agent {
+	cnt, agents := tx.getAgentsByGroupId(zoneID)
+	nodes := make([]common.Agent, cnt)
+
+	if cnt > 0 {
+		for i, a := range *agents {
+			nodes[i] = common.Agent{
+				AgentKey: a.AgentKey,
+				IP:       a.Ip,
+				Port:     a.Port,
+				Version:  a.Version,
+				Resource: &common.Resource{
+					Core:   a.Cpu,
+					Memory: a.Memory,
+					Disk:   a.Disk,
+				},
+			}
+		}
+
+		return nodes
+	}
+
+	return nil
 }
 
 func updateAgentAccess(tx *Tx, agentKey string) *Agents {
@@ -462,15 +508,17 @@ func updateAgentAccess(tx *Tx, agentKey string) *Agents {
 	return agent
 }
 
-func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) common.Primary {
+func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) (common.Primary, string) {
 	// primary agent 정보
 	groupPrimary := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
+	var oldPrimaryAgentKey string
 
 	if groupPrimary.AgentId == 0 {
 		primaryAgent = electPrimary(ctx, zoneID, agentID, false)
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
+		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
 
@@ -487,7 +535,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) comm
 		Port:           primaryAgent.Port,
 		IsActive:       primaryAgent.IsActive,
 		LastAccessTime: primaryAgent.LastAccessTime.UTC().Unix(),
-	}
+	}, oldPrimaryAgentKey
 }
 
 // primary agent 선출
