@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -67,6 +66,5 @@ func (t *JSONTime) MarshalJSON() ([]byte, error) {
 	}
 
 	s := t.UTC().Format(jsonTimeDefaultMarshalFormat)
-	fmt.Println("GGGGGGGGGGGGG", s)
 	return []byte(`"` + s + `"`), nil
 }

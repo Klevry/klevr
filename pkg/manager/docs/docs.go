@@ -18,18 +18,15 @@ var doc = `{
     "info": {
         "description": "{{.Description}}",
         "title": "{{.Title}}",
-        "contact": {
-            "name": "mrchopa",
-            "email": "ys3gods@gmail.com"
-        },
+        "contact": {},
         "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/accounts/{id}": {
-            "get": {
+        "/agents/handshake": {
+            "put": {
                 "description": "에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.",
                 "consumes": [
                     "application/json"
@@ -40,7 +37,171 @@ var doc = `{
                 "tags": [
                     "agents"
                 ],
-                "summary": "에이전트의 handshake 요청을 받아 처리한다."
+                "summary": "에이전트의 handshake 요청을 받아 처리한다.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API KEY",
+                        "name": "X-API-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "AGENT KEY",
+                        "name": "X-AGENT-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ZONE ID",
+                        "name": "X-ZONE-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "agent 정보",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/agents/reports/{agentKey}": {
+            "get": {
+                "description": "secondary 에이전트의 primary 에이전트 상태 확인 요청을 받아 primary 재선출 및 primary 정보를 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agents"
+                ],
+                "summary": "secondary 에이전트의 primary 상태 확인 요청을 처리한다.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API KEY",
+                        "name": "X-API-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "AGENT KEY",
+                        "name": "X-AGENT-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ZONE ID",
+                        "name": "X-ZONE-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "agent key",
+                        "name": "agentKey",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "agent 정보",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/agents/{agentKey}": {
+            "put": {
+                "description": "primary 에이전트의 polling 요청을 받아 primary 에이전트의 실행정보 갱신, nodes 정보 갱신, task 할당 및 상태 업데이트를 수행한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agents"
+                ],
+                "summary": "primary 에이전트의 polling 요청을 받아 처리한다.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API KEY",
+                        "name": "X-API-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "AGENT KEY",
+                        "name": "X-AGENT-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ZONE ID",
+                        "name": "X-ZONE-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "agent key",
+                        "name": "agentKey",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "agent 정보",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Body"
+                        }
+                    }
+                }
             }
         },
         "/temp": {
@@ -58,6 +219,25 @@ var doc = `{
                 "summary": "에이전트의 handshake 요청을 받아 처리한다."
             }
         }
+    },
+    "definitions": {
+        "common.Body": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "type": "BodyAgent"
+                },
+                "me": {
+                    "type": "Me"
+                },
+                "task": {
+                    "type": "array",
+                    "items": {
+                        "type": "KlevrTask"
+                    }
+                }
+            }
+        }
     }
 }`
 
@@ -72,11 +252,11 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.0",
+	Version:     "",
 	Host:        "",
-	BasePath:    "/",
+	BasePath:    "",
 	Schemes:     []string{},
-	Title:       "Klevr-Manager API",
+	Title:       "",
 	Description: "",
 }
 

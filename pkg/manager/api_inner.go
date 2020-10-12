@@ -487,10 +487,10 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	stepLen := len(dto.Steps)
 
 	if stepLen > 0 {
-		steps := make([]*TaskSteps, stepLen)
+		steps := make([]TaskSteps, stepLen)
 
 		for i, dtoStep := range dto.Steps {
-			steps[i] = &TaskSteps{
+			steps[i] = TaskSteps{
 				Id:          dtoStep.ID,
 				Seq:         dtoStep.Seq,
 				TaskId:      dto.ID,
@@ -508,7 +508,7 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 			}
 		}
 
-		persist.TaskSteps = steps
+		persist.TaskSteps = &steps
 	}
 
 	if dto.Log != "" {
@@ -555,12 +555,15 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 		dto.ShowLog = detail.ShowLog
 	}
 
-	stepLen := len(persist.TaskSteps)
+	stepLen := 0
+	if persist.TaskSteps != nil {
+		stepLen = len(*persist.TaskSteps)
+	}
 
 	if stepLen > 0 {
 		steps := make([]*common.KlevrTaskStep, stepLen)
 
-		for i, step := range persist.TaskSteps {
+		for i, step := range *persist.TaskSteps {
 			steps[i] = &common.KlevrTaskStep{
 				ID:          step.Id,
 				Seq:         step.Seq,

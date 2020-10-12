@@ -2,6 +2,7 @@ package manager
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"xorm.io/builder"
@@ -287,14 +288,13 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 		}
 	}
 
-	taskStepLen := int64(len(t.TaskSteps))
+	taskStepLen := int64(len(*t.TaskSteps))
 
 	if t.TaskSteps != nil && taskStepLen > 0 {
-		for i, ts := range t.TaskSteps {
-			ts.TaskId = t.Id
-
+		for i, ts := range *t.TaskSteps {
+			(*t.TaskSteps)[i].TaskId = t.Id
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
-			logger.Debugf("%v, %v", ((t.TaskSteps)[i]), ts)
+			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
 		}
 
 		cnt, err = tx.Insert(t.TaskSteps)
@@ -310,6 +310,17 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	return t
 }
 
+func (tx *Tx) updateHandoverTasks(tasks *[]Tasks) {
+	for _, t := range *tasks {
+		_, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE ID = ?",
+			string(common.HandOver), t.Id)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func (tx *Tx) updateTask(t *Tasks) {
 	cnt, err := tx.Where("ID = ?", t.Id).
 		Cols("EXE_AGENT_KEY", "STATUS").
@@ -320,6 +331,40 @@ func (tx *Tx) updateTask(t *Tasks) {
 		panic(err)
 	} else if cnt != 1 {
 		common.PanicForUpdate("updated", cnt, 1)
+	}
+
+	detail := t.TaskDetail
+	if detail.Result != "" {
+		cnt, err = tx.Where("TASK_ID = ?", t.Id).
+			Cols("CURRENT_STEP", "RESULT", "FAILED_STEP", "IS_FAILED_RECOVER").
+			Update(detail)
+	} else {
+		cnt, err = tx.Where("TASK_ID = ?", t.Id).
+			Cols("CURRENT_STEP", "FAILED_STEP", "IS_FAILED_RECOVER").
+			Update(detail)
+	}
+
+	if err != nil {
+		panic(err)
+	} else if cnt > 1 {
+		common.PanicForUpdate("updated", cnt, 1)
+	}
+
+	if t.Logs.Logs != "" {
+		logs := t.Logs
+
+		result, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
+			t.Id, logs.Logs, t.Id, logs.Logs)
+
+		if err != nil {
+			panic(err)
+		}
+
+		cnt, _ := result.RowsAffected()
+
+		if cnt != 1 {
+			common.PanicForUpdate("upserted", cnt, 1)
+		}
 	}
 }
 
@@ -333,7 +378,7 @@ func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
 	exist := common.CheckGetQuery(stmt.Where("TASKS.ID = ?", id).Get(&rTask))
 	logger.Debugf("Selected Task : %v", rTask)
 
-	var steps []*TaskSteps
+	var steps []TaskSteps
 
 	err := tx.Where("TASK_ID = ?", id).Find(&steps)
 	if err != nil {
@@ -343,9 +388,80 @@ func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
 	task = rTask.Tasks
 	task.TaskDetail = &rTask.TaskDetail
 	task.Logs = &rTask.TaskLogs
-	task.TaskSteps = steps
+	task.TaskSteps = &steps
 
 	return &task, exist
+}
+
+func (tx *Tx) getTasksByIds(ids []uint64) (*[]Tasks, int64) {
+	var rts []RetriveTask
+	inqCnt := len(ids)
+
+	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
+	stmt = stmt.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
+
+	cnt, err := stmt.Where(builder.In("ID", ids)).FindAndCount(&rts)
+	logger.Debugf("Selected Tasks : %+v", rts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if int(cnt) != inqCnt {
+		panic("The number of inquired tasks does not match - inquired count : " +
+			strconv.Itoa(inqCnt) +
+			", selected count : " + strconv.Itoa(int(cnt)))
+	}
+
+	return toTasks(&rts), cnt
+}
+
+func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, int64) {
+	var tasks *[]Tasks
+
+	var rts []RetriveTask
+
+	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
+	stmt = stmt.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
+
+	cnt, err := stmt.Where("ZONE_ID = ?", groupID).And(builder.In("STATUS", statuses)).FindAndCount(&rts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("selected retreive tasks : %d", cnt)
+
+	tasks = toTasks(&rts)
+
+	for i, t := range *tasks {
+		var steps []TaskSteps
+
+		cnt, err := tx.Where("TASK_ID = ?", t.Id).OrderBy("SEQ ASC").FindAndCount(&steps)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("select steps for %d - %d", t.Id, cnt)
+
+		(*tasks)[i].TaskSteps = &steps
+	}
+
+	logger.Debugf("tasks : [%+v]", tasks)
+
+	return tasks, cnt
+}
+
+func toTasks(rts *[]RetriveTask) *[]Tasks {
+	var tasks = make([]Tasks, 0, len(*rts))
+
+	for _, rt := range *rts {
+		rt.Tasks.TaskDetail = &rt.TaskDetail
+		rt.Tasks.Logs = &rt.TaskLogs
+		tasks = append(tasks, rt.Tasks)
+	}
+
+	return &tasks
 }
 
 func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string, taskNames []string) (*[]Tasks, bool) {
@@ -372,6 +488,21 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	logger.Debugf("Selected Tasks : %d", cnt)
 
 	return &tasks, cnt > 0
+}
+
+func (tx *Tx) updateScheduledTask() int64 {
+	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE STATUS = ? AND SCHEDULE < CURRENT_TIMESTAMP() AND DELETED_AT IS NULL",
+		common.WaitPolling, common.Scheduled)
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt
 }
 
 func (tx *Tx) cancelTask(id uint64) bool {

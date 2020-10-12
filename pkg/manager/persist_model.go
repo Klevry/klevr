@@ -81,7 +81,7 @@ type Tasks struct {
 	ExeAgentKey string
 	Status      common.TaskStatus
 	TaskDetail  *TaskDetail  `xorm:"-"`
-	TaskSteps   []*TaskSteps `xorm:"-"`
+	TaskSteps   *[]TaskSteps `xorm:"-"`
 	Logs        *TaskLogs    `xorm:"-"`
 	CreatedAt   time.Time    `xorm:"created"`
 	UpdatedAt   time.Time    `xorm:"updated"`

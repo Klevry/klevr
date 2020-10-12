@@ -1,20 +1,138 @@
-basePath: /
+definitions:
+  common.Body:
+    properties:
+      agent:
+        type: BodyAgent
+      me:
+        type: Me
+      task:
+        items:
+          type: KlevrTask
+        type: array
+    type: object
 info:
-  contact:
-    email: ys3gods@gmail.com
-    name: mrchopa
+  contact: {}
   license: {}
-  title: Klevr-Manager API
-  version: "1.0"
 paths:
-  /accounts/{id}:
-    get:
+  /agents/{agentKey}:
+    put:
+      consumes:
+      - application/json
+      description: primary 에이전트의 polling 요청을 받아 primary 에이전트의 실행정보 갱신, nodes 정보 갱신, task 할당 및 상태 업데이트를 수행한다.
+      parameters:
+      - description: API KEY
+        in: header
+        name: X-API-KEY
+        required: true
+        type: string
+      - description: AGENT KEY
+        in: header
+        name: X-AGENT-KEY
+        required: true
+        type: string
+      - description: ZONE ID
+        in: header
+        name: X-ZONE-ID
+        required: true
+        type: string
+      - description: agent key
+        in: path
+        name: agentKey
+        required: true
+        type: string
+      - description: agent 정보
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.Body'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Body'
+      summary: primary 에이전트의 polling 요청을 받아 처리한다.
+      tags:
+      - agents
+  /agents/handshake:
+    put:
       consumes:
       - application/json
       description: 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
+      parameters:
+      - description: API KEY
+        in: header
+        name: X-API-KEY
+        required: true
+        type: string
+      - description: AGENT KEY
+        in: header
+        name: X-AGENT-KEY
+        required: true
+        type: string
+      - description: ZONE ID
+        in: header
+        name: X-ZONE-ID
+        required: true
+        type: string
+      - description: agent 정보
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.Body'
       produces:
       - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Body'
       summary: 에이전트의 handshake 요청을 받아 처리한다.
+      tags:
+      - agents
+  /agents/reports/{agentKey}:
+    get:
+      consumes:
+      - application/json
+      description: secondary 에이전트의 primary 에이전트 상태 확인 요청을 받아 primary 재선출 및 primary 정보를 반환한다.
+      parameters:
+      - description: API KEY
+        in: header
+        name: X-API-KEY
+        required: true
+        type: string
+      - description: AGENT KEY
+        in: header
+        name: X-AGENT-KEY
+        required: true
+        type: string
+      - description: ZONE ID
+        in: header
+        name: X-ZONE-ID
+        required: true
+        type: string
+      - description: agent key
+        in: path
+        name: agentKey
+        required: true
+        type: string
+      - description: agent 정보
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.Body'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Body'
+      summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
   /temp:
