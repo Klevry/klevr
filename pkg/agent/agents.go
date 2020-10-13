@@ -45,7 +45,9 @@ func (agent *KlevrAgent) Run() {
 }
 
 func (agent *KlevrAgent) startScheduler(prim string) {
-	var scheduleFunc interface{}
+	//var scheduleFunc interface{}
+
+	s := gocron.NewScheduler()
 
 	if Check_primary(prim) {
 		var interval int
@@ -55,13 +57,15 @@ func (agent *KlevrAgent) startScheduler(prim string) {
 
 		go getCommand(agent)
 
-		scheduleFunc = agent.tempHealthCheck
+		s.Every(5).Seconds().Do(Polling, agent)
+
+		//scheduleFunc = agent.tempHealthCheck
+		//scheduleFunc = Polling
 	} else {
-		scheduleFunc = PrimaryStatusReport
+		//scheduleFunc = PrimaryStatusReport
 	}
 
-	s := gocron.NewScheduler()
-	s.Every(5).Seconds().Do(scheduleFunc)
+	//s.Every(5).Seconds().Do(scheduleFunc)
 
 	agent.scheduler = s
 
