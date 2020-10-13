@@ -24,5 +24,5 @@ func Polling(agent *KlevrAgent) {
 	// put in & get out
 	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
 
-	logger.Debugf("%v", result)
+	logger.Debugf("%v", string(result))
 }

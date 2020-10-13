@@ -55,7 +55,7 @@ func (agent *KlevrAgent) startScheduler(prim string) {
 			interval = defaultSchedulerInterval
 		}
 
-		go getCommand(agent)
+		//go getCommand(agent)
 
 		s.Every(5).Seconds().Do(Polling, agent)
 
