@@ -216,20 +216,20 @@ ADD CONSTRAINT `FK_TASK_LOGS` FOREIGN KEY (`TASK_ID`) REFERENCES `TASKS` (`ID`) 
 --
 
 DROP TABLE IF EXISTS `TASK_PARAMS`;
---/*!40101 SET @saved_cs_client     = @@character_set_client */;
---/*!40101 SET character_set_client = utf8 */;
---CREATE TABLE IF NOT EXISTS `TASK_PARAMS` (
+-- /*!40101 SET @saved_cs_client     = @@character_set_client */;
+-- /*!40101 SET character_set_client = utf8 */;
+-- CREATE TABLE IF NOT EXISTS `TASK_PARAMS` (
 --  `TASK_ID` bigint(20) unsigned NOT NULL,
 --  `PARAMS` text DEFAULT NULL COMMENT 'TYPE.RESERVED = 함수 argument\nTYPE.INLINE = 스크립트 변수 replace',
 --  PRIMARY KEY (`TASK_ID`)
---) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='TASK 파라미터 테이블';
---/*!40101 SET character_set_client = @saved_cs_client */;
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='TASK 파라미터 테이블';
+-- /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `TASK_STEPS`
 --
 
---DROP TABLE IF EXISTS `TASK_STEPS`;
+-- DROP TABLE IF EXISTS `TASK_STEPS`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `TASK_STEPS` (

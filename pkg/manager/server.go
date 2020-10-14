@@ -117,9 +117,9 @@ func (manager *KlevrManager) Run() error {
 	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
 	go manager.startEventHandler()
 	// klevr 에이전트 상태 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
-	go manager.updateAgentStatus(common.FromContext(ctx), time.Duration(manager.Config.Server.StatusUpdateCycle))
+	go manager.updateAgentStatus(common.FromContext(ctx), manager.Config.Server.StatusUpdateCycle)
 	// klevr task 스케쥴 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
-	go manager.updateScheduledTask(common.FromContext(ctx), time.Duration(manager.Config.Agent.CallCycle))
+	go manager.updateScheduledTask(common.FromContext(ctx), manager.Config.Agent.CallCycle)
 	// klevr task hand-over 상태 업데이트
 	go manager.startTaskHandoverUpdater(common.FromContext(ctx))
 
@@ -220,18 +220,20 @@ func (manager *KlevrManager) getLock(ctx *common.Context) {
 	}
 }
 
-func (manager *KlevrManager) updateScheduledTask(ctx *common.Context, cycle time.Duration) {
+func (manager *KlevrManager) updateScheduledTask(ctx *common.Context, cycle int) {
+	st := cycle / 2
+	if st < 1 {
+		st = 1
+	}
+
+	sleep := time.Duration(st) * time.Second
+
 	for {
 		if manager.HasLock {
 			db := CtxGetDbConn(ctx)
 
-			st := cycle / 2
-			if st == 0 {
-				st = 1
-			}
-
-			time.Sleep(st * time.Second)
-			logger.Debugf("sleep duration : %+v", st*time.Second)
+			time.Sleep(sleep)
+			logger.Debugf("sleep duration : %+v", sleep)
 
 			tx := &Tx{db.NewSession()}
 
@@ -429,18 +431,20 @@ func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
 
 }
 
-func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.Duration) {
+func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
+	st := cycle / 2
+	if st < 1 {
+		st = 1
+	}
+
+	sleep := time.Duration(st) * time.Second
+
 	for {
 		if manager.HasLock {
 			db := CtxGetDbConn(ctx)
 
-			st := cycle / 2
-			if st == 0 {
-				st = 1
-			}
-
-			time.Sleep(st * time.Second)
-			logger.Debugf("sleep duration : %+v", st*time.Second)
+			time.Sleep(sleep)
+			logger.Debugf("sleep duration : %+v", sleep)
 
 			tx := &Tx{db.NewSession()}
 
