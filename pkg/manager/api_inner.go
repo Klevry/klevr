@@ -19,26 +19,40 @@ type KlevrVariable struct {
 	Example     string `json:"example"`
 }
 
+type serversAPI int
+
 // InitInner initialize inner server API
 func (api *API) InitInner(inner *mux.Router) {
 	logger.Debug("API InitAgent - init URI")
 
-	registURI(inner, POST, "/groups", addGroup)
-	registURI(inner, GET, "/groups", getGroups)
-	registURI(inner, GET, "/groups/{groupID}", getGroup)
-	registURI(inner, POST, "/groups/{groupID}/apikey", addAPIKey)
-	registURI(inner, PUT, "/groups/{groupID}/apikey", updateAPIKey)
-	registURI(inner, GET, "/groups/{groupID}/apikey", getAPIKey)
-	registURI(inner, GET, "/variables", getKlevrVariables)
-	registURI(inner, GET, "/groups/{groupID}/agents", getAgents)
-	registURI(inner, GET, "/groups/{groupID}/primary", getPrimaryAgent)
-	registURI(inner, POST, "/tasks", addTask)
-	registURI(inner, DELETE, "/tasks/{taskID}", removeTask)
-	registURI(inner, GET, "/tasks/{taskID}", getTask)
-	registURI(inner, GET, "/tasks", getTasks)
+	serversAPI := serversAPI(0)
+
+	registURI(inner, POST, "/groups", serversAPI.addGroup)
+	registURI(inner, GET, "/groups", serversAPI.getGroups)
+	registURI(inner, GET, "/groups/{groupID}", serversAPI.getGroup)
+	registURI(inner, POST, "/groups/{groupID}/apikey", serversAPI.addAPIKey)
+	registURI(inner, PUT, "/groups/{groupID}/apikey", serversAPI.updateAPIKey)
+	registURI(inner, GET, "/groups/{groupID}/apikey", serversAPI.getAPIKey)
+	registURI(inner, GET, "/variables", serversAPI.getKlevrVariables)
+	registURI(inner, GET, "/groups/{groupID}/agents", serversAPI.getAgents)
+	registURI(inner, GET, "/groups/{groupID}/primary", serversAPI.getPrimaryAgent)
+	registURI(inner, POST, "/tasks", serversAPI.addTask)
+	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.removeTask)
+	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
+	registURI(inner, GET, "/tasks", serversAPI.getTasks)
+	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
 }
 
-func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
+// getPrimaryAgent godoc
+// @Summary primary agent 정보를 반환한다.
+// @Description groupID에 해당하는 klevr zone의 primary agent 정보를 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID}/primary [get]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} common.Agent
+func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -61,7 +75,7 @@ func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		agent = common.Agent{
 			AgentKey:           a.AgentKey,
 			IsActive:           a.IsActive,
-			LastAliveCheckTime: a.LastAliveCheckTime.Unix(),
+			LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
 			IP:                 a.Ip,
 			Port:               a.Port,
 			Version:            a.Version,
@@ -84,7 +98,45 @@ func getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func getAgents(w http.ResponseWriter, r *http.Request) {
+// getReservedCommands godoc
+// @Summary 예약어 커맨드 정보를 반환한다.
+// @Description Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/commands [get]
+// @Success 200 {object} []ReservedCommand
+func (api *serversAPI) getReservedCommands(w http.ResponseWriter, r *http.Request) {
+	m := make(map[string]ReservedCommand)
+
+	for k, v := range common.GetCommands() {
+		m[k] = ReservedCommand{
+			Description:    v.Description,
+			ParameterModel: v.ParameterModel,
+			ResultModel:    v.ResultModel,
+			HasRecover:     v.Recover != nil,
+		}
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// getAgents godoc
+// @Summary zone의 agent 목록을 반환한다.
+// @Description groupID에 해당하는 klevr zone의 모든 agent 정보를 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID}/agents [get]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} []common.Agent
+func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -106,7 +158,7 @@ func getAgents(w http.ResponseWriter, r *http.Request) {
 			nodes[i] = common.Agent{
 				AgentKey:           a.AgentKey,
 				IsActive:           a.IsActive,
-				LastAliveCheckTime: a.LastAliveCheckTime.Unix(),
+				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
@@ -130,7 +182,16 @@ func getAgents(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func addTask(w http.ResponseWriter, r *http.Request) {
+// addTask godoc
+// @Summary TASK를 등록한다.
+// @Description KlevrTask 모델에 기입된 ZONE의 AGENT에서 실행할 TASK를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks [post]
+// @Param b body common.KlevrTask true "TASK"
+// @Success 200 {object} common.KlevrTask
+func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 	var t common.KlevrTask
@@ -167,7 +228,7 @@ func addTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func removeTask(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) removeTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -191,7 +252,7 @@ func removeTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"canceled\":%v}", canceled)
 }
 
-func getTask(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -222,7 +283,7 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getTasks(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -281,7 +342,7 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func getKlevrVariables(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getKlevrVariables(w http.ResponseWriter, r *http.Request) {
 	var variables []KlevrVariable
 
 	variables = append(variables, KlevrVariable{
@@ -301,7 +362,7 @@ func getKlevrVariables(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func addAPIKey(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -324,7 +385,7 @@ func addAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func updateAPIKey(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -347,7 +408,7 @@ func updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func getAPIKey(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -368,7 +429,7 @@ func getAPIKey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", auth.ApiKey)
 }
 
-func addGroup(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) addGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 	var ag AgentGroups
@@ -395,7 +456,7 @@ func addGroup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func getGroups(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -410,7 +471,7 @@ func getGroups(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func getGroup(w http.ResponseWriter, r *http.Request) {
+func (api *serversAPI) getGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -435,26 +496,6 @@ func getGroup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 }
-
-// func AddTask(tx *Tx, taskType common.TaskType, command string, zoneID uint64, agentKey string, params map[string]interface{}) *Tasks {
-// 	b, err := json.Marshal(params)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	task := &Tasks{
-// 		TaskType: taskType,
-// 		Command:  command,
-// 		ZoneId:   zoneID,
-// 		AgentKey: agentKey,
-// 		Params: &TaskParams{
-// 			Params: string(b),
-// 		},
-// 		Status: string(common.DELIVERED),
-// 	}
-
-// 	return tx.insertTask(task)
-// }
 
 func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	persist := &Tasks{

@@ -88,3 +88,10 @@ func NewKlevrEventTaskResultString(task *Tasks, complete bool, success bool, isC
 
 	return string(b)
 }
+
+type ReservedCommand struct {
+	Description    string      `json:"description"`
+	ParameterModel interface{} `json:"parameterModel"`
+	ResultModel    interface{} `json:"resultModel"`
+	HasRecover     bool        `json:"hasRecover"`
+}

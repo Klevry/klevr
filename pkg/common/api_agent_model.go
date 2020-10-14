@@ -50,12 +50,12 @@ type Primary struct {
 
 // Agent agent info
 type Agent struct {
-	AgentKey           string `json:"agentKey"`
-	IsActive           bool   `json:"isActive"`
-	LastAliveCheckTime int64  `json:"lastAliveCheckTime"`
-	IP                 string `json:"ip"`
-	Port               int    `json:"port"`
-	Version            string `json:"version"`
+	AgentKey           string    `json:"agentKey"`
+	IsActive           bool      `json:"isActive"`
+	LastAliveCheckTime *JSONTime `json:"lastAliveCheckTime"`
+	IP                 string    `json:"ip"`
+	Port               int       `json:"port"`
+	Version            string    `json:"version"`
 	*Resource
 }
 

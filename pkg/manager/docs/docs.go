@@ -204,6 +204,133 @@ var doc = `{
                 }
             }
         },
+        "/inner/commands": {
+            "get": {
+                "description": "Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "예약어 커맨드 정보를 반환한다.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.ReservedCommand"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/groups/{groupID}/agents": {
+            "get": {
+                "description": "groupID에 해당하는 klevr zone의 모든 agent 정보를 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "zone의 agent 목록을 반환한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.Agent"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/groups/{groupID}/primary": {
+            "get": {
+                "description": "groupID에 해당하는 klevr zone의 primary agent 정보를 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "primary agent 정보를 반환한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Agent"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/tasks": {
+            "post": {
+                "description": "KlevrTask 모델에 기입된 ZONE의 AGENT에서 실행할 TASK를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "TASK를 등록한다.",
+                "parameters": [
+                    {
+                        "description": "TASK",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
         "/temp": {
             "get": {
                 "description": "에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.",
@@ -221,6 +348,29 @@ var doc = `{
         }
     },
     "definitions": {
+        "common.Agent": {
+            "type": "object",
+            "properties": {
+                "agentKey": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "lastAliveCheckTime": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "common.Body": {
             "type": "object",
             "properties": {
@@ -233,8 +383,108 @@ var doc = `{
                 "task": {
                     "type": "array",
                     "items": {
-                        "type": "KlevrTask"
+                        "$ref": "#/definitions/common.KlevrTask"
                     }
+                }
+            }
+        },
+        "common.KlevrTask": {
+            "type": "object",
+            "properties": {
+                "agentKey": {
+                    "type": "string"
+                },
+                "callbackUrl": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "JSONTime"
+                },
+                "cron": {
+                    "type": "string"
+                },
+                "currentStep": {
+                    "type": "integer"
+                },
+                "exeAgentChangeable": {
+                    "type": "boolean"
+                },
+                "exeAgentKey": {
+                    "type": "string"
+                },
+                "failedStep": {
+                    "type": "integer"
+                },
+                "hasRecover": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isFailedRecover": {
+                    "type": "boolean"
+                },
+                "log": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameter": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "type": "JSONTime"
+                },
+                "showLog": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "TaskStatus"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "KlevrTaskStep"
+                    }
+                },
+                "taskType": {
+                    "type": "TaskType"
+                },
+                "timeout": {
+                    "type": "integer"
+                },
+                "totalStepCount": {
+                    "type": "integer"
+                },
+                "untilRun": {
+                    "type": "JSONTime"
+                },
+                "updatedAt": {
+                    "type": "JSONTime"
+                },
+                "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "manager.ReservedCommand": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "hasRecover": {
+                    "type": "boolean"
+                },
+                "parameterModel": {
+                    "type": "object"
+                },
+                "resultModel": {
+                    "type": "object"
                 }
             }
         }

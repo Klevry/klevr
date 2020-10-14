@@ -272,7 +272,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		for i, agent := range nodes {
 			arrAgent[i].AgentKey = agent.AgentKey
-			arrAgent[i].LastAliveCheckTime = time.Unix(agent.LastAliveCheckTime, 0)
+			arrAgent[i].LastAliveCheckTime = agent.LastAliveCheckTime.Time
 			arrAgent[i].IsActive = agent.IsActive
 			arrAgent[i].Cpu = agent.Core
 			arrAgent[i].Memory = agent.Memory

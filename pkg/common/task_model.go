@@ -15,6 +15,12 @@ type TaskStatus string
 // CommandType for KlevrTask struct
 type CommandType string
 
+// INLINE script reserved variable name constants
+const (
+	InlineCommandOriginalParamVarName = "TASK_ORIGIN_PARAM"
+	InlineCommandTaskResultVarName    = "TASK_RESULT"
+)
+
 // TaskType Task 종류 정의
 const (
 	AtOnce    = TaskType("atOnce")    // 한번만 실행
@@ -33,7 +39,8 @@ const (
 	Complete      = TaskStatus("complete")       // Task 수행 완료
 	FailedRecover = TaskStatus("failed-recover") // 복구 실패
 	Failed        = TaskStatus("failed")         // Task 수행 실패
-	Canceled      = TaskStatus("canceled")       // Task 취소
+	Canceled      = TaskStatus("canceled")       // Task 취소 (recovery 하지 않음)
+	Timeout       = TaskStatus("timeout")        // Task timeout (recovery 하지 않음)
 )
 
 // CommandType Command 종류 정의
@@ -78,6 +85,13 @@ type KlevrTaskStep struct {
 	CommandType CommandType `json:"commandType"`
 	Command     string      `json:"command"`
 	IsRecover   bool        `json:"isRecover"`
+}
+
+type KlevrTaskCallback struct {
+	ID     uint64     `json:"id"`
+	Name   string     `json:"name"`
+	Status TaskStatus `json:"status"`
+	Result string     `json:"result"`
 }
 
 func TaskStatusAdd(task *KlevrTask) *KlevrTask {

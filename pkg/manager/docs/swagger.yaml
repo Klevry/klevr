@@ -1,4 +1,19 @@
 definitions:
+  common.Agent:
+    properties:
+      agentKey:
+        type: string
+      ip:
+        type: string
+      isActive:
+        type: boolean
+      lastAliveCheckTime:
+        type: integer
+      port:
+        type: integer
+      version:
+        type: string
+    type: object
   common.Body:
     properties:
       agent:
@@ -7,8 +22,74 @@ definitions:
         type: Me
       task:
         items:
-          type: KlevrTask
+          $ref: '#/definitions/common.KlevrTask'
         type: array
+    type: object
+  common.KlevrTask:
+    properties:
+      agentKey:
+        type: string
+      callbackUrl:
+        type: string
+      createdAt:
+        type: JSONTime
+      cron:
+        type: string
+      currentStep:
+        type: integer
+      exeAgentChangeable:
+        type: boolean
+      exeAgentKey:
+        type: string
+      failedStep:
+        type: integer
+      hasRecover:
+        type: boolean
+      id:
+        type: integer
+      isFailedRecover:
+        type: boolean
+      log:
+        type: string
+      name:
+        type: string
+      parameter:
+        type: string
+      result:
+        type: string
+      schedule:
+        type: JSONTime
+      showLog:
+        type: boolean
+      status:
+        type: TaskStatus
+      steps:
+        items:
+          type: KlevrTaskStep
+        type: array
+      taskType:
+        type: TaskType
+      timeout:
+        type: integer
+      totalStepCount:
+        type: integer
+      untilRun:
+        type: JSONTime
+      updatedAt:
+        type: JSONTime
+      zoneId:
+        type: integer
+    type: object
+  manager.ReservedCommand:
+    properties:
+      description:
+        type: string
+      hasRecover:
+        type: boolean
+      parameterModel:
+        type: object
+      resultModel:
+        type: object
     type: object
 info:
   contact: {}
@@ -135,6 +216,89 @@ paths:
       summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
+  /inner/commands:
+    get:
+      consumes:
+      - application/json
+      description: Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.ReservedCommand'
+            type: array
+      summary: 예약어 커맨드 정보를 반환한다.
+      tags:
+      - servers
+  /inner/groups/{groupID}/agents:
+    get:
+      consumes:
+      - application/json
+      description: groupID에 해당하는 klevr zone의 모든 agent 정보를 반환한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.Agent'
+            type: array
+      summary: zone의 agent 목록을 반환한다.
+      tags:
+      - servers
+  /inner/groups/{groupID}/primary:
+    get:
+      consumes:
+      - application/json
+      description: groupID에 해당하는 klevr zone의 primary agent 정보를 반환한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Agent'
+      summary: primary agent 정보를 반환한다.
+      tags:
+      - servers
+  /inner/tasks:
+    post:
+      consumes:
+      - application/json
+      description: KlevrTask 모델에 기입된 ZONE의 AGENT에서 실행할 TASK를 등록한다.
+      parameters:
+      - description: TASK
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.KlevrTask'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrTask'
+      summary: TASK를 등록한다.
+      tags:
+      - servers
   /temp:
     get:
       consumes:
