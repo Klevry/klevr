@@ -384,6 +384,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				complete = true
 			case common.Canceled:
 				complete = true
+			case common.Stopped:
+				complete = true
 			default:
 				panic("invalid task status - " + t.Status)
 			}

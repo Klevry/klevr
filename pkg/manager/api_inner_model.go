@@ -23,6 +23,15 @@ const (
 	TaskCallback EventType = "TASK_CALLBACK"
 )
 
+type KlevrVariable struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Length      string `json:"length"`
+	Description string `json:"description"`
+	Example     string `json:"example"`
+	Value       string `json:"value"`
+}
+
 // KlevrEvent klevr event struct
 type KlevrEvent struct {
 	EventType EventType        `json:"eventType"`

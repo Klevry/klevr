@@ -11,14 +11,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type KlevrVariable struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Length      string `json:"length"`
-	Description string `json:"description"`
-	Example     string `json:"example"`
-}
-
 type serversAPI int
 
 // InitInner initialize inner server API
@@ -37,7 +29,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/groups/{groupID}/agents", serversAPI.getAgents)
 	registURI(inner, GET, "/groups/{groupID}/primary", serversAPI.getPrimaryAgent)
 	registURI(inner, POST, "/tasks", serversAPI.addTask)
-	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.removeTask)
+	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.cancelTask)
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
@@ -228,7 +220,16 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
-func (api *serversAPI) removeTask(w http.ResponseWriter, r *http.Request) {
+// removeTask godoc
+// @Summary TASK를 취소한다.
+// @Description agent에 전달되지 않은(hand-over 이전) task를 취소한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{taskID} [delete]
+// @Param taskID path uint64 true "task id"
+// @Success 200 {object} string "{\"canceld\":true/false}"
+func (api *serversAPI) cancelTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
@@ -252,6 +253,15 @@ func (api *serversAPI) removeTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"canceled\":%v}", canceled)
 }
 
+// getTask godoc
+// @Summary TASK를 조회한다.
+// @Description taskID에 해당하는 TASK를 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{taskID} [get]
+// @Param taskID path uint64 true "task id"
+// @Success 200 {object} common.KlevrTask
 func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -283,6 +293,18 @@ func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getTasks godoc
+// @Summary TASK 목록을 반환한다.
+// @Description 검색조건에 해당하는 TASK 목록을 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks [get]
+// @Param groupID query []uint64 true "ZONE ID 배열"
+// @Param status query []string false "STATUS 배열"
+// @Param agentKey query []string false "AGENT KEY 배열"
+// @Param name query []string true "TASK NAME 배열"
+// @Success 200 {object} []common.KlevrTask
 func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -342,16 +364,33 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
+// getKlevrVariables godoc
+// @Summary Klevr에서 제공하는 시스템 변수 목록을 조회한다.
+// @Description TASK inline command에서 사용할 수 있는 시스템 변수 목록을 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/variables [get]
+// @Success 200 {object} []KlevrVariable
 func (api *serversAPI) getKlevrVariables(w http.ResponseWriter, r *http.Request) {
-	var variables []KlevrVariable
+	// ctx := CtxGetFromRequest(r)
 
-	variables = append(variables, KlevrVariable{
-		Name:        "KLEVR_HOST",
-		Type:        "string",
-		Length:      "-",
-		Description: "klevr host url",
-		Example:     "echo {KLEVR_HOST} => echo http://klevr.io",
-	})
+	var variables []KlevrVariable = []KlevrVariable{
+		KlevrVariable{
+			Name:        "KLEVR.HOST",
+			Type:        "string",
+			Length:      "-",
+			Description: "klevr host url",
+			Example:     "echo {KLEVR.HOST} => echo http://klevr.io",
+		},
+		KlevrVariable{
+			Name:        "KLEVR.PORT",
+			Type:        "int",
+			Length:      "-",
+			Description: "klevr service port",
+			Example:     "echo {KLEVR.HOST} => echo http://klevr.io",
+		},
+	}
 
 	b, err := json.Marshal(&variables)
 	if err != nil {
@@ -362,6 +401,16 @@ func (api *serversAPI) getKlevrVariables(w http.ResponseWriter, r *http.Request)
 	fmt.Fprintf(w, "%s", b)
 }
 
+// addAPIKey godoc
+// @Summary 사용자 그룹에 API key를 등록한다.
+// @Description agent가 zone에 접속할 수 있는 API KEY를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID}/apikey [post]
+// @Param groupID path uint64 true "ZONE ID"
+// @Param b body string true "API KEY"
+// @Success 200
 func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -385,6 +434,16 @@ func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// updateAPIKey godoc
+// @Summary 사용자 그룹의 API key를 수정한다.
+// @Description agent가 zone에 접속할 수 있는 API KEY를 수정한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID}/apikey [put]
+// @Param groupID path uint64 true "ZONE ID"
+// @Param b body string true "API KEY"
+// @Success 200
 func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -408,6 +467,15 @@ func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// getAPIKey godoc
+// @Summary 사용자 그룹의 API key를 조회한다.
+// @Description agent가 zone에 접속할 수 있는 API KEY를 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID}/apikey [get]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} string
 func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -429,6 +497,15 @@ func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", auth.ApiKey)
 }
 
+// addGroup godoc
+// @Summary ZONE을 추가한다.
+// @Description KLEVR ZONE을 생성한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups [post]
+// @Param b body AgentGroups true "AgentGroups model"
+// @Success 200 {object} AgentGroups
 func (api *serversAPI) addGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -456,6 +533,14 @@ func (api *serversAPI) addGroup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
+// getGroups godoc
+// @Summary ZONE 목록을 조회한다.
+// @Description KLEVR ZONE 목록을 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups [get]
+// @Success 200 {object} []AgentGroups
 func (api *serversAPI) getGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -471,6 +556,15 @@ func (api *serversAPI) getGroups(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
+// getGroup godoc
+// @Summary ZONE을 조회한다.
+// @Description KLEVR ZONE을 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID} [get]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} AgentGroups
 func (api *serversAPI) getGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)

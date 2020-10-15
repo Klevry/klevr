@@ -210,6 +210,96 @@
                 }
             }
         },
+        "/inner/groups": {
+            "get": {
+                "description": "KLEVR ZONE 목록을 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "ZONE 목록을 조회한다.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.AgentGroups"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "KLEVR ZONE을 생성한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "ZONE을 추가한다.",
+                "parameters": [
+                    {
+                        "description": "AgentGroups model",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.AgentGroups"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.AgentGroups"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/groups/{groupID}": {
+            "get": {
+                "description": "KLEVR ZONE을 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "ZONE을 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.AgentGroups"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/groups/{groupID}/agents": {
             "get": {
                 "description": "groupID에 해당하는 klevr zone의 모든 agent 정보를 반환한다.",
@@ -242,6 +332,106 @@
                             }
                         }
                     }
+                }
+            }
+        },
+        "/inner/groups/{groupID}/apikey": {
+            "get": {
+                "description": "agent가 zone에 접속할 수 있는 API KEY를 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "사용자 그룹의 API key를 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "agent가 zone에 접속할 수 있는 API KEY를 수정한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "사용자 그룹의 API key를 수정한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "API KEY",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {}
+                }
+            },
+            "post": {
+                "description": "agent가 zone에 접속할 수 있는 API KEY를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "사용자 그룹에 API key를 등록한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "API KEY",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {}
                 }
             }
         },
@@ -278,6 +468,70 @@
             }
         },
         "/inner/tasks": {
+            "get": {
+                "description": "검색조건에 해당하는 TASK 목록을 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "TASK 목록을 반환한다.",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "description": "ZONE ID 배열",
+                        "name": "groupID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "STATUS 배열",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "AGENT KEY 배열",
+                        "name": "agentKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "TASK NAME 배열",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.KlevrTask"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "KlevrTask 모델에 기입된 ZONE의 AGENT에서 실행할 TASK를 등록한다.",
                 "consumes": [
@@ -306,6 +560,94 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/tasks/{taskID}": {
+            "get": {
+                "description": "taskID에 해당하는 TASK를 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "TASK를 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "task id",
+                        "name": "taskID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "agent에 전달되지 않은(hand-over 이전) task를 취소한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "TASK를 취소한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "task id",
+                        "name": "taskID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"canceld\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/variables": {
+            "get": {
+                "description": "TASK inline command에서 사용할 수 있는 시스템 변수 목록을 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Klevr에서 제공하는 시스템 변수 목록을 조회한다.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.KlevrVariable"
+                            }
                         }
                     }
                 }
@@ -341,7 +683,7 @@
                     "type": "boolean"
                 },
                 "lastAliveCheckTime": {
-                    "type": "integer"
+                    "type": "JSONTime"
                 },
                 "port": {
                     "type": "integer"
@@ -448,6 +790,52 @@
                 },
                 "zoneId": {
                     "type": "integer"
+                }
+            }
+        },
+        "manager.AgentGroups": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "groupName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "manager.KlevrVariable": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "example": {
+                    "type": "string"
+                },
+                "length": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
