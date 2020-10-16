@@ -133,7 +133,7 @@ func (manager *KlevrManager) startTaskHandoverUpdater(ctx *common.Context) {
 	q := *manager.HandOverTaskQueue
 
 	q.AddListener(1, func(q *common.Queue, args ...interface{}) {
-		var tasks []Tasks
+		var ids []uint64
 		var iq = *q
 
 		logger.Debugf("hand-over task queue count : %d", iq.Length())
@@ -152,22 +152,22 @@ func (manager *KlevrManager) startTaskHandoverUpdater(ctx *common.Context) {
 					t := iq.Pop().(Tasks)
 
 					if t.Status != common.HandOver {
-						tasks = append(tasks, (iq.Pop().(Tasks)))
+						ids = append(ids, t.Id)
 					}
 				}
 
-				if len(tasks) > 0 {
-					tx.updateHandoverTasks(&tasks)
+				if len(ids) > 0 {
+					tx.updateHandoverTasks(ids)
 				}
 
 				tx.Commit()
 			},
-			Catch: func(e common.Exception) {
+			Catch: func(e error) {
 				if !tx.IsClosed() {
 					tx.Rollback()
 				}
 
-				logger.Errorf("getLock failed : %+v", e)
+				logger.Errorf("update task status to hand-over failed : %+v", e)
 			},
 			Finally: func() {
 				if !tx.IsClosed() {
@@ -204,7 +204,7 @@ func (manager *KlevrManager) getLock(ctx *common.Context) {
 				manager.HasLock = checkLock(tx, manager.InstanceID, duration)
 				tx.Commit()
 			},
-			Catch: func(e common.Exception) {
+			Catch: func(e error) {
 				if !tx.IsClosed() {
 					tx.Rollback()
 				}
@@ -251,7 +251,7 @@ func (manager *KlevrManager) updateScheduledTask(ctx *common.Context, cycle int)
 
 					tx.Commit()
 				},
-				Catch: func(e common.Exception) {
+				Catch: func(e error) {
 					if !tx.IsClosed() {
 						tx.Rollback()
 					}
@@ -474,7 +474,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 
 					tx.Commit()
 				},
-				Catch: func(e common.Exception) {
+				Catch: func(e error) {
 					if !tx.IsClosed() {
 						tx.Rollback()
 					}

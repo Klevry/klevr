@@ -4,6 +4,8 @@ import (
 	"container/list"
 	"reflect"
 	"sync"
+
+	"github.com/NexClipper/logger"
 )
 
 // Queue interface for Queue
@@ -239,6 +241,8 @@ func (q *mutexQueue) BulkPush(items interface{}) {
 			panic("Cannot insert nil into the Queue.")
 		}
 
+		logger.Debugf("bulk push - [%+v]", items)
+
 		arr := reflect.ValueOf(items)
 
 		for i := 0; i < arr.Len(); i++ {
@@ -257,6 +261,7 @@ func (q *mutexQueue) BulkPush(items interface{}) {
 			}
 		}
 	default:
+		logger.Debugf("single push - [%+v]", items)
 		q.Push(items)
 	}
 }

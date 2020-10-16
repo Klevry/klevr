@@ -8,7 +8,7 @@ definitions:
       isActive:
         type: boolean
       lastAliveCheckTime:
-        type: integer
+        type: JSONTime
       port:
         type: integer
       version:
@@ -79,6 +79,38 @@ definitions:
         type: JSONTime
       zoneId:
         type: integer
+    type: object
+  manager.AgentGroups:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      groupName:
+        type: string
+      id:
+        type: integer
+      platform:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  manager.KlevrVariable:
+    properties:
+      description:
+        type: string
+      example:
+        type: string
+      length:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+      value:
+        type: string
     type: object
   manager.ReservedCommand:
     properties:
@@ -233,6 +265,65 @@ paths:
       summary: 예약어 커맨드 정보를 반환한다.
       tags:
       - servers
+  /inner/groups:
+    get:
+      consumes:
+      - application/json
+      description: KLEVR ZONE 목록을 조회한다.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.AgentGroups'
+            type: array
+      summary: ZONE 목록을 조회한다.
+      tags:
+      - servers
+    post:
+      consumes:
+      - application/json
+      description: KLEVR ZONE을 생성한다.
+      parameters:
+      - description: AgentGroups model
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/manager.AgentGroups'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.AgentGroups'
+      summary: ZONE을 추가한다.
+      tags:
+      - servers
+  /inner/groups/{groupID}:
+    get:
+      consumes:
+      - application/json
+      description: KLEVR ZONE을 조회한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.AgentGroups'
+      summary: ZONE을 조회한다.
+      tags:
+      - servers
   /inner/groups/{groupID}/agents:
     get:
       consumes:
@@ -254,6 +345,73 @@ paths:
               $ref: '#/definitions/common.Agent'
             type: array
       summary: zone의 agent 목록을 반환한다.
+      tags:
+      - servers
+  /inner/groups/{groupID}/apikey:
+    get:
+      consumes:
+      - application/json
+      description: agent가 zone에 접속할 수 있는 API KEY를 조회한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 사용자 그룹의 API key를 조회한다.
+      tags:
+      - servers
+    post:
+      consumes:
+      - application/json
+      description: agent가 zone에 접속할 수 있는 API KEY를 등록한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: API KEY
+        in: body
+        name: b
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: 사용자 그룹에 API key를 등록한다.
+      tags:
+      - servers
+    put:
+      consumes:
+      - application/json
+      description: agent가 zone에 접속할 수 있는 API KEY를 수정한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: API KEY
+        in: body
+        name: b
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: 사용자 그룹의 API key를 수정한다.
       tags:
       - servers
   /inner/groups/{groupID}/primary:
@@ -278,6 +436,49 @@ paths:
       tags:
       - servers
   /inner/tasks:
+    get:
+      consumes:
+      - application/json
+      description: 검색조건에 해당하는 TASK 목록을 반환한다.
+      parameters:
+      - description: ZONE ID 배열
+        in: query
+        items:
+          type: integer
+        name: groupID
+        required: true
+        type: array
+      - description: STATUS 배열
+        in: query
+        items:
+          type: string
+        name: status
+        type: array
+      - description: AGENT KEY 배열
+        in: query
+        items:
+          type: string
+        name: agentKey
+        type: array
+      - description: TASK NAME 배열
+        in: query
+        items:
+          type: string
+        name: name
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.KlevrTask'
+            type: array
+      summary: TASK 목록을 반환한다.
+      tags:
+      - servers
     post:
       consumes:
       - application/json
@@ -297,6 +498,64 @@ paths:
           schema:
             $ref: '#/definitions/common.KlevrTask'
       summary: TASK를 등록한다.
+      tags:
+      - servers
+  /inner/tasks/{taskID}:
+    delete:
+      consumes:
+      - application/json
+      description: agent에 전달되지 않은(hand-over 이전) task를 취소한다.
+      parameters:
+      - description: task id
+        in: path
+        name: taskID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"canceld\":true/false}'
+          schema:
+            type: string
+      summary: TASK를 취소한다.
+      tags:
+      - servers
+    get:
+      consumes:
+      - application/json
+      description: taskID에 해당하는 TASK를 조회한다.
+      parameters:
+      - description: task id
+        in: path
+        name: taskID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrTask'
+      summary: TASK를 조회한다.
+      tags:
+      - servers
+  /inner/variables:
+    get:
+      consumes:
+      - application/json
+      description: TASK inline command에서 사용할 수 있는 시스템 변수 목록을 조회한다.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.KlevrVariable'
+            type: array
+      summary: Klevr에서 제공하는 시스템 변수 목록을 조회한다.
       tags:
       - servers
   /temp:

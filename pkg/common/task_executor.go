@@ -28,6 +28,7 @@ type taskExecutor struct {
 	sync.RWMutex
 	runningTasks *concurrent.ConcurrentMap // 실행중인 TASK map
 	updatedTasks *concurrent.ConcurrentMap // 업데이트된 TASK map
+	closed       bool
 }
 
 // TaskWrapper for running task management
@@ -82,7 +83,11 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 }
 
 // RunTask Run the task.
-func (executor *taskExecutor) RunTask(task *KlevrTask) {
+func (executor *taskExecutor) RunTask(task *KlevrTask) error {
+	if executor.closed {
+		return errors.New("Task executor was closed")
+	}
+
 	tw := &TaskWrapper{KlevrTask: task}
 	tw.Status = Running
 
@@ -92,6 +97,8 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) {
 	}
 
 	go executor.execute(tw)
+
+	return nil
 }
 
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
@@ -217,7 +224,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 			tw.Status = Failed
 		}
 	}).OnCancel(func() {
-		tw.Status = Canceled
+		tw.Status = Stopped
 	})
 
 	tw.future = future

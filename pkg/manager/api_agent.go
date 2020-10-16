@@ -156,7 +156,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agent := tx.getAgentByAgentKey(ch.AgentKey)
+	agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
 	upsertAgent(tx, agent, ch, &paramAgent)
@@ -247,7 +247,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// primary agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey)
+	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
 	logger.Debugf("%v", agent)
 
 	primary := tx.getPrimaryAgent(ch.ZoneID)
@@ -384,6 +384,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				complete = true
 			case common.Canceled:
 				complete = true
+			case common.Stopped:
+				complete = true
 			default:
 				panic("invalid task status - " + t.Status)
 			}
@@ -439,7 +441,7 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey)
+	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
 
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
@@ -500,8 +502,8 @@ func getNodes(tx *Tx, zoneID uint64) []common.Agent {
 	return nil
 }
 
-func updateAgentAccess(tx *Tx, agentKey string) *Agents {
-	agent := tx.getAgentByAgentKey(agentKey)
+func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
+	agent := tx.getAgentByAgentKey(agentKey, zoneID)
 
 	// agent 접속 시간 갱신
 	agent.LastAccessTime = time.Now().UTC()
@@ -583,12 +585,12 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 
 			tx.Commit()
 		},
-		Catch: func(e common.Exception) {
+		Catch: func(e error) {
 			if tx != nil {
 				tx.Rollback()
 			}
 
-			logger.Warning(e)
+			logger.Warningf("%+v", e)
 			common.Throw(e)
 		},
 		Finally: func() {

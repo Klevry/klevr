@@ -3,13 +3,17 @@ package common
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"time"
 )
 
 func init() {
 	// 샘플 커맨드
 	// InitCommand(testCommand())
 
-	InitCommand(stopTask()) // 실행중인 Task 중지 처리(작업 취소)
+	InitCommand(stopTask())               // 실행중인 Task 중지 처리(작업 취소)
+	InitCommand(forceShutdownAgent())     // 에이전트 즉시 중지 처리
+	InitCommand(gracefuleShutdownAgent()) // 현재 실행중인 작업을 마치고 에이전트 중지 처리
 }
 
 // 샘플 커맨드 작성
@@ -103,6 +107,52 @@ func stopTask() Command {
 
 				return string(b), nil
 			}
+		},
+	}
+}
+
+func forceShutdownAgent() Command {
+	return Command{
+		Name:        "ForceShutdownAgent",
+		Description: "Ignore the ongoing task and stop the agent immediately.",
+		Run: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
+			os.Exit(0)
+
+			return "", nil
+		},
+	}
+}
+
+func gracefuleShutdownAgent() Command {
+	return Command{
+		Name: "GracefulShutdownAgent",
+		Description: "When all ongoing AtOnce tasks are finished, the agent is terminated.\n" +
+			"Tasks other than AtOnce are forcibly terminated.",
+		Run: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
+			executor := GetTaskExecutor()
+
+			executor.closed = true
+
+			var complete = false
+
+			for !complete {
+				complete = true
+
+				for _, e := range executor.runningTasks.ToSlice() {
+					tw := e.Value().(*TaskWrapper)
+
+					if AtOnce == tw.TaskType {
+						complete = false
+						break
+					}
+				}
+
+				time.Sleep(1 * time.Second)
+			}
+
+			os.Exit(0)
+
+			return "", nil
 		},
 	}
 }

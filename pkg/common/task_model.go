@@ -39,7 +39,8 @@ const (
 	Complete      = TaskStatus("complete")       // Task 수행 완료
 	FailedRecover = TaskStatus("failed-recover") // 복구 실패
 	Failed        = TaskStatus("failed")         // Task 수행 실패
-	Canceled      = TaskStatus("canceled")       // Task 취소 (recovery 하지 않음)
+	Canceled      = TaskStatus("canceled")       // hand-over 전인 Task 실행 취소
+	Stopped       = TaskStatus("stopped")        // 실행중인 Task 취소 (recovery 하지 않음)
 	Timeout       = TaskStatus("timeout")        // Task timeout (recovery 하지 않음)
 )
 
