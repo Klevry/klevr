@@ -856,6 +856,9 @@ var doc = `{
                 },
                 "type": {
                     "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },

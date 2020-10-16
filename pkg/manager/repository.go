@@ -42,10 +42,10 @@ func (tx *Tx) deletePrimaryAgent(zoneID uint64) {
 
 }
 
-func (tx *Tx) getAgentByAgentKey(agentKey string) *Agents {
+func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
 	var a Agents
 
-	common.CheckGetQuery(tx.Where("agent_key = ?", agentKey).Get(&a))
+	common.CheckGetQuery(tx.Where("agent_key = ?", agentKey).And("group_id = ?", groupID).Get(&a))
 	logger.Debugf("Selected Agent : %v", a)
 
 	return &a
@@ -310,14 +310,12 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	return t
 }
 
-func (tx *Tx) updateHandoverTasks(tasks *[]Tasks) {
-	for _, t := range *tasks {
-		_, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE ID = ?",
-			string(common.HandOver), t.Id)
-
-		if err != nil {
-			panic(err)
-		}
+func (tx *Tx) updateHandoverTasks(ids []uint64) {
+	cnt, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
+	if err != nil {
+		panic(err)
+	} else if cnt > 1 {
+		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }
 
