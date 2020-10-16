@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func writeFile(path string, data string) {
+func writeFile(path string, data interface{}) {
 	d, _ := json.MarshalIndent(data, "", "  ")
 	err := ioutil.WriteFile(path, d, os.FileMode(0644))
 	if err != nil {

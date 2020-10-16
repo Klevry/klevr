@@ -19,6 +19,6 @@ build: require ## Build main.go
 
 run: ## Run main.go with some args 
 ##	go run ./main.go -id=ralf -platform=baremetal -webconsole=${WEBCONSOLE} -zone=dev -group="klevr-a-team"
-	go run ./main.go -apiKey="2d732d48059f463aace751a723d7a239" -platform="kubernetes" -manager="http://dev.nexclipper.io:8090" -zoneId="18"
+	go run ./main.go -apiKey="2d732d48059f463aace751a723d7a239" -platform="kubernetes" -manager="http://localhost:8090" -zoneId="18"
 
 all: build ## Same with build
