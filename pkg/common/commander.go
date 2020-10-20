@@ -2,52 +2,28 @@ package common
 
 import (
 	"fmt"
-	"sync"
 
-	"github.com/NexClipper/logger"
-	"github.com/fanliao/go-promise"
-)
-
-// TaskStatusType task status type
-type TaskStatusType string
-
-// TaskStatusType const define
-const (
-	TaskStatusStart    = TaskStatusType("START")
-	TaskStatusRunning  = TaskStatusType("RUNNING")
-	TaskStatusSuccess  = TaskStatusType("SUCCESS")
-	TaskStatusFailed   = TaskStatusType("FAILED")
-	TaskStatusCanceled = TaskStatusType("CANCELED")
+	"github.com/pkg/errors"
 )
 
 // 커맨드 구현체를 담는 map
 var commands = make(map[string]Command)
 
-// 실행중인 task를 담는 map
-var taskMap = sync.Map{}
-
-// CommandWrapper 커맨드를 래핑한 task struct
-type CommandWrapper struct {
-	Command
-	id     uint64
-	result TaskResult
-	param  *map[string]interface{}
-	future *promise.Future
-}
-
 // Command 종류별로 구현해야 하는 커맨드 struct.
 // 사용자는 필요한 Command를 추가로 생성해야 한다.
 type Command struct {
-	Name    string
-	Run     func(*map[string]interface{}) (interface{}, error)
-	Recover func(*map[string]interface{}) (interface{}, error)
+	Name           string
+	Description    string
+	ParameterModel interface{}
+	ResultModel    interface{}
+	Run            func(jsonOriginalParam string, jsonPreResult string) (jsonResult string, err error)
+	Recover        func(jsonOriginalParam string, jsonPreResult string) (jsonResult string, err error)
 }
 
-// TaskResult task 수행 결과 struct
-// Status는
-type TaskResult struct {
-	Status TaskStatusType
-	Result interface{}
+type CommandDescriptor struct {
+	Type        string      `json:"type"`
+	Description string      `json:"description"`
+	Values      interface{} `json:"values"`
 }
 
 // InitCommand 커맨드 추가
@@ -55,86 +31,54 @@ func InitCommand(c Command) {
 	commands[c.Name] = c
 }
 
+// GetCommands 등록된 command map을 반환
+func GetCommands() map[string]Command {
+	t := make(map[string]Command)
+
+	for k, v := range commands {
+		t[k] = v
+	}
+
+	return t
+}
+
 // RunCommand 커맨드를 실행
-func RunCommand(id uint64, commandName string, param *map[string]interface{}) error {
-	c, ok := commands[commandName]
+func RunCommand(jsonPreResult string, task *KlevrTask, command *KlevrTaskStep) (result string, err error) {
+	// 커맨드 구현체 function 획득
+	c, ok := commands[command.Command]
 	if !ok {
-		return NewStandardError(fmt.Sprintf("%s command does not exist.", commandName))
+		return "", NewStandardError(fmt.Sprintf("%s command does not exist.", command.Command))
 	}
 
-	// 커맨드 인스턴스 생성
-	cw := &CommandWrapper{
-		Command: c,
-		id:      id,
-		result:  TaskResult{},
-		param:   param,
-	}
+	var r string
+	var e error
 
-	cw.result.Status = TaskStatusStart
+	// Recover function 실행 (Run()이 panic 또는 error 일때만)
+	defer func() {
+		v := recover()
+		var ex error
 
-	logger.Debug(cw)
+		if v != nil {
+			e = errors.New(fmt.Sprintf("%+v", v))
+			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(e))
 
-	// 커맨드(task) 실행
-	go cw.execute()
-
-	return nil
-}
-
-func (c *CommandWrapper) execute() {
-	callbacked := false
-
-	// task 맵에 현재 커맨드(task) 적재 for 상태관리
-	taskMap.Store(c.id, c)
-
-	task := func() (interface{}, error) {
-		return c.Run(c.param)
-	}
-
-	// task 실행 및 상태 처리
-	f := promise.Start(task).OnSuccess(func(v interface{}) {
-		c.result.Status = TaskStatusSuccess
-	}).OnFailure(func(v interface{}) {
-		c.result.Status = TaskStatusFailed
-	}).OnComplete(func(v interface{}) {
-		callbacked = true
-	}).OnCancel(func() {
-		callbacked = true
-		c.result.Status = TaskStatusCanceled
-	})
-
-	c.result.Status = TaskStatusRunning
-
-	c.future = f
-
-	// task 수행 결과 수신
-	r, err := f.Get()
-
-	// cancel 처리 시 OnComplete()이 호출 되지 않는 케이스에 대한 보완 처리
-	if !callbacked {
-		if f.IsCancelled() {
-			c.result.Status = TaskStatusCanceled
-		} else if err != nil {
-			c.result.Status = TaskStatusFailed
-			c.result.Result = r
+			if c.Recover != nil {
+				r, ex = c.Recover(task.Parameter, task.Result)
+			}
+		} else if e != nil {
+			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(e))
+			if c.Recover != nil {
+				r, ex = c.Recover(task.Parameter, task.Result)
+			}
 		}
-	}
 
-	// task 수행 결과물 적재
-	c.result.Result = r
+		if ex != nil {
+			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(ex))
+		}
+	}()
 
-	// TODO: 매니저로 실행 결과 전송 구현
+	// Run function 실행
+	r, e = c.Run(task.Parameter, task.Result)
 
-	// task 맵에서 현재 커맨드(task) 삭제
-	taskMap.Delete(c.id)
-}
-
-// GetTaskResult get task result
-func GetTaskResult(ID uint64) (TaskResult, bool) {
-	r, ok := taskMap.Load(ID)
-
-	if ok {
-		return r.(TaskResult), ok
-	}
-
-	return TaskResult{}, ok
+	return r, e
 }

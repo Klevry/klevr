@@ -7,6 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/fanliao/go-concurrentMap v0.0.0-20141114143905-7d2d7a5ea67b
 	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-gonic/gin v1.6.3
@@ -55,5 +56,6 @@ require (
 	k8s.io/klog/v2 v2.3.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
+	xorm.io/builder v0.3.7
 	xorm.io/xorm v1.0.5
 )

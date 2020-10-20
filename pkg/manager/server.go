@@ -22,11 +22,13 @@ const AgentStatusUpdateTask = "AGENT_STATUS_UPDATE"
 
 // KlevrManager klevr manager struct
 type KlevrManager struct {
-	ServerName string
-	Config     Config
-	RootRouter *mux.Router
-	InstanceID string
-	EventQueue *common.Queue
+	ServerName        string
+	Config            Config
+	RootRouter        *mux.Router
+	InstanceID        string
+	HasLock           bool
+	EventQueue        *common.Queue
+	HandOverTaskQueue *common.Queue
 }
 
 // Config klevr manager config struct
@@ -77,8 +79,10 @@ func NewKlevrManager() (*KlevrManager, error) {
 	router := mux.NewRouter()
 
 	instance := &KlevrManager{
-		RootRouter: router,
-		EventQueue: common.NewMutexQueue(),
+		RootRouter:        router,
+		EventQueue:        common.NewMutexQueue(),
+		HandOverTaskQueue: common.NewMutexQueue(),
+		HasLock:           false,
 	}
 
 	instance.InstanceID = fmt.Sprintf("%v_%v", &instance, time.Now().UTC().Unix())
@@ -109,13 +113,161 @@ func (manager *KlevrManager) Run() error {
 		WriteTimeout: time.Duration(serverConfig.WriteTimeout) * time.Second,
 	}
 
+	go manager.getLock(common.FromContext(ctx))
+	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
 	go manager.startEventHandler()
-	go manager.updateAgentStatus(common.FromContext(ctx), time.Duration(manager.Config.Server.StatusUpdateCycle))
+	// klevr 에이전트 상태 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
+	go manager.updateAgentStatus(common.FromContext(ctx), manager.Config.Server.StatusUpdateCycle)
+	// klevr task 스케쥴 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
+	go manager.updateScheduledTask(common.FromContext(ctx), manager.Config.Agent.CallCycle)
+	// klevr task hand-over 상태 업데이트
+	go manager.startTaskHandoverUpdater(common.FromContext(ctx))
 
 	Init(ctx)
 
 	return s.ListenAndServe()
 }
+
+func (manager *KlevrManager) startTaskHandoverUpdater(ctx *common.Context) {
+	db := CtxGetDbConn(ctx)
+	q := *manager.HandOverTaskQueue
+
+	q.AddListener(1, func(q *common.Queue, args ...interface{}) {
+		var ids []uint64
+		var iq = *q
+
+		logger.Debugf("hand-over task queue count : %d", iq.Length())
+
+		tx := &Tx{db.NewSession()}
+
+		common.Block{
+			Try: func() {
+				err := tx.Begin()
+				if err != nil {
+					logger.Errorf("DB session begin error : %v", err)
+					common.Throw(err)
+				}
+
+				for iq.Length() > 0 {
+					t := iq.Pop().(Tasks)
+
+					if t.Status != common.HandOver {
+						ids = append(ids, t.Id)
+					}
+				}
+
+				if len(ids) > 0 {
+					tx.updateHandoverTasks(ids)
+				}
+
+				tx.Commit()
+			},
+			Catch: func(e error) {
+				if !tx.IsClosed() {
+					tx.Rollback()
+				}
+
+				logger.Errorf("update task status to hand-over failed : %+v", e)
+			},
+			Finally: func() {
+				if !tx.IsClosed() {
+					tx.Close()
+				}
+			},
+		}.Do()
+	})
+}
+
+func (manager *KlevrManager) getLock(ctx *common.Context) {
+	for {
+		db := CtxGetDbConn(ctx)
+
+		st := time.Duration(manager.Config.Server.StatusUpdateCycle) / 2
+		if st == 0 {
+			st = 1
+		}
+
+		time.Sleep(st * time.Second)
+		logger.Debugf("getLock sleep duration : %+v", st*time.Second)
+
+		tx := &Tx{db.NewSession()}
+		duration := time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second
+
+		common.Block{
+			Try: func() {
+				err := tx.Begin()
+				if err != nil {
+					logger.Errorf("DB session begin error : %v", err)
+					common.Throw(err)
+				}
+
+				manager.HasLock = checkLock(tx, manager.InstanceID, duration)
+				tx.Commit()
+			},
+			Catch: func(e error) {
+				if !tx.IsClosed() {
+					tx.Rollback()
+				}
+
+				logger.Errorf("getLock failed : %+v", e)
+			},
+			Finally: func() {
+				if !tx.IsClosed() {
+					tx.Close()
+				}
+			},
+		}.Do()
+	}
+}
+
+func (manager *KlevrManager) updateScheduledTask(ctx *common.Context, cycle int) {
+	st := cycle / 2
+	if st < 1 {
+		st = 1
+	}
+
+	sleep := time.Duration(st) * time.Second
+
+	for {
+		if manager.HasLock {
+			db := CtxGetDbConn(ctx)
+
+			time.Sleep(sleep)
+			logger.Debugf("sleep duration : %+v", sleep)
+
+			tx := &Tx{db.NewSession()}
+
+			common.Block{
+				Try: func() {
+					err := tx.Begin()
+					if err != nil {
+						logger.Errorf("DB session begin error : %v", err)
+						common.Throw(err)
+					}
+
+					cnt := tx.updateScheduledTask()
+
+					logger.Debugf("Scheduled tasks status updated to wait-polling : %d", cnt)
+
+					tx.Commit()
+				},
+				Catch: func(e error) {
+					if !tx.IsClosed() {
+						tx.Rollback()
+					}
+
+					logger.Errorf("update scheduled task failed : %+v", e)
+				},
+				Finally: func() {
+					if !tx.IsClosed() {
+						tx.Close()
+					}
+				},
+			}.Do()
+		}
+	}
+}
+
 func (manager *KlevrManager) startEventHandler() {
 	webhookConf := manager.Config.Server.Webhook
 	url := webhookConf.Url
@@ -180,6 +332,13 @@ func (manager *KlevrManager) startEventHandler() {
 	}
 }
 
+func AddHandOverTasks(tasks *[]Tasks) {
+	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
+
+	q := *manager.HandOverTaskQueue
+	q.BulkPush(*tasks)
+}
+
 // AddEvent add klevr event for webhook
 func AddEvent(event *KlevrEvent) {
 	logger.Debugf("add event : [%+v]", *event)
@@ -199,6 +358,19 @@ func AddEvent(event *KlevrEvent) {
 		q := *manager.EventQueue
 		q.Push(event)
 	}
+}
+
+func AddEvents(events *[]KlevrEvent) {
+	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
+	hookConfig := manager.Config.Server.Webhook
+
+	logger.Debugf("hookConfig : [%+v]", hookConfig)
+
+	if hookConfig.Url == "" {
+		return
+	}
+
+	go sendBulkEventWebHook(hookConfig.Url, events)
 }
 
 func sendSingleEventWebHook(url string, event *KlevrEvent) {
@@ -254,29 +426,36 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	logger.Debugf("sendEventWebHook - statusCode : [%d], body : [%s]", res.StatusCode, body)
 }
 
+// TODO: event 발송 실패 재처리 구현
 func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
 
 }
 
-func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.Duration) {
+func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
+	st := cycle / 2
+	if st < 1 {
+		st = 1
+	}
+
+	sleep := time.Duration(st) * time.Second
+
 	for {
-		db := CtxGetDbConn(ctx)
+		if manager.HasLock {
+			db := CtxGetDbConn(ctx)
 
-		time.Sleep(cycle / 2 * time.Second)
-		logger.Debugf("sleep duration : %+v", cycle*time.Second)
+			time.Sleep(sleep)
+			logger.Debugf("sleep duration : %+v", sleep)
 
-		tx := &Tx{db.NewSession()}
-		duration := time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second
+			tx := &Tx{db.NewSession()}
 
-		common.Block{
-			Try: func() {
-				err := tx.Begin()
-				if err != nil {
-					logger.Errorf("DB session begin error : %v", err)
-					common.Throw(err)
-				}
+			common.Block{
+				Try: func() {
+					err := tx.Begin()
+					if err != nil {
+						logger.Errorf("DB session begin error : %v", err)
+						common.Throw(err)
+					}
 
-				if checkLock(tx, manager.InstanceID, duration) {
 					current := time.Now().UTC()
 					before := current.Add(-time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second)
 
@@ -294,21 +473,21 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle time.D
 					}
 
 					tx.Commit()
-				}
-			},
-			Catch: func(e common.Exception) {
-				if !tx.IsClosed() {
-					tx.Rollback()
-				}
+				},
+				Catch: func(e error) {
+					if !tx.IsClosed() {
+						tx.Rollback()
+					}
 
-				logger.Errorf("update agent status failed : %+v", e)
-			},
-			Finally: func() {
-				if !tx.IsClosed() {
-					tx.Close()
-				}
-			},
-		}.Do()
+					logger.Errorf("update agent status failed : %+v", e)
+				},
+				Finally: func() {
+					if !tx.IsClosed() {
+						tx.Close()
+					}
+				},
+			}.Do()
+		}
 	}
 }
 

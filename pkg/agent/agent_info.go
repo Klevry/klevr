@@ -43,7 +43,6 @@ func DiskUsage(path string) (disk DiskStatus) {
 // send agent info to manager
 func SendMe(body *common.Body) {
 	body.Me.IP = Local_ip_add()
-	body.Me.IP = Local_ip_add()
 	body.Me.Port = 18800
 	body.Me.Version = "0.1.0"
 

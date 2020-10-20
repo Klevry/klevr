@@ -59,7 +59,7 @@ func CommonWrappingHandler(ctx *common.Context) mux.MiddlewareFunc {
 						common.Throw(err)
 					}
 				},
-				Catch: func(e common.Exception) {
+				Catch: func(e error) {
 					// 트랜잭션 recover 정의
 					if !tx.IsClosed() {
 						tx.Rollback()

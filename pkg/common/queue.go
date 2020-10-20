@@ -2,7 +2,10 @@ package common
 
 import (
 	"container/list"
+	"reflect"
 	"sync"
+
+	"github.com/NexClipper/logger"
 )
 
 // Queue interface for Queue
@@ -14,6 +17,7 @@ type Queue interface {
 	Length() uint64
 	Pop() interface{}
 	Push(interface{})
+	BulkPush(interface{})
 	ResetListenerCallCount()
 }
 
@@ -131,6 +135,21 @@ func (q *channelQueue) Push(item interface{}) {
 	q.buf <- item
 }
 
+func (q *channelQueue) BulkPush(items interface{}) {
+	switch reflect.TypeOf(items).Kind() {
+	case reflect.Slice:
+		fallthrough
+	case reflect.Array:
+		arr := reflect.ValueOf(items)
+
+		for i := 0; i < arr.Len(); i++ {
+			q.Push(arr.Index(i))
+		}
+	default:
+		q.Push(items)
+	}
+}
+
 func (q *channelQueue) Pop() interface{} {
 	item := <-q.current
 
@@ -204,6 +223,47 @@ func (q *mutexQueue) Close() {
 // IsClosed 큐의 close 상태 여부를 반환한다.
 func (q *mutexQueue) IsClosed() bool {
 	return q.alive
+}
+
+func (q *mutexQueue) BulkPush(items interface{}) {
+	switch reflect.TypeOf(items).Kind() {
+	case reflect.Slice:
+		fallthrough
+	case reflect.Array:
+		q.Lock()
+		defer q.Unlock()
+
+		if !q.alive {
+			panic("The queue has closed and can no longer be used.")
+		}
+
+		if items == nil {
+			panic("Cannot insert nil into the Queue.")
+		}
+
+		logger.Debugf("bulk push - [%+v]", items)
+
+		arr := reflect.ValueOf(items)
+
+		for i := 0; i < arr.Len(); i++ {
+			q.item.PushBack(arr.Index(i).Interface())
+		}
+
+		if q.listener != nil {
+			q.listenerRunCount++
+
+			// 리스너 함수가 설정되고 호출 건수가 만족되면 리스너 함수를 호출한다.
+			if q.listenerRunCount != 0 && q.listenerRunCount >= q.listenerCallCount {
+				// 리스너 함수는 별도의 go routine으로 호출되므로 호출 시점의 누적 건수와 실행 시점의 누적 건수는 차이가 발생할 수 있다.
+				var Q Queue = q
+				go q.listener(&Q)
+				q.listenerRunCount = 0
+			}
+		}
+	default:
+		logger.Debugf("single push - [%+v]", items)
+		q.Push(items)
+	}
 }
 
 func (q *mutexQueue) Push(item interface{}) {

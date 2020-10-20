@@ -42,6 +42,9 @@ func loadConfig(configPath string) (*config, error) {
 }
 
 func main() {
+	// TimeZone UTC로 설정
+	os.Setenv("TZ", "")
+
 	common.InitLogger(common.NewLoggerEnv())
 
 	logger.Info("Start Klevr-manager")

@@ -12,6 +12,9 @@ import (
 var AGENT_VERSION = "0.0.1"
 
 func main() {
+	// TimeZone UTC로 설정
+	os.Setenv("TZ", "")
+
 	common.InitLogger(common.NewLoggerEnv())
 
 	// Flag options
