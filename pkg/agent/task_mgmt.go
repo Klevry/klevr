@@ -56,12 +56,13 @@ func Polling(agent *KlevrAgent) {
 		logger.Error(err)
 	}
 
-	logger.Debugf("%v", rb)
+	//logger.Debugf("%v", rb)
 
 	// polling API 호출
 	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
 
 	var body common.Body
+	logger.Debugf("%v", string(result))
 	err2 := json.Unmarshal(result, &body)
 	if err2 != nil {
 		logger.Errorf("%v", err2)
@@ -73,35 +74,31 @@ func Polling(agent *KlevrAgent) {
 			body.Task[i].Status = common.WaitExec
 		}
 
+		logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
+
 		if body.Task[i].ExeAgentChangeable {
 
 		} else {
-			for _, v := range list.Nodes {
-				if v.AgentKey == body.Task[i].AgentKey {
-					ip := v.IP
+			logger.Debugf("%v", &body.Task[i])
 
-					agent.taskExecute(ip, &body.Task[i])
-				}
-			}
+			executor.RunTask(&body.Task[i])
 
+			//for _, v := range list.Nodes {
+			//	if v.AgentKey == body.Task[i].AgentKey {
+			//		ip := v.IP
+			//
+			//		logger.Debugf("%v", body.Task[i])
+			//		agent.taskExecute(ip, &body.Task[i])
+			//	}
+			//}
 		}
 	}
 
 	//exec.RunTask(body.Task)
 
-	logger.Debugf("%v", string(result))
+	//logger.Debugf("%v", string(result))
 
 	writeFile(agentsList, body.Agent)
 
 	//logger.Debugf("%v", string(result))
-}
-
-func (agent *KlevrAgent) taskExecute(ip string, task *common.KlevrTask) []common.KlevrTask {
-	var tasks []common.KlevrTask
-
-	if ip == agent.PrimaryIP {
-		executor.RunTask(task)
-	}
-
-	return tasks
 }
