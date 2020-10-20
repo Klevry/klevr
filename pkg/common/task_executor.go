@@ -268,7 +268,7 @@ func runReservedCommand(preResult string, task *KlevrTask, command *KlevrTaskSte
 // inline shell script 커맨드 실행
 func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep) (result string, err error) {
 	var wrapper string
-	var path = "/tmp" + strconv.FormatUint(task.ID, 10)
+	var path = "/tmp/" + strconv.FormatUint(task.ID, 10)
 
 	// inline command 스크립트 파일 생성을 위한 디렉토리 체크(/tmp/taskID)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
