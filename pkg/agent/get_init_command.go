@@ -16,6 +16,7 @@ import (
 // get task command from git
 func getCommand(agent *KlevrAgent) {
 	// SSH_provbee := "ssh provbee-service "
+
 	uri := agent.Manager + "/agents/commands/init"
 
 	var loop = true

@@ -2,7 +2,7 @@ FROM ubuntu:focal
 LABEL version=0.1.4
 
 RUN apt-get update -y && \
-    apt-get install -y ssh && \
+    apt-get install -y ssh jq && \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/*
 
