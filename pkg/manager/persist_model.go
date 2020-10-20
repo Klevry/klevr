@@ -2,6 +2,8 @@ package manager
 
 import (
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
 )
 
 // AgentGroups model for AGENT_GROUPS
@@ -59,31 +61,64 @@ type TaskLock struct {
 	LockDate   time.Time
 }
 
+type RetriveTask struct {
+	Tasks      `xorm:"extends"`
+	TaskDetail `xorm:"extends"`
+	TaskLogs   `xorm:"extends"`
+}
+
+func (RetriveTask) TableName() string {
+	return "TASKS"
+}
+
 type Tasks struct {
 	Id          uint64 `xorm:"PK"`
-	Type        string
-	Command     string
 	ZoneId      uint64
+	Name        string
+	TaskType    common.TaskType
+	Schedule    time.Time
 	AgentKey    string
 	ExeAgentKey string
-	Status      string
-	Params      *TaskParams `xorm:"foreignKey:Id"`
-	Logs        *TaskLogs   `xorm:"foreignKey:Id"`
-	Result      string
-	CreatedAt   time.Time `xorm:"created"`
-	UpdatedAt   time.Time `xorm:"updated"`
+	Status      common.TaskStatus
+	TaskDetail  *TaskDetail  `xorm:"-"`
+	TaskSteps   *[]TaskSteps `xorm:"-"`
+	Logs        *TaskLogs    `xorm:"-"`
+	CreatedAt   time.Time    `xorm:"created"`
+	UpdatedAt   time.Time    `xorm:"updated"`
 	DeletedAt   time.Time
 }
 
 type TaskLogs struct {
-	TaskId    uint64 `xorm:"PK"`
-	Logs      string
-	CreatedAt time.Time `xorm:"created"`
+	TaskId uint64 `xorm:"PK"`
+	Logs   string
 }
 
-type TaskParams struct {
-	TaskId uint64 `xorm:"PK"`
-	Params string
+type TaskSteps struct {
+	Id              uint64 `xorm:"PK"`
+	Seq             int
+	TaskId          uint64
+	CommandName     string
+	CommandType     common.CommandType
+	ReservedCommand string
+	InlineScript    string
+	IsRecover       bool
+}
+
+type TaskDetail struct {
+	TaskId             uint64 `xorm:"PK"`
+	Cron               string
+	UntilRun           time.Time
+	Timeout            uint
+	ExeAgentChangeable bool
+	TotalStepCount     uint
+	CurrentStep        uint
+	HasRecover         bool
+	Parameter          string
+	CallbackUrl        string
+	Result             string
+	FailedStep         uint
+	IsFailedRecover    bool
+	ShowLog            bool
 }
 
 func (tl *TaskLock) expired() bool {

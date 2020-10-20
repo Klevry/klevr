@@ -49,7 +49,7 @@ func Put_Json_http(url string, data []byte, agent string, api string, zone strin
 		body, _ = ioutil.ReadAll(res.Body)
 		http_body_buffer = string(body)
 
-		logger.Debugf("response : [%+v]", res)
+		//logger.Debugf("response : [%+v]", res)
 	} else {
 		logger.Error(err)
 	}

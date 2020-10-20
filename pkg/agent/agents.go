@@ -24,6 +24,12 @@ type KlevrAgent struct {
 	schedulerInterval int
 	initialized       bool
 	scheduler         *gocron.Scheduler
+	PrimaryIP         string
+	SecondaryIP       []Secondary
+}
+
+type Secondary struct {
+	IP string
 }
 
 func NewKlevrAgent() *KlevrAgent {
@@ -38,30 +44,34 @@ func NewKlevrAgent() *KlevrAgent {
 
 func (agent *KlevrAgent) Run() {
 
-	primary_IP := HandShake(agent)
-	agent.startScheduler(primary_IP)
+	agent.PrimaryIP = HandShake(agent)
+	agent.startScheduler()
 
 	http.ListenAndServe(":18800", nil)
 }
 
-func (agent *KlevrAgent) startScheduler(prim string) {
-	var scheduleFunc interface{}
+func (agent *KlevrAgent) startScheduler() {
+	//var scheduleFunc interface{}
 
-	if Check_primary(prim) {
+	s := gocron.NewScheduler()
+
+	if Check_primary(agent.PrimaryIP) {
 		var interval int
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval
 		}
 
-		go getCommand(agent)
+		//go getCommand(agent)
 
-		scheduleFunc = agent.tempHealthCheck
+		s.Every(5).Seconds().Do(Polling, agent)
+
+		//scheduleFunc = agent.tempHealthCheck
+		//scheduleFunc = Polling
 	} else {
-		scheduleFunc = PrimaryStatusReport
+		//scheduleFunc = PrimaryStatusReport
 	}
 
-	s := gocron.NewScheduler()
-	s.Every(5).Seconds().Do(scheduleFunc)
+	//s.Every(5).Seconds().Do(scheduleFunc)
 
 	agent.scheduler = s
 

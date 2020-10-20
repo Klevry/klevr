@@ -150,7 +150,7 @@ func errorWithLog(err error, l logger.Level, message string) {
 // Block Try-Catch-Finally block struct
 type Block struct {
 	Try     func()
-	Catch   func(Exception)
+	Catch   func(error)
 	Finally func()
 }
 
@@ -171,7 +171,7 @@ func (b Block) Do() {
 	if b.Catch != nil {
 		defer func() {
 			if r := recover(); r != nil {
-				b.Catch(r)
+				b.Catch(errors.WithStack(fmt.Errorf("%+v", r)))
 			}
 		}()
 	}
