@@ -327,8 +327,6 @@ func (tx *Tx) updateTask(t *Tasks) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
 	}
 
 	detail := t.TaskDetail
@@ -344,24 +342,16 @@ func (tx *Tx) updateTask(t *Tasks) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt > 1 {
-		common.PanicForUpdate("updated", cnt, 1)
 	}
 
 	if t.Logs.Logs != "" {
 		logs := t.Logs
 
-		result, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
+		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
 			t.Id, logs.Logs, t.Id, logs.Logs)
 
 		if err != nil {
 			panic(err)
-		}
-
-		cnt, _ := result.RowsAffected()
-
-		if cnt != 1 {
-			common.PanicForUpdate("upserted", cnt, 1)
 		}
 	}
 }
