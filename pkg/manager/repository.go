@@ -47,7 +47,6 @@ func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
 
 	common.CheckGetQuery(tx.Where("agent_key = ?", agentKey).And("group_id = ?", groupID).Get(&a))
 	logger.Debugf("selected Agent - id : [%d], agentKey : [%s], isActive : [%v], lastAccessTime : [%v]", a.Id, a.AgentKey, a.IsActive, a.LastAccessTime)
-
 	return &a
 }
 

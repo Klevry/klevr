@@ -170,6 +170,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
 
+
 	// 접속한 agent 정보
 	me := &rb.Me
 
@@ -513,6 +514,7 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 }
 
 func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
+
 	// primary agent 정보
 	groupPrimary := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
