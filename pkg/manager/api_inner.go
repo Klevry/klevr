@@ -66,7 +66,7 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 
 		agent = common.Agent{
 			AgentKey:           a.AgentKey,
-			IsActive:           a.IsActive,
+			IsActive:           byteToBool(a.IsActive),
 			LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
 			IP:                 a.Ip,
 			Port:               a.Port,
@@ -149,7 +149,7 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
 				AgentKey:           a.AgentKey,
-				IsActive:           a.IsActive,
+				IsActive:           byteToBool(a.IsActive),
 				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
 				IP:                 a.Ip,
 				Port:               a.Port,

@@ -168,7 +168,8 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	// primary 조회
 	var oldPrimaryAgentKey string
-	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
+	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
+
 
 	// 접속한 agent 정보
 	me := &rb.Me
@@ -246,21 +247,32 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	// response 데이터 생성
 	rb := &common.Body{}
 
-	// primary agent access 정보 갱신
+	// agent access 정보 갱신
 	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
-	logger.Debugf("%v", agent)
+	logger.Debugf("%+v", agent)
 
-	primary := tx.getPrimaryAgent(ch.ZoneID)
+	// 수행한 task 상태 정보 업데이트
+	var taskLength = len(param.Task)
 
-	if agent.Id != primary.AgentId { // primary가 바뀐 경우
-		pAgent := tx.getAgentByID(primary.AgentId)
+	if taskLength > 0 {
+		var pTaskMap = make(map[uint64]*Tasks)
+		var tIds = make([]uint64, len(param.Task))
 
-		rb.Agent.Primary.AgentKey = pAgent.AgentKey
-		rb.Agent.Primary.IP = pAgent.Ip
-		rb.Agent.Primary.IsActive = true
-		rb.Agent.Primary.LastAccessTime = pAgent.LastAccessTime.UTC().Unix()
-		rb.Agent.Primary.Port = pAgent.Port
-	} else {
+		for i, task := range param.Task {
+			tIds[i] = task.ID
+		}
+
+		pTasks, _ := tx.getTasksByIds(tIds)
+		for _, pt := range *pTasks {
+			pTaskMap[pt.Id] = &pt
+		}
+
+		updateTaskStatus(ctx, pTaskMap, &param.Task)
+	}
+
+	rb.Agent.Primary, _ = getPrimary(ctx, tx, ch.ZoneID, agent)
+
+	if agent.AgentKey == rb.Agent.Primary.AgentKey {
 		// TODO: primary agent 실행 파라미터 update
 		// rb.Me.CallCycle =
 		// rb.Me.LogLevel =
@@ -270,36 +282,23 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		nodeLength := len(nodes)
 		arrAgent := make([]Agents, nodeLength)
 
-		for i, agent := range nodes {
-			arrAgent[i].AgentKey = agent.AgentKey
-			arrAgent[i].LastAliveCheckTime = agent.LastAliveCheckTime.Time
-			arrAgent[i].IsActive = agent.IsActive
-			arrAgent[i].Cpu = agent.Core
-			arrAgent[i].Memory = agent.Memory
-			arrAgent[i].Disk = agent.Disk
+		for i, a := range nodes {
+			arrAgent[i].AgentKey = a.AgentKey
+			arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
+			arrAgent[i].Cpu = a.Core
+			arrAgent[i].Memory = a.Memory
+			arrAgent[i].Disk = a.Disk
+
+			if agent.AgentKey == a.AgentKey {
+				arrAgent[i].IsActive = 1
+			} else {
+				arrAgent[i].IsActive = boolToByte(a.IsActive)
+			}
 		}
 
 		tx.updateZoneStatus(&arrAgent)
+
 		tx.Commit()
-
-		// 수행한 task 상태 정보 업데이트
-		var taskLength = len(param.Task)
-
-		if taskLength > 0 {
-			var pTaskMap = make(map[uint64]*Tasks)
-			var tIds = make([]uint64, len(param.Task))
-
-			for i, task := range param.Task {
-				tIds[i] = task.ID
-			}
-
-			pTasks, _ := tx.getTasksByIds(tIds)
-			for _, pt := range *pTasks {
-				pTaskMap[pt.Id] = &pt
-			}
-
-			updateTaskStatus(ctx, pTaskMap, &param.Task)
-		}
 
 		// 신규 task 할당
 		nTasks, cnt := tx.getTasksWithSteps(ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
@@ -444,7 +443,7 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
 
 	var oldPrimaryAgentKey string
-	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent.Id)
+	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
 		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
@@ -506,28 +505,33 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	agent := tx.getAgentByAgentKey(agentKey, zoneID)
 
 	// agent 접속 시간 갱신
-	agent.LastAccessTime = time.Now().UTC()
-	tx.updateAgent(agent)
+	// agent.IsActive = 1
+	// agent.LastAccessTime = time.Now().UTC()
+	// tx.updateAgent(agent)
+	tx.updateAccessAgent(agent.Id, time.Now().UTC())
 
 	return agent
 }
 
-func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) (common.Primary, string) {
+func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
+
 	// primary agent 정보
 	groupPrimary := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
 	var oldPrimaryAgentKey string
 
-	if groupPrimary.AgentId == 0 {
-		primaryAgent = electPrimary(ctx, zoneID, agentID, false)
+	if groupPrimary.AgentId == curAgent.Id {
+		primaryAgent = curAgent
+	} else if groupPrimary.AgentId == 0 {
+		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
 
-		if primaryAgent.Id == 0 || !primaryAgent.IsActive {
-			primaryAgent = electPrimary(ctx, zoneID, agentID, true)
+		if primaryAgent.Id == 0 || primaryAgent.IsActive == 0 {
+			primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, true)
 
 			logger.Debugf("changed primaryAgent : %+v", primaryAgent)
 		}
@@ -537,7 +541,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) (com
 		AgentKey:       primaryAgent.AgentKey,
 		IP:             primaryAgent.Ip,
 		Port:           primaryAgent.Port,
-		IsActive:       primaryAgent.IsActive,
+		IsActive:       byteToBool(primaryAgent.IsActive),
 		LastAccessTime: primaryAgent.LastAccessTime.UTC().Unix(),
 	}, oldPrimaryAgentKey
 }
@@ -607,7 +611,7 @@ func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *com
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
 		agent.GroupId = ch.ZoneID
-		agent.IsActive = true
+		agent.IsActive = 1
 		agent.LastAccessTime = time.Now().UTC()
 		agent.Ip = paramAgent.IP
 		agent.Port = paramAgent.Port
@@ -619,7 +623,7 @@ func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *com
 
 		tx.addAgent(agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
-		agent.IsActive = true
+		agent.IsActive = 1
 		agent.LastAccessTime = time.Now().UTC()
 		agent.Ip = paramAgent.IP
 		agent.Port = paramAgent.Port
@@ -631,4 +635,20 @@ func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *com
 
 		tx.updateAgent(agent)
 	}
+}
+
+func byteToBool(b byte) bool {
+	if b == 0 {
+		return false
+	}
+
+	return true
+}
+
+func boolToByte(b bool) byte {
+	if b {
+		return 1
+	}
+
+	return 0
 }

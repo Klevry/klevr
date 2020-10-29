@@ -46,8 +46,7 @@ func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
 	var a Agents
 
 	common.CheckGetQuery(tx.Where("agent_key = ?", agentKey).And("group_id = ?", groupID).Get(&a))
-	logger.Debugf("Selected Agent : %v", a)
-
+	logger.Debugf("selected Agent - id : [%d], agentKey : [%s], isActive : [%v], lastAccessTime : [%v]", a.Id, a.AgentKey, a.IsActive, a.LastAccessTime)
 	return &a
 }
 
@@ -55,7 +54,7 @@ func (tx *Tx) getAgentByID(id uint64) *Agents {
 	var a Agents
 
 	common.CheckGetQuery(tx.ID(id).Get(&a))
-	logger.Debugf("Selected Agent : %v", a)
+	logger.Debugf("Selected Agent : %+v", a)
 
 	return &a
 }
@@ -94,7 +93,7 @@ func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 }
 
 func (tx *Tx) updateAgentStatus(ids []uint64) {
-	cnt, err := tx.Table(new(Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": false})
+	cnt, err := tx.Table(new(Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": 0})
 	logger.Debugf("Status updated Agent(%d) : [%+v]", cnt, ids)
 
 	if err != nil {
@@ -102,6 +101,19 @@ func (tx *Tx) updateAgentStatus(ids []uint64) {
 	} else if cnt != int64(len(ids)) {
 		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
+}
+
+func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
+	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = ? WHERE ID = ?",
+		accessTime, 1, id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, _ := result.RowsAffected()
+
+	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, id)
 }
 
 func (tx *Tx) updateZoneStatus(arrAgent *[]Agents) {

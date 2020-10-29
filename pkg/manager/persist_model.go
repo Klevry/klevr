@@ -25,7 +25,7 @@ type Agents struct {
 	AgentKey  string
 	GroupId   uint64
 	// Group              AgentGroups `gorm:"foreignkey:GroupID"`
-	IsActive           bool
+	IsActive           byte
 	LastAliveCheckTime time.Time
 	LastAccessTime     time.Time
 	Ip                 string
