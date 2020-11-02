@@ -39,7 +39,7 @@ func stopTask() Command {
 	}
 
 	type ParamModel struct {
-		TargetTaskID interface{} `json:"targetTaskID"`
+		TargetTaskID interface{} `json:"targetTaskId"`
 	}
 
 	type ResultModel struct {

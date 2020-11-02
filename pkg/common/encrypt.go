@@ -46,6 +46,86 @@ func Encrypt(key string, msg string) (encrypted string, err error) {
 	return encoder.EncodeToString(crypted), nil
 }
 
+// EncryptWithSalt encrypt msg with the given key and salt.
+func EncryptWithSalt(key string, salt string, msg string) (encrypted string, err error) {
+	block, err := aes.NewCipher([]byte(key[0:16]))
+	if err != nil {
+		return "", err
+	}
+
+	encoder := base64.StdEncoding
+
+	ecb := cipher.NewCBCEncrypter(block, getIvParam(key))
+
+	msgBytes := []byte(msg)
+	saltBytes := []byte(salt)
+
+	msgLength := len(msgBytes)
+	saltLength := len(saltBytes) - 1
+
+	sumBytes := make([]byte, msgLength)
+
+	for i, j := 0, 0; i < msgLength; i++ {
+		sumBytes[i] = msgBytes[i] ^ saltBytes[j]
+
+		if j < saltLength {
+			j++
+		} else {
+			j = 0
+		}
+	}
+
+	content := []byte(encoder.EncodeToString([]byte(sumBytes)))
+
+	content = getPKCS5Padding(content, block.BlockSize())
+	crypted := make([]byte, len(content))
+	ecb.CryptBlocks(crypted, content)
+
+	return encoder.EncodeToString(crypted), nil
+}
+
+// DecryptWithSalt decrypt msg with the given key and salt.
+func DecryptWithSalt(key string, salt string, crypt string) (decrypted string, err error) {
+	block, err := aes.NewCipher([]byte(key[0:16]))
+	if err != nil {
+		return "", err
+	}
+
+	b, err := base64.StdEncoding.DecodeString(crypt)
+	if err != nil {
+		return "", err
+	}
+
+	ecb := cipher.NewCBCDecrypter(block, getIvParam(key))
+	dec := make([]byte, len(b))
+	ecb.CryptBlocks(dec, b)
+	decrypt := getPKCS5Trimming(dec)
+
+	b, err = base64.StdEncoding.DecodeString(string(decrypt))
+	if err != nil {
+		return "", err
+	}
+
+	saltBytes := []byte(salt)
+
+	msgLength := len(b)
+	saltLength := len(saltBytes) - 1
+
+	sumBytes := make([]byte, msgLength)
+
+	for i, j := 0, 0; i < msgLength; i++ {
+		sumBytes[i] = b[i] ^ saltBytes[j]
+
+		if j < saltLength {
+			j++
+		} else {
+			j = 0
+		}
+	}
+
+	return string(sumBytes), nil
+}
+
 // Decrypt decrypt msg with the given key.
 func Decrypt(key string, crypt string) (decrypted string, err error) {
 	block, err := aes.NewCipher([]byte(key[0:16]))

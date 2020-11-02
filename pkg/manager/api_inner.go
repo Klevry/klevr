@@ -71,12 +71,18 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 			IP:                 a.Ip,
 			Port:               a.Port,
 			Version:            a.Version,
-			Resource: &common.Resource{
-				Core:   a.Cpu,
-				Memory: a.Memory,
-				Disk:   a.Disk,
-			},
+			Resource:           &common.Resource{},
 		}
+
+		manager := ctx.Get(CtxServer).(*KlevrManager)
+
+		core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+		memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+		disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+
+		agent.Core = core
+		agent.Memory = memory
+		agent.Disk = disk
 	}
 
 	b, err := json.Marshal(agent)
@@ -145,6 +151,8 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	cnt, agents := tx.getAgentsByGroupId(groupID)
 	nodes := make([]common.Agent, cnt)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	if cnt > 0 {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
@@ -154,12 +162,16 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
-				Resource: &common.Resource{
-					Core:   a.Cpu,
-					Memory: a.Memory,
-					Disk:   a.Disk,
-				},
+				Resource:           &common.Resource{},
 			}
+
+			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+
+			nodes[i].Core = core
+			nodes[i].Memory = memory
+			nodes[i].Disk = disk
 		}
 	}
 
@@ -424,8 +436,10 @@ func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	auth := &ApiAuthentications{
-		ApiKey:  nr.BodyToString(),
+		ApiKey:  manager.encrypt(nr.BodyToString()),
 		GroupId: groupID,
 	}
 
@@ -457,12 +471,18 @@ func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+	apiKey := nr.BodyToString()
+
 	auth := &ApiAuthentications{
-		ApiKey:  nr.BodyToString(),
+		ApiKey:  manager.encrypt(apiKey),
 		GroupId: groupID,
 	}
 
 	tx.updateAPIKey(auth)
+
+	ctxAPI := ctx.Get(CtxAPI).(*API)
+	ctxAPI.APIKeyMap.Put(groupID, apiKey)
 
 	w.WriteHeader(200)
 }
@@ -493,8 +513,10 @@ func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", auth.ApiKey)
+	fmt.Fprintf(w, "%s", manager.decrypt(auth.ApiKey))
 }
 
 // addGroup godoc

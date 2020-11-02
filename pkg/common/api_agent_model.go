@@ -5,12 +5,13 @@ const CustomHeaderName = "CTX-CUSTOM-HEADER"
 
 // CustomHeader header for klevr
 type CustomHeader struct {
-	APIKey         string `header:"X-API-KEY"`
-	AgentKey       string `header:"X-AGENT-KEY"`
-	HashCode       string `header:"X-HASH-CODE"`
-	ZoneID         uint64 `header:"X-ZONE-ID"`
-	SupportVersion string `header:"X-SUPPORT-AGENT-VERSION"`
-	Timestamp      int64  `header:"X-TIMESTAMP"`
+	APIKey           string `header:"X-API-KEY"`
+	AgentKey         string `header:"X-AGENT-KEY"`
+	HashCode         string `header:"X-HASH-CODE"`
+	ZoneID           uint64 `header:"X-ZONE-ID"`
+	SupportVersion   string `header:"X-SUPPORT-AGENT-VERSION"`
+	Timestamp        int64  `header:"X-TIMESTAMP"`
+	PayloadEncrypted bool   `header:"X-PAYLOAD-ENC"`
 }
 
 // Body body for message

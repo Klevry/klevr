@@ -8,6 +8,7 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	_ "github.com/Klevry/klevr/pkg/manager/docs"
+	concurrent "github.com/fanliao/go-concurrentMap"
 	swagger "github.com/swaggo/http-swagger"
 
 	"github.com/NexClipper/logger"
@@ -47,24 +48,13 @@ type API struct {
 	BaseRoutes *Routes
 	DB         *common.DB
 	Manager    *KlevrManager
+	APIKeyMap  *concurrent.ConcurrentMap
 }
 
 type apiDef struct {
 	method   string
 	uri      string
 	function func(*gin.Context)
-}
-
-// ReceiveHandshake godoc
-// @Summary 에이전트의 handshake 요청을 받아 처리한다.
-// @Description 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
-// @Tags temp
-// @Accept json
-// @Produce json
-// @Router /temp [get]
-func temp2(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", "OK")
 }
 
 // Init initialize API router
@@ -81,7 +71,10 @@ func Init(ctx *common.Context) *API {
 		BaseRoutes: &Routes{},
 		DB:         CtxGetDbConn(ctx),
 		Manager:    CtxGetServer(ctx),
+		APIKeyMap:  concurrent.NewConcurrentMap(),
 	}
+
+	ctx.Put(CtxAPI, api)
 
 	api.DB.ShowSQL(true)
 	// TODO: ContextLogger interface 구현하여 logger override
@@ -91,7 +84,6 @@ func Init(ctx *common.Context) *API {
 
 	// swagger 설정
 	api.BaseRoutes.Root.PathPrefix("/swagger").Handler(swagger.WrapHandler)
-	api.BaseRoutes.Root.PathPrefix("/test").Subrouter().HandleFunc("/test", temp2)
 
 	api.BaseRoutes.APIRoot = api.BaseRoutes.Root
 

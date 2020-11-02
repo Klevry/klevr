@@ -32,9 +32,9 @@ type Agents struct {
 	Port               int
 	HmacKey            string
 	EncKey             string
-	Cpu                int
-	Memory             int
-	Disk               int
+	Cpu                string
+	Memory             string
+	Disk               string
 	Version            string
 }
 
@@ -48,8 +48,8 @@ type PrimaryAgents struct {
 
 // ApiAuthentications model for API_AUTHENTICATIONS
 type ApiAuthentications struct {
-	ApiKey    string `xorm:"pk"`
-	GroupId   uint64
+	GroupId   uint64 `xorm:"pk"`
+	ApiKey    string
 	CreatedAt time.Time `xorm:"created"`
 	UpdatedAt time.Time `xorm:"updated"`
 }
