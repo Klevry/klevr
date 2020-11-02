@@ -22,7 +22,7 @@ docker-compose up -d
 ## Features
  * **[Agent](./agent/)**
    * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
-   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon, Helm chart
+   * Get & Run: Hypervisor(via libvirt container or Multipass), Terraform, Prometheus, Beacon, Helm chart
    * Metric data aggregate & delivery
   * **[Web console](./webconsole/)**
    * Host pool management
@@ -51,6 +51,7 @@ docker-compose up -d
    * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] KVM(libvirt) by [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Multipass for Hosted Virtual-machine
  * [x] ~~Micro K8s~~ K3s
  * [x] Prometheus by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Grafana by [ProvBee](https://github.com/NexClipper/provbee)
