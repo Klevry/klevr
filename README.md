@@ -55,7 +55,7 @@ docker-compose up -d
  * [x] Prometheus by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Grafana by [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Helm by [ProvBee](https://github.com/NexClipper/provbee)
- * [ ] Vault(maybe)
+ * [ ] ~~Vault(maybe)~~
  * [ ] ~~Packer(maybe)~~
  * [x] ~~Vagrant~~
  * [x] ~~Consul~~ 
