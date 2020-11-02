@@ -35,7 +35,7 @@ docker-compose up -d
    * [Webconsole](./Dockerfile/klevr_websonsole)(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
    * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
    * [Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
-   * Prometheus operator(Service discovery)
+   * ~~Prometheus operator(Service discovery)~~
    * [ProvBee](https://github.com/NexClipper/provbee)(nexclipper/provbee)  
    * ~~Metric crawler~~
    * Task manager
