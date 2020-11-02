@@ -17,13 +17,13 @@ type Tx struct {
 	*common.Session
 }
 
-func (tx *Tx) getPrimaryAgent(zoneID uint64) *PrimaryAgents {
+func (tx *Tx) getPrimaryAgent(zoneID uint64) (primary *PrimaryAgents, exist bool) {
 	var pa PrimaryAgents
 
-	common.CheckGetQuery(tx.Where("group_id = ?", zoneID).Get(&pa))
+	ok := common.CheckGetQuery(tx.Where("group_id = ?", zoneID).Get(&pa))
 	logger.Debugf("Selected PrimaryAgent : %v", pa)
 
-	return &pa
+	return &pa, ok
 }
 
 func (tx *Tx) insertPrimaryAgent(pa *PrimaryAgents) (int64, error) {

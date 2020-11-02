@@ -547,7 +547,7 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
 
 	// primary agent 정보
-	groupPrimary := tx.getPrimaryAgent(zoneID)
+	groupPrimary, _ := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
 	var oldPrimaryAgentKey string
 
@@ -600,7 +600,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			cnt, err := tx.insertPrimaryAgent(pa)
 
 			if err != nil {
-				pa = tx.getPrimaryAgent(zoneID)
+				pa, _ = tx.getPrimaryAgent(zoneID)
 			} else if cnt != 1 {
 				logger.Warning(fmt.Sprintf("insert primary agent cnt : %d", cnt))
 				common.Throw(common.NewStandardError("elect primary failed."))

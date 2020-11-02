@@ -58,10 +58,10 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	primary := tx.getPrimaryAgent(groupID)
+	primary, exist := tx.getPrimaryAgent(groupID)
 	var agent common.Agent
 
-	if primary != nil {
+	if exist {
 		a := tx.getAgentByID(primary.AgentId)
 
 		agent = common.Agent{
