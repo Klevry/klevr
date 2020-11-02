@@ -1,3 +1,9 @@
+CREATE DATABASE  IF NOT EXISTS `klevr` /*!40100 DEFAULT CHARACTER SET utf8 */;
+USE `klevr`;
+
+CREATE USER 'klevr'@'%' identified by 'klevr';
+GRANT ALL PRIVILEGES ON klevr.* to `klevr`@`%`;
+
 -- MariaDB dump 10.17  Distrib 10.4.13-MariaDB, for osx10.15 (x86_64)
 --
 -- Host: 127.0.0.1    Database: klevr
