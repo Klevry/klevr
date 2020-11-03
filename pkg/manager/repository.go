@@ -267,7 +267,7 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 	}
 }
 
-func (tx *Tx) insertTask(t *Tasks) *Tasks {
+func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 	result, err := tx.Exec("INSERT INTO `TASKS` (`zone_id`,`name`,`task_type`,`schedule`,`agent_key`,`exe_agent_key`,`status`) VALUES (?,?,?,?,?,?,?)",
 		t.ZoneId, t.Name, t.TaskType, t.Schedule, t.AgentKey, t.ExeAgentKey, t.Status)
 
@@ -290,6 +290,9 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	if t.TaskDetail != nil {
 		t.TaskDetail.TaskId = t.Id
 
+		t.TaskDetail.Parameter = manager.encrypt(t.TaskDetail.Parameter)
+		t.TaskDetail.Result = manager.encrypt(t.TaskDetail.Result)
+
 		cnt, err = tx.Insert(t.TaskDetail)
 		if err != nil {
 			panic(err)
@@ -305,6 +308,9 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	if t.TaskSteps != nil && taskStepLen > 0 {
 		for i, ts := range *t.TaskSteps {
 			(*t.TaskSteps)[i].TaskId = t.Id
+			(*t.TaskSteps)[i].ReservedCommand = manager.encrypt(ts.ReservedCommand)
+			(*t.TaskSteps)[i].InlineScript = manager.encrypt(ts.InlineScript)
+
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
 			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
 		}
@@ -331,7 +337,7 @@ func (tx *Tx) updateHandoverTasks(ids []uint64) {
 	}
 }
 
-func (tx *Tx) updateTask(t *Tasks) {
+func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
 	cnt, err := tx.Where("ID = ?", t.Id).
 		Cols("EXE_AGENT_KEY", "STATUS").
 		Update(t)
@@ -343,6 +349,8 @@ func (tx *Tx) updateTask(t *Tasks) {
 
 	detail := t.TaskDetail
 	if detail.Result != "" {
+		detail.Result = manager.encrypt(detail.Result)
+
 		cnt, err = tx.Where("TASK_ID = ?", t.Id).
 			Cols("CURRENT_STEP", "RESULT", "FAILED_STEP", "IS_FAILED_RECOVER").
 			Update(detail)
@@ -359,6 +367,8 @@ func (tx *Tx) updateTask(t *Tasks) {
 	if t.Logs.Logs != "" {
 		logs := t.Logs
 
+		logs.Logs = manager.encrypt(logs.Logs)
+
 		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
 			t.Id, logs.Logs, t.Id, logs.Logs)
 
@@ -368,7 +378,7 @@ func (tx *Tx) updateTask(t *Tasks) {
 	}
 }
 
-func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
+func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 	var rTask RetriveTask
 	var task Tasks
 
@@ -388,12 +398,21 @@ func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
 	task = rTask.Tasks
 	task.TaskDetail = &rTask.TaskDetail
 	task.Logs = &rTask.TaskLogs
+
+	task.TaskDetail.Parameter = manager.decrypt(task.TaskDetail.Parameter)
+	task.TaskDetail.Result = manager.decrypt(task.TaskDetail.Result)
+	task.Logs.Logs = manager.decrypt(task.Logs.Logs)
+
+	for i := 0; i < len(steps); i++ {
+		steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+		steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+	}
 	task.TaskSteps = &steps
 
 	return &task, exist
 }
 
-func (tx *Tx) getTasksByIds(ids []uint64) (*[]Tasks, int64) {
+func (tx *Tx) getTasksByIds(manager *KlevrManager, ids []uint64) (*[]Tasks, int64) {
 	var rts []RetriveTask
 	inqCnt := len(ids)
 
@@ -413,10 +432,10 @@ func (tx *Tx) getTasksByIds(ids []uint64) (*[]Tasks, int64) {
 			", selected count : " + strconv.Itoa(int(cnt)))
 	}
 
-	return toTasks(&rts), cnt
+	return toTasks(manager, &rts), cnt
 }
 
-func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, int64) {
+func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses []string) (*[]Tasks, int64) {
 	var tasks *[]Tasks
 
 	var rts []RetriveTask
@@ -432,7 +451,7 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 
 	logger.Debugf("selected retreive tasks : %d", cnt)
 
-	tasks = toTasks(&rts)
+	tasks = toTasks(manager, &rts)
 
 	for i, t := range *tasks {
 		var steps []TaskSteps
@@ -444,6 +463,11 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 
 		logger.Debugf("select steps for %d - %d", t.Id, cnt)
 
+		for i := 0; i < len(steps); i++ {
+			steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+			steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+		}
+
 		(*tasks)[i].TaskSteps = &steps
 	}
 
@@ -452,12 +476,17 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 	return tasks, cnt
 }
 
-func toTasks(rts *[]RetriveTask) *[]Tasks {
+func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 	var tasks = make([]Tasks, 0, len(*rts))
 
 	for _, rt := range *rts {
 		rt.Tasks.TaskDetail = &rt.TaskDetail
 		rt.Tasks.Logs = &rt.TaskLogs
+
+		rt.Tasks.TaskDetail.Parameter = manager.decrypt(rt.Tasks.TaskDetail.Parameter)
+		rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
+		rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+
 		tasks = append(tasks, rt.Tasks)
 	}
 
