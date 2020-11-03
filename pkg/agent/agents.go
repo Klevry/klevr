@@ -43,6 +43,8 @@ func NewKlevrAgent() *KlevrAgent {
 }
 
 func (agent *KlevrAgent) Run() {
+	
+	logger.Debugf("new agent")
 
 	agent.PrimaryIP = HandShake(agent)
 	agent.startScheduler()
