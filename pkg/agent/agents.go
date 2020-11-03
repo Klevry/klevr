@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/jasonlvhit/gocron"
+	"github.com/NexClipper/logger"
 )
 
 const defaultSchedulerInterval int = 5
