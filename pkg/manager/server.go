@@ -529,6 +529,10 @@ func expired(lockDate time.Time, d time.Duration) bool {
 }
 
 func (manager *KlevrManager) encrypt(msg string) string {
+	if msg == "" {
+		return ""
+	}
+
 	encKey := manager.Config.Server.EncryptionKey
 
 	enc, err := common.Encrypt(encKey, msg)
@@ -541,6 +545,10 @@ func (manager *KlevrManager) encrypt(msg string) string {
 }
 
 func (manager *KlevrManager) decrypt(encrypted string) string {
+	if encrypted == "" {
+		return ""
+	}
+
 	encKey := manager.Config.Server.EncryptionKey
 
 	dec, err := common.Decrypt(encKey, encrypted)

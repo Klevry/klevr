@@ -122,13 +122,15 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
+func UpdateTaskStatus(ctx *common.Context, tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
 	len := len(*tasks)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if len > 0 {
 		for _, t := range *tasks {
 
-			tx.updateTask(&Tasks{
+			tx.updateTask(manager, &Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
@@ -276,6 +278,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	// 수행한 task 상태 정보 업데이트
 	var taskLength = len(param.Task)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	if taskLength > 0 {
 		var pTaskMap = make(map[uint64]*Tasks)
 		var tIds = make([]uint64, len(param.Task))
@@ -284,7 +288,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			tIds[i] = task.ID
 		}
 
-		pTasks, _ := tx.getTasksByIds(tIds)
+		pTasks, _ := tx.getTasksByIds(manager, tIds)
 		for _, pt := range *pTasks {
 			pTaskMap[pt.Id] = &pt
 		}
@@ -325,7 +329,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		tx.Commit()
 
 		// 신규 task 할당
-		nTasks, cnt := tx.getTasksWithSteps(ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
+		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
 		if cnt > 0 {
 			var dtos []common.KlevrTask = make([]common.KlevrTask, len(*nTasks))
 
@@ -356,6 +360,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 	var events = make([]KlevrEvent, 0, length*2)
 
 	tx := GetDBConn(ctx)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	for _, t := range *uTasks {
 		oTask := oTasks[t.ID]
@@ -428,7 +434,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 			}
 		}
 
-		tx.updateTask(oTask)
+		tx.updateTask(manager, oTask)
 	}
 
 	AddEvents(&events)

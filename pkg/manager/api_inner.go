@@ -214,10 +214,12 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	// DTO -> entity
 	persistTask := *TaskDtoToPerist(&t)
 
-	// DB insert
-	persistTask = *tx.insertTask(&persistTask)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
-	task, _ := tx.getTask(persistTask.Id)
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
 
 	dto := TaskPersistToDto(task)
 
@@ -286,7 +288,9 @@ func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, exist := tx.getTask(taskID)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	task, exist := tx.getTask(manager, taskID)
 
 	if exist {
 		dto := TaskPersistToDto(task)
