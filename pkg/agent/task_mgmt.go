@@ -5,6 +5,8 @@ import (
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/NexClipper/logger"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -68,37 +70,38 @@ func Polling(agent *KlevrAgent) {
 		logger.Errorf("%v", err2)
 	}
 
-	// change task status
-	for i := 0; i < len(body.Task); i++ {
-		if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
-			body.Task[i].Status = common.WaitExec
-		}
+	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
+	errcheck := provcheck.Run()
+	if errcheck != nil {
+		logger.Errorf("provbee-service is not running: %v", errcheck)
+	}
 
-		logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
+	hi := readFile("/tmp/con")
+	str := strings.TrimRight(string(hi), "\n")
 
-		if body.Task[i].ExeAgentChangeable {
+	if strings.Compare(str, "hi") == 0 {
+		// change task status
+		for i := 0; i < len(body.Task); i++ {
+			if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
+				body.Task[i].Status = common.WaitExec
+			}
 
-		} else {
-			logger.Debugf("%v", &body.Task[i])
+			logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
 
-			executor.RunTask(&body.Task[i])
+			if body.Task[i].ExeAgentChangeable {
 
-			//for _, v := range list.Nodes {
-			//	if v.AgentKey == body.Task[i].AgentKey {
-			//		ip := v.IP
-			//
-			//		logger.Debugf("%v", body.Task[i])
-			//		agent.taskExecute(ip, &body.Task[i])
-			//	}
-			//}
+			} else {
+				logger.Debugf("%v", &body.Task[i])
+
+				executor.RunTask(&body.Task[i])
+
+			}
 		}
 	}
 
-	//exec.RunTask(body.Task)
-
-	//logger.Debugf("%v", string(result))
-
 	writeFile(agentsList, body.Agent)
+}
 
-	//logger.Debugf("%v", string(result))
+func taskRun(){
+
 }
