@@ -101,7 +101,3 @@ func Polling(agent *KlevrAgent) {
 
 	writeFile(agentsList, body.Agent)
 }
-
-func taskRun(){
-
-}
