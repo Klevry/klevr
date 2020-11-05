@@ -12,8 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/NexClipper/logger"
+	"github.com/gorhill/cronexpr"
 	"github.com/pkg/errors"
 
 	concurrent "github.com/fanliao/go-concurrentMap"
@@ -122,10 +124,14 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				return steps[i].Seq < steps[j].Seq
 			})
 
+			// Recover 스텝을 제외한 정규 step 개수
 			regularCnt := size
 			if tw.HasRecover {
 				regularCnt--
 			}
+
+			// Iteration task 반복 수행 시작 지점
+		ITERATION:
 
 			tw.CurrentStep = 1
 
@@ -172,6 +178,30 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					tw.CurrentStep++
 
 					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+				}
+			}
+
+			// Iteration task 반복 수행
+			if Iteration == tw.TaskType {
+				expr, err := cronexpr.Parse(tw.Cron)
+
+				if err != nil {
+					tw.Log += "Invalid cron expression - " + tw.Cron + "\n"
+					return tw, err
+				}
+
+				curTime := time.Now()
+				nextTime := expr.Next(curTime)
+
+				if tw.UntilRun.After(nextTime) {
+					tw.Status = WaitInterationSchedule
+					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+
+					time.Sleep(nextTime.Sub(curTime))
+
+					tw.Status = Running
+
+					goto ITERATION
 				}
 			}
 		}

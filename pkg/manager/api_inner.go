@@ -8,6 +8,7 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
+	"github.com/gorhill/cronexpr"
 	"github.com/gorilla/mux"
 )
 
@@ -210,6 +211,15 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 
 	// Task 상태 설정
 	t = *common.TaskStatusAdd(&t)
+
+	// Task validation
+	if common.Iteration == t.TaskType {
+		_, err := cronexpr.Parse(t.Cron)
+
+		if err != nil {
+			common.WriteHTTPError(400, w, err, "Invalid cron expression - "+t.Cron)
+		}
+	}
 
 	// DTO -> entity
 	persistTask := *TaskDtoToPerist(&t)

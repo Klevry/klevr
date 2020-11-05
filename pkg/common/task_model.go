@@ -30,18 +30,19 @@ const (
 
 // TaskStatus Task 상태 정의
 const (
-	Scheduled     = TaskStatus("scheduled")      // 실행 스케쥴링됨
-	WaitPolling   = TaskStatus("wait-polling")   // 에이전트 polling 대기중
-	HandOver      = TaskStatus("hand-over")      // Primary 에이전트로 task 전달
-	WaitExec      = TaskStatus("wait-exec")      // Secondary 에이전트로 task 전달 대기중
-	Running       = TaskStatus("running")        // Task 실행중
-	Recovering    = TaskStatus("recovering")     // 복구중
-	Complete      = TaskStatus("complete")       // Task 수행 완료
-	FailedRecover = TaskStatus("failed-recover") // 복구 실패
-	Failed        = TaskStatus("failed")         // Task 수행 실패
-	Canceled      = TaskStatus("canceled")       // hand-over 전인 Task 실행 취소
-	Stopped       = TaskStatus("stopped")        // 실행중인 Task 취소 (recovery 하지 않음)
-	Timeout       = TaskStatus("timeout")        // Task timeout (recovery 하지 않음)
+	Scheduled              = TaskStatus("scheduled")               // 실행 스케쥴링됨
+	WaitPolling            = TaskStatus("wait-polling")            // 에이전트 polling 대기중
+	HandOver               = TaskStatus("hand-over")               // Primary 에이전트로 task 전달
+	WaitExec               = TaskStatus("wait-exec")               // Secondary 에이전트로 task 전달 대기중
+	Running                = TaskStatus("running")                 // Task 실행중
+	Recovering             = TaskStatus("recovering")              // 복구중
+	WaitInterationSchedule = TaskStatus("wait-iteration-schedule") // 반복 스케쥴 대기중
+	Complete               = TaskStatus("complete")                // Task 수행 완료
+	FailedRecover          = TaskStatus("failed-recover")          // 복구 실패
+	Failed                 = TaskStatus("failed")                  // Task 수행 실패
+	Canceled               = TaskStatus("canceled")                // hand-over 전인 Task 실행 취소
+	Stopped                = TaskStatus("stopped")                 // 실행중인 Task 취소 (recovery 하지 않음)
+	Timeout                = TaskStatus("timeout")                 // Task timeout (recovery 하지 않음)
 )
 
 // CommandType Command 종류 정의
