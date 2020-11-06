@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/jasonlvhit/gocron"
-	"github.com/NexClipper/logger"
 )
 
 const defaultSchedulerInterval int = 5
@@ -44,8 +43,6 @@ func NewKlevrAgent() *KlevrAgent {
 }
 
 func (agent *KlevrAgent) Run() {
-	
-	logger.Debugf("new agent")
 
 	agent.PrimaryIP = HandShake(agent)
 	agent.startScheduler()
