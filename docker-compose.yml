@@ -26,7 +26,7 @@ services:
         image: ${MODULE_IMAGE}
         container_name: dev_klevr-manager-2
         ports:
-           - "8091:8091"
+           - "8091:8090"
         volumes:
            - ./db_backup:/nexclipper
         environment:
