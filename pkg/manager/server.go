@@ -474,13 +474,15 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 
 							ids[i] = agent.Id
 
-							events = append(events, KlevrEvent{
+							events[i] = KlevrEvent{
 								EventType: AgentDisconnect,
 								AgentKey:  agent.AgentKey,
 								GroupID:   agent.GroupId,
 								Result:    "",
 								EventTime: eventTime,
-							})
+							}
+
+							logger.Debugf("disconnected event : [%+v]", events[i])
 						}
 
 						tx.updateAgentStatus(ids)
