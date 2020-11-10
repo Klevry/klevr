@@ -1,12 +1,13 @@
 package agent
 
 import (
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/mackerelio/go-osstat/memory"
-	netutil "k8s.io/apimachinery/pkg/util/net"
 	"log"
 	"runtime"
 	"syscall"
+
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/mackerelio/go-osstat/memory"
+	netutil "k8s.io/apimachinery/pkg/util/net"
 )
 
 const (
