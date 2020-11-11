@@ -378,7 +378,7 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 			dtos[i] = *TaskPersistToDto(&t)
 		}
 
-		b, err := json.Marshal(dtos)
+		b, err = json.Marshal(dtos)
 		if err != nil {
 			panic(err)
 		}
@@ -386,7 +386,8 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 		logger.Debugf("response : [%s]", string(b))
 	}
 
-	fmt.Fprintf(w, "%s", b)
+	// fmt.Fprintf(w, "%s", b)
+	w.Write(b)
 	w.WriteHeader(200)
 
 	logger.Debugf("response : [%s]", string(b))
