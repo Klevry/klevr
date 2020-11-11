@@ -386,8 +386,10 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 		logger.Debugf("response : [%s]", string(b))
 	}
 
-	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+	w.WriteHeader(200)
+
+	logger.Debugf("response : [%s]", string(b))
 }
 
 // getKlevrVariables godoc

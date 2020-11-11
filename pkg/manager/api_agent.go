@@ -404,6 +404,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				success = true
 			case common.FailedRecover:
 				oTask.TaskDetail.IsFailedRecover = true
+				isCommandError = true
 				complete = true
 			case common.Failed:
 				if t.FailedStep > 0 {
