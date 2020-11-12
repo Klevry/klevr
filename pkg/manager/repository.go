@@ -329,11 +329,9 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 }
 
 func (tx *Tx) updateHandoverTasks(ids []uint64) {
-	cnt, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
+	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
 	if err != nil {
 		panic(err)
-	} else if cnt > 1 {
-		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }
 
