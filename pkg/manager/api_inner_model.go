@@ -89,6 +89,8 @@ func NewKlevrEventTaskResultString(task *Tasks, complete bool, success bool, isC
 		IsCommandError:   isCommandError,
 		ExceptionMessage: exceptionMessage,
 		ExceptionTrace:   exceptionTrace,
+		Result:           result,
+		Log:              log,
 	})
 
 	if err != nil {

@@ -223,19 +223,19 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		EventTime: &common.JSONTime{Time: time.Now().UTC()},
 	})
 
-	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
-			AgentKey:  agent.AgentKey,
+			EventType: PrimaryRetire,
+			AgentKey:  oldPrimaryAgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 
-	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryRetire,
-			AgentKey:  oldPrimaryAgentKey,
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
@@ -404,6 +404,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				success = true
 			case common.FailedRecover:
 				oTask.TaskDetail.IsFailedRecover = true
+				isCommandError = true
 				complete = true
 			case common.Failed:
 				if t.FailedStep > 0 {
@@ -487,19 +488,19 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 
-	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
-			AgentKey:  agent.AgentKey,
+			EventType: PrimaryRetire,
+			AgentKey:  oldPrimaryAgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 
-	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryRetire,
-			AgentKey:  oldPrimaryAgentKey,
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})

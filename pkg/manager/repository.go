@@ -73,7 +73,7 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
-	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID").Find(&agents)
+	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID", "AGENT_KEY, GROUP_ID").Find(&agents)
 	if err != nil {
 		panic(err)
 	}

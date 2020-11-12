@@ -12,7 +12,7 @@
 * docker-compose 명령어
 ```
 git clone https://github.com/ralfyang/klevr.git
-docker-compose up -d
+docker-compose -f docker-compose-demo.yml up -d
 ```
 
 ## 다이어그램 개요
@@ -110,3 +110,13 @@ docker-compose up -d
     └── [Provisioning scripts]
 
 ```
+
+## Usage
+### Swagger-UI API
+* API 대시보드 URL : http://localhost:8090/swagger/index.html
+### 1. 그룹 추가
+* [POST] /inner/groups
+### 2. API KEY 등록
+* [POST] /inner/groups/{groupID}/apikey
+### 3. TASK 입력
+* [POST] /inner/tasks
