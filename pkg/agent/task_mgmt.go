@@ -44,6 +44,9 @@ func Polling(agent *KlevrAgent) {
 	// update task status
 	tasks, _ := executor.GetUpdatedTasks()
 
+	for _, r := range tasks{
+		logger.Debugf("%v", r)
+	}
 	rb.Task = tasks
 
 	// secondary node 정보 취합
@@ -93,19 +96,6 @@ func Polling(agent *KlevrAgent) {
 				logger.Debugf("%v", &body.Task[i])
 
 				executor.RunTask(&body.Task[i])
-
-				resultCom := exec.Command("sh", "-c", "echo $TASK_RESULT > /tmp/result")
-				err := resultCom.Run()
-				if err != nil{
-					logger.Errorf("error to get task result : %v", err)
-				}
-				taskResult := readFile("/tmp/result")
-
-				logger.Debugf("%v", string(taskResult))
-
-				body.Task[i].Result = string(taskResult)
-
-				deleteFile("/tmp/result")
 			}
 		}
 	}
