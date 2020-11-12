@@ -73,7 +73,7 @@ func Polling(agent *KlevrAgent) {
 
 	if strings.Compare(str, "hi") == 0 {
 		// change task status
-		logger.Debugf("HIHIHIHIHIHIHIHIHIHIHIHIHIHIHI")
+		logger.Debugf("%v", body.Task)
 		for i := 0; i < len(body.Task); i++ {
 			if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
 				body.Task[i].Status = common.WaitExec
