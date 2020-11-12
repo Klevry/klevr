@@ -63,12 +63,7 @@ func Polling(agent *KlevrAgent) {
 	// polling API 호출
 	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
 
-	var body common.Body
-	logger.Debugf("%v", string(result))
-	err2 := json.Unmarshal(result, &body)
-	if err2 != nil {
-		logger.Errorf("%v", err2)
-	}
+	body := JsonUnmarshal(result)
 
 	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
 	errcheck := provcheck.Run()
