@@ -2,16 +2,19 @@ package agent
 
 import (
 	"encoding/json"
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/Klevry/klevr/pkg/communicator"
-	"github.com/NexClipper/logger"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/communicator"
+	"github.com/NexClipper/logger"
 )
 
 var agentsList = "/tmp/agents"
 var executor = common.GetTaskExecutor()
+
+var receivedTasks *[]common.KlevrTask
 
 func Polling(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/" + agent.AgentKey
@@ -39,15 +42,27 @@ func Polling(agent *KlevrAgent) {
 		}
 	}
 
+	var updateMap = make(map[uint64]common.KlevrTask)
+
+	for _, t := range *receivedTasks {
+		updateMap[t.ID] = t
+	}
+
 	rb.Agent.Nodes = list.Nodes
 
 	// update task status
 	tasks, _ := executor.GetUpdatedTasks()
 
-	for _, r := range tasks{
-		logger.Debugf("%v", r)
+	for _, t := range tasks {
+		updateMap[t.ID] = t
 	}
-	rb.Task = tasks
+
+	updateTasks := []common.KlevrTask{}
+	for _, value := range updateMap {
+		updateTasks = append(updateTasks, value)
+	}
+
+	rb.Task = updateTasks
 
 	// secondary node 정보 취합
 	/**
@@ -66,7 +81,7 @@ func Polling(agent *KlevrAgent) {
 	var body common.Body
 
 	err := json.Unmarshal(result, &body)
-	if err != nil{
+	if err != nil {
 		logger.Debugf("%v", string(result))
 		logger.Error(err)
 	}
@@ -98,5 +113,9 @@ func Polling(agent *KlevrAgent) {
 				executor.RunTask(&body.Task[i])
 			}
 		}
+
+		receivedTasks = &body.Task
 	}
+
+	writeFile(agentsList, body.Agent)
 }
