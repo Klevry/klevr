@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/Klevry/klevr/pkg/common"
 	"net/http"
 
 	"github.com/jasonlvhit/gocron"
@@ -25,11 +26,7 @@ type KlevrAgent struct {
 	initialized       bool
 	scheduler         *gocron.Scheduler
 	PrimaryIP         string
-	SecondaryIP       []Secondary
-}
-
-type Secondary struct {
-	IP string
+	Agents            []common.Agent
 }
 
 func NewKlevrAgent() *KlevrAgent {

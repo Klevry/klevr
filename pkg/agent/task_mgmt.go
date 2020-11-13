@@ -23,23 +23,8 @@ func Polling(agent *KlevrAgent) {
 
 	SendMe(rb)
 
-	// add agent nodes
-	by := readFile(agentsList)
-
-	list := common.BodyAgent{}
-
-	_ = json.Unmarshal(by, &list)
-
-	for i := 0; i < len(list.Nodes); i++ {
-		list.Nodes[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
-
-		for j := 0; j < len(agent.SecondaryIP); j++ {
-			if list.Nodes[i].IP == agent.SecondaryIP[i].IP {
-				break
-			} else {
-				agent.SecondaryIP = append(agent.SecondaryIP, Secondary{list.Nodes[i].IP})
-			}
-		}
+	for i := 0; i < len(agent.Agents); i++ {
+		agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
 	}
 
 	var updateMap = make(map[uint64]common.KlevrTask)
@@ -48,7 +33,7 @@ func Polling(agent *KlevrAgent) {
 		updateMap[t.ID] = t
 	}
 
-	rb.Agent.Nodes = list.Nodes
+	rb.Agent.Nodes = agent.Agents
 
 	// update task status
 	tasks, _ := executor.GetUpdatedTasks()
@@ -117,5 +102,5 @@ func Polling(agent *KlevrAgent) {
 		receivedTasks = &body.Task
 	}
 
-	writeFile(agentsList, body.Agent)
+	agent.Agents = body.Agent.Nodes
 }

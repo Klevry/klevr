@@ -45,7 +45,7 @@ func HandShake(agent *KlevrAgent) string {
 
 	if len(body.Agent.Nodes) > 0 {
 		for _, v := range body.Agent.Nodes {
-			agent.SecondaryIP = append(agent.SecondaryIP, Secondary{IP: v.IP})
+			agent.Agents = append(agent.Agents, v)
 		}
 	}
 
