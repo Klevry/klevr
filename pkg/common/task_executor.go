@@ -338,18 +338,23 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	// 실행
 	cmd := exec.Command("sh", "-c", wrapperFile)
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
+	var stdOut bytes.Buffer
+	var errOut bytes.Buffer
+
+	cmd.Stdout = &stdOut
+	cmd.Stderr = &errOut
 
 	runErr := cmd.Run()
+
+	if task.ShowLog {
+		task.Log += stdOut.String() + "\n\n"
+	}
+
+	task.Log += errOut.String() + "\n\n"
+
 	if runErr != nil {
 		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(runErr))
 		return "", runErr
-	}
-
-	if task.ShowLog {
-		task.Log += out.String() + "\n\n"
 	}
 
 	// 결과 조회

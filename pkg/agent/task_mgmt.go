@@ -14,7 +14,7 @@ import (
 var agentsList = "/tmp/agents"
 var executor = common.GetTaskExecutor()
 
-var receivedTasks *[]common.KlevrTask
+var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 
 func Polling(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/" + agent.AgentKey
@@ -29,7 +29,7 @@ func Polling(agent *KlevrAgent) {
 
 	var updateMap = make(map[uint64]common.KlevrTask)
 
-	for _, t := range *receivedTasks {
+	for _, t := range receivedTasks {
 		updateMap[t.ID] = t
 	}
 
@@ -99,7 +99,7 @@ func Polling(agent *KlevrAgent) {
 			}
 		}
 
-		receivedTasks = &body.Task
+		receivedTasks = body.Task
 	}
 
 	agent.Agents = body.Agent.Nodes
