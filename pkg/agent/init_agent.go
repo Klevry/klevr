@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -53,12 +52,7 @@ func CheckAgentKey() string {
 			logger.Error(err)
 		}
 
-		// writeFile(agent_id_file, key)
-
-		err = ioutil.WriteFile(agent_id_file, []byte(key), os.FileMode(0644))
-		if err != nil {
-			logger.Error(err)
-		}
+		writeFile(agent_id_file, key)
 
 		agent_id_string = key
 	}
