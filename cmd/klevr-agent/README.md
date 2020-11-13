@@ -1,6 +1,6 @@
 # klevr-agent
 ## Introduction
-Klevr manager, Provbee와 통신을 하며 할당된 작업을 수행하는 Klevr agent
+Klevr manager와 통신을 하며 할당된 작업을 수행하는 Klevr agent
 
 ## Process
 1. 에이전트 구동시 매니저에게 handshake를 보낸다. 
