@@ -88,14 +88,25 @@ func Polling(agent *KlevrAgent) {
 				body.Task[i].Status = common.WaitExec
 			}
 
-			logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
-
 			if body.Task[i].ExeAgentChangeable {
-
+				executor.RunTask(&body.Task[i])
 			} else {
 				logger.Debugf("%v", &body.Task[i])
 
 				executor.RunTask(&body.Task[i])
+
+				//for _, v := range agent.Agents {
+				//	if v.AgentKey == body.Task[i].AgentKey {
+				//		ip := v.IP
+				//
+				//		t := JsonMarshal(body.Task[i])
+				//
+				//		logger.Debugf("%v", body.Task[i])
+				//		//agent.PrimaryTaskSend(ip, t)
+				//	} else {
+				//		executor.RunTask(&body.Task[i])
+				//	}
+				//}
 			}
 		}
 
