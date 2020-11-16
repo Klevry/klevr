@@ -353,6 +353,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+
+	logger.Debug(string(b))
 }
 
 func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]common.KlevrTask) {
