@@ -203,6 +203,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					time.Sleep(nextTime.Sub(curTime))
 
 					tw.Status = Running
+					tw.Log = ""
 
 					goto ITERATION
 				}
