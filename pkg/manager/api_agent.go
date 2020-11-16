@@ -392,13 +392,16 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				sendEvent = false
 			case common.Running:
 				if t.TaskType == common.Iteration {
-					sendEvent = true
+					success = true
 				} else {
 					// 한 단계 이상이 완료 되어야 event 발송
 					if t.CurrentStep < 2 {
 						sendEvent = false
 					}
 				}
+			case common.WaitInterationSchedule:
+				success = true
+
 			case common.Recovering:
 				if t.FailedStep > 0 {
 					isCommandError = true

@@ -125,20 +125,22 @@ func getIterationTask() *common.KlevrTask {
 // }
 
 func TestIterationTask(t *testing.T) {
-	iterStr := "{\"task\":[{\"id\":37,\"zoneId\":17,\"name\":\"MONITOR CLUSTER STATUS\",\"taskType\":\"iteration\",\"schedule\":null,\"agentKey\":\"\",\"exeAgentKey\":\"\",\"status\":\"wait-polling\",\"cron\":\"* * * * *\",\"untilRun\":null,\"timeout\":0,\"exeAgentChangeable\":true,\"totalStepCount\":1,\"currentStep\":0,\"hasRecover\":false,\"parameter\":\"{}\",\"callbackUrl\":\"\",\"result\":\"\",\"failedStep\":0,\"isFailedRecover\":false,\"steps\":[{\"id\":38,\"seq\":1,\"commandName\":\"GET P8S STATUS\",\"commandType\":\"inline\",\"command\":\"JSON_TASK_PARAMS=${TASK_ORIGIN_PARAM}\nPROVNS=$(echo ${JSON_TASK_PARAMS} | jq -r '.p8s_namespace')\np8s_status=`ssh provbee-service busybee kps wow $PROVNS` \nTASK_RESULT=$(echo ${p8s_status})\n\",\"isRecover\":false}],\"showLog\":false,\"log\":\"\",\"createdAt\":\"2020-11-16T05:17:51.000000Z\",\"updatedAt\":\"2020-11-16T05:17:51.000000Z\"}]}"
+	iterStr := "{\"id\":37,\"zoneId\":17,\"name\":\"MONITOR CLUSTER STATUS\",\"taskType\":\"iteration\",\"schedule\":null,\"agentKey\":\"\",\"exeAgentKey\":\"\",\"status\":\"wait-polling\",\"cron\":\"* * * * *\",\"untilRun\":null,\"timeout\":0,\"exeAgentChangeable\":true,\"totalStepCount\":1,\"currentStep\":0,\"hasRecover\":false,\"parameter\":\"{}\",\"callbackUrl\":\"\",\"result\":\"\",\"failedStep\":0,\"isFailedRecover\":false,\"steps\":[{\"id\":38,\"seq\":1,\"commandName\":\"GET P8S STATUS\",\"commandType\":\"inline\",\"command\":\"JSON_TASK_PARAMS=${TASK_ORIGIN_PARAM}\\nPROVNS=$(echo ${JSON_TASK_PARAMS} | jq -r '.p8s_namespace')\\np8s_status=`ssh provbee-service busybee kps wow $PROVNS` \\nTASK_RESULT=$(echo ${p8s_status})\\n\",\"isRecover\":false}],\"showLog\":false,\"log\":\"\",\"createdAt\":\"2020-11-16T05:17:51.000000Z\",\"updatedAt\":\"2020-11-16T05:17:51.000000Z\"}"
 
 	var iterTask common.KlevrTask
 	err := json.Unmarshal([]byte(iterStr), &iterTask)
 
+	fmt.Println(err)
+	fmt.Println(iterTask)
 	fmt.Printf("iter task : [%+v]\n\n", iterTask)
 
 	task := &iterTask
 
-	curTime := time.Now()
+	// curTime := time.Now()
 
 	task.TaskType = common.Iteration
 	task.Cron = "* * * * *"
-	task.UntilRun = common.JSONTime{curTime.Add(3 * time.Minute)}
+	// task.UntilRun = common.JSONTime{curTime.Add(3 * time.Minute)}
 
 	fmt.Printf("before task : [%+v]\n\n", iterTask)
 

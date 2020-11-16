@@ -36,8 +36,9 @@ type taskExecutor struct {
 // TaskWrapper for running task management
 type TaskWrapper struct {
 	*KlevrTask
-	future  *promise.Future
-	recover *KlevrTaskStep
+	future       *promise.Future
+	recover      *KlevrTaskStep
+	iterationCnt int64
 }
 
 // GetTaskExecutor constructor for taskExecutor.
@@ -195,6 +196,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 				if tw.UntilRun.IsZero() || tw.UntilRun.After(nextTime) {
 					tw.Status = WaitInterationSchedule
+					tw.iterationCnt = tw.iterationCnt + 1
+
 					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
 
 					time.Sleep(nextTime.Sub(curTime))
@@ -327,7 +330,12 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 
 	// command wrapper 스크립트 파일 생성
 	wrapperFile := path + "/wrapper.sh"
-	ioutil.WriteFile(wrapperFile, []byte(wrapper), 0700)
+	wrapperErr := ioutil.WriteFile(wrapperFile, []byte(wrapper), 0700)
+	if wrapperErr != nil {
+		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(wrapperErr))
+		return "", wrapperErr
+	}
+
 	defer func() {
 		err := os.Remove(wrapperFile)
 		if err != nil {
