@@ -336,7 +336,7 @@ func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
 
 		logs.Logs = manager.encrypt(logs.Logs)
 
-		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
+		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS= ?",
 			t.Id, logs.Logs, t.Id, logs.Logs)
 
 		if err != nil {
