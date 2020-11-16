@@ -366,13 +366,23 @@ func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 	task.TaskDetail = &rTask.TaskDetail
 	task.Logs = &rTask.TaskLogs
 
-	task.TaskDetail.Parameter = manager.decrypt(task.TaskDetail.Parameter)
-	task.TaskDetail.Result = manager.decrypt(task.TaskDetail.Result)
-	task.Logs.Logs = manager.decrypt(task.Logs.Logs)
+	if task.TaskDetail.Parameter != "" {
+		task.TaskDetail.Parameter = manager.decrypt(task.TaskDetail.Parameter)
+	}
+	if task.TaskDetail.Result != "" {
+		task.TaskDetail.Result = manager.decrypt(task.TaskDetail.Result)
+	}
+	if task.Logs.Logs != "" {
+		task.Logs.Logs = manager.decrypt(task.Logs.Logs)
+	}
 
 	for i := 0; i < len(steps); i++ {
-		steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
-		steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+		if steps[i].ReservedCommand != "" {
+			steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+		}
+		if steps[i].InlineScript != "" {
+			steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+		}
 	}
 	task.TaskSteps = &steps
 
@@ -431,8 +441,12 @@ func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses 
 		logger.Debugf("select steps for %d - %d", t.Id, cnt)
 
 		for i := 0; i < len(steps); i++ {
-			steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
-			steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+			if steps[i].ReservedCommand != "" {
+				steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+			}
+			if steps[i].InlineScript != "" {
+				steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+			}
 		}
 
 		(*tasks)[i].TaskSteps = &steps
@@ -450,9 +464,15 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 		rt.Tasks.TaskDetail = &rt.TaskDetail
 		rt.Tasks.Logs = &rt.TaskLogs
 
-		rt.Tasks.TaskDetail.Parameter = manager.decrypt(rt.Tasks.TaskDetail.Parameter)
-		rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
-		rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+		if rt.Tasks.TaskDetail.Parameter != "" {
+			rt.Tasks.TaskDetail.Parameter = manager.decrypt(rt.Tasks.TaskDetail.Parameter)
+		}
+		if rt.Tasks.TaskDetail.Result != "" {
+			rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
+		}
+		if rt.Tasks.Logs.Logs != "" {
+			rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+		}
 
 		tasks = append(tasks, rt.Tasks)
 	}
