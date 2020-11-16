@@ -180,7 +180,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
 				}
 			}
-			fmt.Println("요기1", Iteration == tw.TaskType)
+
 			// Iteration task 반복 수행
 			if Iteration == tw.TaskType {
 				expr, err := cronexpr.Parse(tw.Cron)
@@ -193,16 +193,13 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				curTime := time.Now()
 				nextTime := expr.Next(curTime)
 
-				fmt.Println("요기2", tw.UntilRun.After(nextTime))
-				if tw.UntilRun.After(nextTime) {
+				if tw.UntilRun.IsZero() || tw.UntilRun.After(nextTime) {
 					tw.Status = WaitInterationSchedule
 					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
 
 					time.Sleep(nextTime.Sub(curTime))
 
 					tw.Status = Running
-
-					fmt.Println("요기3")
 
 					goto ITERATION
 				}
