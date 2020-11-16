@@ -12,15 +12,16 @@ Klevr manager와 통신을 하며 할당된 작업을 수행하는 Klevr agent
 ### pkg
 ```shell script
 .
-├── agent_info.go             // Get agents info
-├── agents.go                 // Agent main
-├── file_rwd.go               // File read, write, delete functions
-├── get_init_command.go       // Get tasks commands
-├── handshake.go              // Handshake to manager
-├── init_agent.go             // Create agentkey, initialize primary
-├── primary_init_callback.go  
+├── agent_info.go
+├── agents.go
+├── file_rwd.go
+├── get_init_command.go
+├── handshake.go
+├── init_agent.go
+├── primary_init_callback.go
 ├── primary_status_report.go
-└── task_mgmt.go
+├── task_mgmt.go
+└── temp.go
 ```
 
 ## How to use
