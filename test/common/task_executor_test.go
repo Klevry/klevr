@@ -105,9 +105,10 @@ func TestIterationTask(t *testing.T) {
 
 		if cnt == 1 {
 			status := updated[0].Status
-			expected := []common.TaskStatus{common.Running, common.Complete}
+			// fmt.Println(status)
+			expected := []common.TaskStatus{common.Running, common.Complete, common.WaitInterationSchedule}
 
-			assert.Contains(t, expected, status, "Invalid task status")
+			assert.Contains(t, expected, status, "Invalid task status - "+status)
 
 			updatedTask = updated[0]
 		}

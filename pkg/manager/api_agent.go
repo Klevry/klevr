@@ -423,6 +423,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 			oTask.TaskDetail.CurrentStep = t.CurrentStep
 			oTask.Status = t.Status
 			oTask.Logs.Logs = t.Log
+			oTask.TaskDetail.Result = t.Result
 
 			if sendEvent {
 				events = append(events, KlevrEvent{
