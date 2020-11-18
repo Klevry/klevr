@@ -2,9 +2,9 @@ version: '3'
 services: 
    klevr-manager:
       image: ${MODULE_IMAGE}
-      container_name: dev_klevr-manager
+      container_name: prd_klevr-manager
       ports:
-         - "8090:8090"
+         - "${KLEVR_CONTAINER_PORT}"
       volumes:
          - ./db_backup:/nexclipper
       environment:
@@ -16,31 +16,16 @@ services:
          KLEVR_DB_LOGLEVEL: "warn"
          KLEVR_DB_SHOWSQL: "false"
          KLEVR_SERVER_STATUSUPDATECYCLE: 30
+         KLEVR_SERVER_PORT: ${KLEVR_SERVER_PORT}
+         KLEVR_SERVER_ENCRYPTIONKEY: "${KLEVR_ENCRYPTION_KEY}"
+         KLEVR_SERVER_TRANSENCKEY: "${KLEVR_TRANS_ENC_KEY}"
+         KLEVR_SERVER_WEBHOOK_URL: "${KLEVR_WEBHOOK_URL}"
+         KLEVR_SERVER_WEBHOOK_HOOKTERM: ${KLEVR_SERVER_WEBHOOK_HOOK_TERM}
+         KLEVR_SERVER_WEBHOOK_HOOKCOUNT: ${KLEVR_SERVER_WEBHOOK_HOOK_COUNT}
+         KLEVR_AGENT_CALLCYCLE: ${KLEVR_AGENT_HOOK_CYCLE}
       command:
          - bash
          - -c
          - |
             /init-db.sh ${KLEVR_DB_USER} ${KLEVR_DB_PASSWD} ${KLEVR_DB_URL} ${KLEVR_DB_PORT} klevr ./conf/klevr-manager-db.sql /nexclipper
             /klevr-manager -c ./conf/klevr-manager-compose.yml -hook "${NEXCLIPPER_INNER_URL}/events/klevr"
-   klevr-manager2:
-      image: ${MODULE_IMAGE}
-      container_name: dev_klevr-manager-2
-      ports:
-         - "8091:8090"
-      volumes:
-         - ./db_backup:/nexclipper
-      environment:
-         LOG_LOGPATH: "/nexclipper/klevr_log/klevr-manager.log"
-         LOG_MAXSIZe: 5
-         LOG_MAXBACKUPS: 10
-         LOG_MAXAGE: 10
-         KLEVR_DB_URL: "${KLEVR_DB_USER}:${KLEVR_DB_PASSWD}@tcp(${KLEVR_DB_URL}:${KLEVR_DB_PORT})/klevr?charset=utf8mb4&parseTime=True&loc=Local"
-         KLEVR_DB_LOGLEVEL: "warn"
-         KLEVR_DB_SHOWSQL: "false"
-         KLEVR_SERVER_STATUSUPDATECYCLE: 30
-      command:
-         - bash
-         - -c
-         - |
-            /init-db.sh ${KLEVR_DB_USER} ${KLEVR_DB_PASSWD} ${KLEVR_DB_URL} ${KLEVR_DB_PORT} klevr ./conf/klevr-manager-db.sql /nexclipper
-            /klevr-manager -c ./conf/klevr-manager-compose.yml -hook "${NEXCLIPPER_INNER_URL2}/events/klevr"
