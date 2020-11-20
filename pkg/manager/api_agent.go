@@ -469,13 +469,6 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
 	tx := GetDBConn(ctx)
-	var param common.Body
-
-	err := json.NewDecoder(r.Body).Decode(&param)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "JSON parsing error")
-		return
-	}
 
 	// response 데이터 생성
 	rb := &common.Body{}
