@@ -14,14 +14,14 @@ Klevr manager와 통신을 하며 할당된 작업을 수행하는 Klevr agent
 .
 ├── agent_info.go
 ├── agents.go
-├── file_rwd.go
-├── get_init_command.go
+├── handler.go
 ├── handshake.go
 ├── init_agent.go
-├── primary_init_callback.go
 ├── primary_status_report.go
-├── task_mgmt.go
-└── temp.go
+├── protobuf
+│   ├── task.pb.go
+│   └── task.proto
+└── task_mgmt.go
 ```
 
 ## How to use
