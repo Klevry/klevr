@@ -19,6 +19,7 @@ type Queue interface {
 	Push(interface{})
 	BulkPush(interface{})
 	ResetListenerCallCount()
+	PopAll() []interface{}
 }
 
 // channel을 이용한 queue 구현체
@@ -168,6 +169,25 @@ func (q *channelQueue) Pop() interface{} {
 	return nil
 }
 
+func (q *channelQueue) PopAll() []interface{} {
+	length := q.Length()
+
+	values := make([]interface{}, 0, length)
+	var value interface{}
+
+	for i := uint64(0); i < length; i++ {
+		value = q.Pop()
+
+		if value == nil {
+			break
+		}
+
+		values = append(values, value)
+	}
+
+	return values
+}
+
 func (q *channelQueue) Length() uint64 {
 	return q.length
 }
@@ -297,7 +317,7 @@ func (q *mutexQueue) Pop() interface{} {
 	q.Lock()
 	defer q.Unlock()
 
-	item := q.item.Back()
+	item := q.item.Front()
 
 	if item != nil {
 		q.item.Remove(item)
@@ -305,6 +325,28 @@ func (q *mutexQueue) Pop() interface{} {
 	}
 
 	return nil
+}
+
+func (q *mutexQueue) PopAll() []interface{} {
+	q.Lock()
+	defer q.Unlock()
+
+	length := uint64(q.item.Len())
+
+	values := make([]interface{}, 0, length)
+
+	for i := uint64(0); i < length; i++ {
+		item := q.item.Front()
+
+		if item == nil {
+			break
+		}
+
+		q.item.Remove(item)
+		values = append(values, item.Value)
+	}
+
+	return values
 }
 
 func (q *mutexQueue) Length() uint64 {
