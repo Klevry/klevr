@@ -12,16 +12,16 @@ Klevr manager와 통신을 하며 할당된 작업을 수행하는 Klevr agent
 ### pkg
 ```shell script
 .
-├── agent_info.go
-├── agents.go
-├── handler.go
-├── handshake.go
-├── init_agent.go
-├── primary_status_report.go
-├── protobuf
-│   ├── task.pb.go
+├── protobuf                     // grpc를 위한 protoc 파일
+│   ├── task.pb.go
 │   └── task.proto
-└── task_mgmt.go
+├── agent_info.go                // get agent info
+├── agents.go                    // Agent main
+├── handler.go                   // gRPC handler
+├── handshake.go                 // Handshake to Manager
+├── init_agent.go                // Create agentkey, initialize primary
+├── primary_status_report.go     // Primary status report to Manager
+└── task_mgmt.go                 // Tasks manage
 ```
 
 ## How to use
