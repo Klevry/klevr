@@ -105,20 +105,21 @@ type TaskSteps struct {
 }
 
 type TaskDetail struct {
-	TaskId             uint64 `xorm:"PK"`
-	Cron               string
-	UntilRun           time.Time
-	Timeout            uint
-	ExeAgentChangeable bool
-	TotalStepCount     uint
-	CurrentStep        uint
-	HasRecover         bool
-	Parameter          string
-	CallbackUrl        string
-	Result             string
-	FailedStep         uint
-	IsFailedRecover    bool
-	ShowLog            bool
+	TaskId               uint64 `xorm:"PK"`
+	Cron                 string
+	UntilRun             time.Time
+	Timeout              uint
+	ExeAgentChangeable   bool
+	TotalStepCount       uint
+	CurrentStep          uint
+	HasRecover           bool
+	Parameter            string
+	CallbackUrl          string
+	Result               string
+	FailedStep           uint
+	IsFailedRecover      bool
+	ShowLog              bool
+	EventHookSendingType string
 }
 
 func (tl *TaskLock) expired() bool {

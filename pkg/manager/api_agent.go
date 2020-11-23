@@ -370,63 +370,102 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 
 		// Task 상태 이상으로 오류 종료 처리
 		if t.Status == common.Scheduled || t.Status == common.WaitPolling || t.Status == common.HandOver {
-			oTask.Status = common.Failed
-			oTask.Logs.Logs = "Invalid Task Status Updated. - " + string(t.Status)
+			if t.EventHookSendingType != common.EventHookWithSuccess {
+				oTask.Status = common.Failed
+				oTask.Logs.Logs = "Invalid Task Status Updated. - " + string(t.Status)
 
-			events = append(events, KlevrEvent{
-				EventType: TaskCallback,
-				AgentKey:  oTask.AgentKey,
-				GroupID:   oTask.ZoneId,
-				Result:    NewKlevrEventTaskResultString(oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
-				EventTime: &common.JSONTime{Time: time.Now().UTC()},
-			})
+				events = append(events, KlevrEvent{
+					EventType: TaskCallback,
+					AgentKey:  oTask.AgentKey,
+					GroupID:   oTask.ZoneId,
+					Result:    NewKlevrEventTaskResultString(oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
+					EventTime: &common.JSONTime{Time: time.Now().UTC()},
+				})
+			}
 		} else {
 			var complete = false
 			var success = false
 			var isCommandError = false
-			var sendEvent = true
+			var sendEvent = false
 			var errorMessage string
 
 			switch t.Status {
 			case common.WaitExec:
-				sendEvent = false
+			case common.Started:
+				if t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
+				}
 			case common.Running:
-				if t.TaskType == common.Iteration {
-					success = true
-				} else {
-					// 한 단계 이상이 완료 되어야 event 발송
-					if t.CurrentStep < 2 {
-						sendEvent = false
-					}
+				if t.EventHookSendingType == common.EventHookWithEachSteps {
+					sendEvent = true
 				}
 			case common.WaitInterationSchedule:
-				success = true
-
+				if t.EventHookSendingType == common.EventHookWithSuccess {
+					sendEvent = true
+				}
 			case common.Recovering:
+				if t.EventHookSendingType == common.EventHookWithEachSteps {
+					sendEvent = true
+				}
+
 				if t.FailedStep > 0 {
 					isCommandError = true
 					errorMessage = "Error occurred during task step execution"
 				}
 				oTask.TaskDetail.FailedStep = t.FailedStep
 			case common.Complete:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithSuccess {
+					sendEvent = true
+				}
+
 				complete = true
 				success = true
 			case common.FailedRecover:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithFailed {
+					sendEvent = true
+				}
+
 				oTask.TaskDetail.IsFailedRecover = true
 				isCommandError = true
 				complete = true
 			case common.Failed:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithFailed {
+					sendEvent = true
+				}
+
 				if t.FailedStep > 0 {
 					isCommandError = true
 					errorMessage = "Error occurred during task step execution"
 				}
 				complete = true
 			case common.Canceled:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
+				}
+
 				complete = true
 			case common.Stopped:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
+				}
+
 				complete = true
 			default:
 				panic("invalid task status - " + t.Status)
+			}
+
+			if t.EventHookSendingType == common.EventHookWithAll {
+				sendEvent = true
+			} else if t.EventHookSendingType == common.EventHookWithChangedResult && t.IsChangedResult {
+				sendEvent = true
 			}
 
 			oTask.TaskDetail.CurrentStep = t.CurrentStep
