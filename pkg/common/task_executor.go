@@ -226,8 +226,6 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	future := promise.Start(f).OnSuccess(func(v interface{}) {
 		tw.Status = Complete
 	}).OnFailure(func(v interface{}) {
-		tw := v.(*TaskWrapper)
-
 		tw.FailedStep = tw.CurrentStep
 
 		if tw.HasRecover {

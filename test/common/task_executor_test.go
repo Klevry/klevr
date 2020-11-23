@@ -1,7 +1,6 @@
 package common_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -38,12 +37,51 @@ func getDefaultTask() *common.KlevrTask {
 				Seq:         1,
 				CommandName: "COMMAND1",
 				CommandType: common.INLINE,
-				Command:     "echo hello",
+				Command:     "echo ${TASK_ORIGIN_PARAM}\necho ${TASK_RESULT}\nTASK_RESULT='{\"step\"=\"command1\", \"success\"=true}'\n",
 				IsRecover:   false,
 			},
 		},
 		ShowLog:   true,
-		Log:       "echo ${TASK_ORIGIN_PARAM}\necho ${TASK_RESULT}\nTASK_RESULT='{\"step\"=\"command1\", \"success\"=true}'",
+		Log:       "",
+		CreatedAt: common.JSONTime{},
+		UpdatedAt: common.JSONTime{},
+	}
+}
+
+func getFailTask() *common.KlevrTask {
+	return &common.KlevrTask{
+		ID:                 1,
+		ZoneID:             1,
+		Name:               "UNIT_TEST",
+		TaskType:           common.AtOnce,
+		Schedule:           common.JSONTime{},
+		AgentKey:           "",
+		ExeAgentKey:        "",
+		Status:             common.WaitExec,
+		Cron:               "",
+		UntilRun:           common.JSONTime{},
+		Timeout:            0,
+		ExeAgentChangeable: false,
+		TotalStepCount:     0,
+		CurrentStep:        0,
+		HasRecover:         false,
+		Parameter:          "{}",
+		CallbackURL:        "",
+		Result:             "",
+		FailedStep:         0,
+		IsFailedRecover:    false,
+		Steps: []*common.KlevrTaskStep{
+			&common.KlevrTaskStep{
+				ID:          1,
+				Seq:         1,
+				CommandName: "COMMAND1",
+				CommandType: common.INLINE,
+				Command:     "echo ${TASK_ORIGIN_PARAM}\necho ${TASK_RESULT}\nTASK_RESULT='{\"step\"=\"command1\", \"success\"=true}'\nexit 1",
+				IsRecover:   false,
+			},
+		},
+		ShowLog:   true,
+		Log:       "",
 		CreatedAt: common.JSONTime{},
 		UpdatedAt: common.JSONTime{},
 	}
@@ -99,21 +137,10 @@ func TestSingleRunTask(t *testing.T) {
 	var updatedTask common.KlevrTask
 
 	for {
-		updated, cnt := executor.GetUpdatedTasks()
+		updated, _ := executor.GetUpdatedTasks()
 
-		for i, u := range updated {
-			fmt.Println(i, " = ", u)
-		}
-
-		assert.LessOrEqual(t, cnt, 1, "Updated task count not matched.")
-
-		if cnt == 1 {
-			status := updated[0].Status
-			expected := []common.TaskStatus{common.Running, common.Complete}
-
-			assert.Contains(t, expected, status, "Invalid task status")
-
-			updatedTask = updated[0]
+		for _, u := range updated {
+			updatedTask = u
 		}
 
 		if count := executor.GetRunningTaskCount(); count < 1 {
@@ -124,6 +151,33 @@ func TestSingleRunTask(t *testing.T) {
 	}
 
 	assert.Equal(t, common.Complete, updatedTask.Status, "")
+}
+
+func TestFailRunTask(t *testing.T) {
+	task := getFailTask()
+
+	executor := common.GetTaskExecutor()
+
+	err := executor.RunTask(task)
+	assert.NoError(t, err, "RunTask failed.")
+
+	var updatedTask common.KlevrTask
+
+	for {
+		updated, _ := executor.GetUpdatedTasks()
+
+		for _, u := range updated {
+			updatedTask = u
+		}
+
+		if count := executor.GetRunningTaskCount(); count < 1 {
+			break
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	assert.Equal(t, common.Failed, updatedTask.Status, "")
 }
 
 // func TestIterationTask(t *testing.T) {

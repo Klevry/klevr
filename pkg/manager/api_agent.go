@@ -76,19 +76,20 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	blockExist, _ := api.BlockKeyMap.ContainsKey(apiKey)
-	if blockExist {
+	bVal, _ := api.BlockKeyMap.Get(apiKey)
+	logger.Debugf("bVal : %+v", bVal)
+	if bVal != nil {
 		return false
 	}
 
 	apiKeyMap := api.APIKeyMap
-	exist, _ := apiKeyMap.ContainsKey(zoneID)
-
-	if !exist {
+	val, _ := apiKeyMap.Get(zoneID)
+	logger.Debugf("val : %+v", val)
+	if val == nil {
 		tx := GetDBConn(ctx)
 		apiKey, ok := tx.getAPIKey(zoneID)
 
-		if ok {
+		if ok && apiKey.GroupId > 0 {
 			manager := ctx.Get(CtxServer).(*KlevrManager)
 
 			apiKeyMap.Put(zoneID, manager.decrypt(apiKey.ApiKey))
