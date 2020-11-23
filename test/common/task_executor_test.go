@@ -7,8 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"encoding/json"
-
 	"github.com/Klevry/klevr/pkg/common"
 )
 
@@ -90,63 +88,12 @@ func getIterationTask() *common.KlevrTask {
 	}
 }
 
-// func TestRunTask(t *testing.T) {
-// 	task := getDefaultTask()
-
-// 	executor := common.GetTaskExecutor()
-
-// 	err := executor.RunTask(task)
-// 	assert.NoError(t, err, "RunTask failed.")
-
-// 	var updatedTask common.KlevrTask
-
-// 	for {
-// 		updated, cnt := executor.GetUpdatedTasks()
-
-// 		assert.LessOrEqual(t, cnt, 1, "Updated task count not matched.")
-
-// 		if cnt == 1 {
-// 			status := updated[0].Status
-// 			expected := []common.TaskStatus{common.Running, common.Complete}
-
-// 			assert.Contains(t, expected, status, "Invalid task status")
-
-// 			updatedTask = updated[0]
-// 		}
-
-// 		if count := executor.GetRunningTaskCount(); count < 1 {
-// 			break
-// 		}
-
-// 		time.Sleep(50 * time.Millisecond)
-// 	}
-
-// 	assert.Equal(t, common.Complete, updatedTask.Status, "")
-// }
-
-func TestIterationTask(t *testing.T) {
-	iterStr := "{\"id\":37,\"zoneId\":17,\"name\":\"MONITOR CLUSTER STATUS\",\"taskType\":\"iteration\",\"schedule\":null,\"agentKey\":\"\",\"exeAgentKey\":\"\",\"status\":\"wait-polling\",\"cron\":\"* * * * *\",\"untilRun\":null,\"timeout\":0,\"exeAgentChangeable\":true,\"totalStepCount\":1,\"currentStep\":0,\"hasRecover\":false,\"parameter\":\"{}\",\"callbackUrl\":\"\",\"result\":\"\",\"failedStep\":0,\"isFailedRecover\":false,\"steps\":[{\"id\":38,\"seq\":1,\"commandName\":\"GET P8S STATUS\",\"commandType\":\"inline\",\"command\":\"JSON_TASK_PARAMS=${TASK_ORIGIN_PARAM}\\nPROVNS=$(echo ${JSON_TASK_PARAMS} | jq -r '.p8s_namespace')\\np8s_status=`ssh provbee-service busybee kps wow $PROVNS` \\nTASK_RESULT=$(echo ${p8s_status})\\n\",\"isRecover\":false}],\"showLog\":false,\"log\":\"\",\"createdAt\":\"2020-11-16T05:17:51.000000Z\",\"updatedAt\":\"2020-11-16T05:17:51.000000Z\"}"
-
-	var iterTask common.KlevrTask
-	err := json.Unmarshal([]byte(iterStr), &iterTask)
-
-	fmt.Println(err)
-	fmt.Println(iterTask)
-	fmt.Printf("iter task : [%+v]\n\n", iterTask)
-
-	task := &iterTask
-
-	// curTime := time.Now()
-
-	task.TaskType = common.Iteration
-	task.Cron = "* * * * *"
-	// task.UntilRun = common.JSONTime{curTime.Add(3 * time.Minute)}
-
-	fmt.Printf("before task : [%+v]\n\n", iterTask)
+func TestSingleRunTask(t *testing.T) {
+	task := getDefaultTask()
 
 	executor := common.GetTaskExecutor()
 
-	err = executor.RunTask(task)
+	err := executor.RunTask(task)
 	assert.NoError(t, err, "RunTask failed.")
 
 	var updatedTask common.KlevrTask
@@ -154,18 +101,19 @@ func TestIterationTask(t *testing.T) {
 	for {
 		updated, cnt := executor.GetUpdatedTasks()
 
+		for i, u := range updated {
+			fmt.Println(i, " = ", u)
+		}
+
 		assert.LessOrEqual(t, cnt, 1, "Updated task count not matched.")
 
 		if cnt == 1 {
 			status := updated[0].Status
-			// fmt.Println(status)
-			expected := []common.TaskStatus{common.Running, common.Complete, common.WaitInterationSchedule}
+			expected := []common.TaskStatus{common.Running, common.Complete}
 
-			assert.Contains(t, expected, status, "Invalid task status - "+status)
+			assert.Contains(t, expected, status, "Invalid task status")
 
 			updatedTask = updated[0]
-
-			fmt.Printf("updated : [%+v]\n", updated[0])
 		}
 
 		if count := executor.GetRunningTaskCount(); count < 1 {
@@ -177,6 +125,60 @@ func TestIterationTask(t *testing.T) {
 
 	assert.Equal(t, common.Complete, updatedTask.Status, "")
 }
+
+// func TestIterationTask(t *testing.T) {
+// 	iterStr := "{\"id\":37,\"zoneId\":17,\"name\":\"MONITOR CLUSTER STATUS\",\"taskType\":\"iteration\",\"schedule\":null,\"agentKey\":\"\",\"exeAgentKey\":\"\",\"status\":\"wait-polling\",\"cron\":\"* * * * *\",\"untilRun\":null,\"timeout\":0,\"exeAgentChangeable\":true,\"totalStepCount\":1,\"currentStep\":0,\"hasRecover\":false,\"parameter\":\"{}\",\"callbackUrl\":\"\",\"result\":\"\",\"failedStep\":0,\"isFailedRecover\":false,\"steps\":[{\"id\":38,\"seq\":1,\"commandName\":\"GET P8S STATUS\",\"commandType\":\"inline\",\"command\":\"JSON_TASK_PARAMS=${TASK_ORIGIN_PARAM}\\nPROVNS=$(echo ${JSON_TASK_PARAMS} | jq -r '.p8s_namespace')\\np8s_status=`ssh provbee-service busybee kps wow $PROVNS` \\nTASK_RESULT=$(echo ${p8s_status})\\n\",\"isRecover\":false}],\"showLog\":false,\"log\":\"\",\"createdAt\":\"2020-11-16T05:17:51.000000Z\",\"updatedAt\":\"2020-11-16T05:17:51.000000Z\"}"
+
+// 	var iterTask common.KlevrTask
+// 	err := json.Unmarshal([]byte(iterStr), &iterTask)
+
+// 	fmt.Println(err)
+// 	fmt.Println(iterTask)
+// 	fmt.Printf("iter task : [%+v]\n\n", iterTask)
+
+// 	task := &iterTask
+
+// 	// curTime := time.Now()
+
+// 	task.TaskType = common.Iteration
+// 	task.Cron = "* * * * *"
+// 	// task.UntilRun = common.JSONTime{curTime.Add(3 * time.Minute)}
+
+// 	fmt.Printf("before task : [%+v]\n\n", iterTask)
+
+// 	executor := common.GetTaskExecutor()
+
+// 	err = executor.RunTask(task)
+// 	assert.NoError(t, err, "RunTask failed.")
+
+// 	var updatedTask common.KlevrTask
+
+// 	for {
+// 		updated, cnt := executor.GetUpdatedTasks()
+
+// 		assert.LessOrEqual(t, cnt, 1, "Updated task count not matched.")
+
+// 		if cnt == 1 {
+// 			status := updated[0].Status
+// 			// fmt.Println(status)
+// 			expected := []common.TaskStatus{common.Running, common.Complete, common.WaitInterationSchedule}
+
+// 			assert.Contains(t, expected, status, "Invalid task status - "+status)
+
+// 			updatedTask = updated[0]
+
+// 			fmt.Printf("updated : [%+v]\n", updated[0])
+// 		}
+
+// 		if count := executor.GetRunningTaskCount(); count < 1 {
+// 			break
+// 		}
+
+// 		time.Sleep(50 * time.Millisecond)
+// 	}
+
+// 	assert.Equal(t, common.Complete, updatedTask.Status, "")
+// }
 
 // func TestMultiTaskRunTask(t *testing.T) {
 // 	iterStr := "{\"task\":[{\"id\":37,\"zoneId\":17,\"name\":\"MONITOR CLUSTER STATUS\",\"taskType\":\"iteration\",\"schedule\":null,\"agentKey\":\"\",\"exeAgentKey\":\"\",\"status\":\"wait-polling\",\"cron\":\"* * * * *\",\"untilRun\":null,\"timeout\":0,\"exeAgentChangeable\":true,\"totalStepCount\":1,\"currentStep\":0,\"hasRecover\":false,\"parameter\":\"{}\",\"callbackUrl\":\"\",\"result\":\"\",\"failedStep\":0,\"isFailedRecover\":false,\"steps\":[{\"id\":38,\"seq\":1,\"commandName\":\"GET P8S STATUS\",\"commandType\":\"inline\",\"command\":\"JSON_TASK_PARAMS=${TASK_ORIGIN_PARAM}\nPROVNS=$(echo ${JSON_TASK_PARAMS} | jq -r '.p8s_namespace')\np8s_status=`ssh provbee-service busybee kps wow $PROVNS` \nTASK_RESULT=$(echo ${p8s_status})\n\",\"isRecover\":false}],\"showLog\":false,\"log\":\"\",\"createdAt\":\"2020-11-16T05:17:51.000000Z\",\"updatedAt\":\"2020-11-16T05:17:51.000000Z\"}]}"

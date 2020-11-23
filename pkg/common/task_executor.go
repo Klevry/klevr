@@ -29,7 +29,7 @@ var tExecutor taskExecutor
 type taskExecutor struct {
 	sync.RWMutex
 	runningTasks *concurrent.ConcurrentMap // 실행중인 TASK map
-	updatedTasks *concurrent.ConcurrentMap // 업데이트된 TASK map
+	updatedTasks Queue                     // 업데이트된 TASK map
 	closed       bool
 }
 
@@ -46,7 +46,7 @@ func GetTaskExecutor() *taskExecutor {
 	once.Do(func() {
 		tExecutor = taskExecutor{
 			runningTasks: concurrent.NewConcurrentMap(), // *TaskWrapper
-			updatedTasks: concurrent.NewConcurrentMap(), // KlevrTask
+			updatedTasks: *NewMutexQueue(),              // KlevrTask
 		}
 	})
 
@@ -69,20 +69,18 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 	executor.Lock()
 	defer executor.Unlock()
 
-	m := executor.updatedTasks
-	size := int(m.Size())
+	updates := executor.updatedTasks.PopAll()
 
+	size := len(updates)
 	tasks := make([]KlevrTask, 0, size)
 
 	if size > 0 {
-		for _, e := range m.ToSlice() {
-			v, _ := m.Remove(e.Key())
-
+		for _, v := range updates {
 			tasks = append(tasks, v.(KlevrTask))
 		}
 	}
 
-	return tasks, len(tasks)
+	return tasks, size
 }
 
 // RunTask Run the task.
@@ -92,7 +90,7 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 	}
 
 	tw := &TaskWrapper{KlevrTask: task}
-	tw.Status = Running
+	tw.Status = Started
 
 	_, err := executor.runningTasks.Put(task.ID, tw)
 	if err != nil {
@@ -108,7 +106,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// execute() 종료 시 runningTask에서 삭제 및 상태 업데이트
 	defer func() {
 		executor.runningTasks.Remove(tw.ID)
-		executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+		executor.updatedTasks.Push(*tw.KlevrTask)
 	}()
 
 	// Promise function definition
@@ -117,6 +115,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		size := len(steps)
 
 		var result string
+		var preResult string
 		var err error
 
 		if size > 0 {
@@ -137,7 +136,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 			tw.CurrentStep = 1
 
 			// Task 실행 시작 상태 업데이트
-			executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+			executor.updatedTasks.Push(*tw.KlevrTask)
 
 			// Task step 순차 실행
 			for i, step := range steps {
@@ -157,6 +156,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					continue
 				}
 
+				preResult = result
+
 				// task step 실행
 				if RESERVED == step.CommandType {
 					result, err = runReservedCommand(result, tw.KlevrTask, step)
@@ -169,16 +170,23 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				// task result 갱신 - task result는 최종 step의 result로 갱신된다.
 				tw.Result = result
 
+				if result != preResult {
+					tw.IsChangedResult = true
+				} else {
+					tw.IsChangedResult = false
+				}
+
 				// step의 처리 결과가 error인 경우 task 실행 중지 및 error return -> OnFailure 처리
 				if err != nil {
 					return tw, err
 				}
 
 				// 마지막 step이 아니면 task 진행상황 업데이트
-				if i < regularCnt {
+				if i < regularCnt-1 {
 					tw.CurrentStep++
+					tw.Status = Running
 
-					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+					executor.updatedTasks.Push(*tw.KlevrTask)
 				}
 			}
 
@@ -198,11 +206,11 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					tw.Status = WaitInterationSchedule
 					tw.iterationCnt = tw.iterationCnt + 1
 
-					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+					executor.updatedTasks.Push(*tw.KlevrTask)
 
 					time.Sleep(nextTime.Sub(curTime))
 
-					tw.Status = Running
+					tw.Status = Started
 					tw.Log = ""
 
 					goto ITERATION
@@ -228,7 +236,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 			tw.CurrentStep = uint(tw.recover.Seq)
 			tw.Status = Recovering
-			executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+			executor.updatedTasks.Push(*tw.KlevrTask)
 
 			defer func(err error) {
 				v := recover()
