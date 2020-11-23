@@ -76,15 +76,15 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
+	blockExist, _ := api.BlockKeyMap.ContainsKey(apiKey)
+	if blockExist {
+		return false
+	}
+
 	apiKeyMap := api.APIKeyMap
 	exist, _ := apiKeyMap.ContainsKey(zoneID)
 
 	if !exist {
-		blockExist, _ := api.BlockKeyMap.ContainsKey(apiKey)
-		if blockExist {
-			return false
-		}
-
 		tx := GetDBConn(ctx)
 		apiKey, ok := tx.getAPIKey(zoneID)
 
