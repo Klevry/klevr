@@ -30,10 +30,149 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/groups/{groupID}/agents", serversAPI.getAgents)
 	registURI(inner, GET, "/groups/{groupID}/primary", serversAPI.getPrimaryAgent)
 	registURI(inner, POST, "/tasks", serversAPI.addTask)
+	registURI(inner, POST, "/tasks/{groupID}/simple/inline", serversAPI.addSimpleInlineTask)
+	registURI(inner, POST, "/tasks/{groupID}/simple/reserved", serversAPI.addSimpleReservedTask)
 	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.cancelTask)
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
+}
+
+// addSimpleReservedTask godoc
+// @Summary reserved simple TASK를 등록한다.
+// @Description 간단하게 실행할 수 있는 reserved simple TASK를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{groupID}/simple/inline [post]
+// @Param b body string true "inline script"
+// @Success 200 {object} common.KlevrTask
+func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	var rc SimpleReservedCommand
+
+	err = json.NewDecoder(r.Body).Decode(&rc)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	t := common.KlevrTask{
+		ZoneID:         groupID,
+		Name:           "simple",
+		TaskType:       common.AtOnce,
+		TotalStepCount: 1,
+		Parameter:      rc.Parameter,
+		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+			Seq:         1,
+			CommandName: "simple",
+			CommandType: common.RESERVED,
+			Command:     rc.Command,
+			IsRecover:   false,
+		}},
+	}
+
+	// Task 상태 설정
+	t = *common.TaskStatusAdd(&t)
+
+	// DTO -> entity
+	persistTask := *TaskDtoToPerist(&t)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// addSimpleInlineTask godoc
+// @Summary inline simple TASK를 등록한다.
+// @Description 간단하게 실행할 수 있는 inline script 형태의 simple TASK를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{groupID}/simple/inline [post]
+// @Param b body string true "inline script"
+// @Success 200 {object} common.KlevrTask
+func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	nr := &common.Request{Request: r}
+
+	t := common.KlevrTask{
+		ZoneID:         groupID,
+		Name:           "simple",
+		TaskType:       common.AtOnce,
+		TotalStepCount: 1,
+		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+			Seq:         1,
+			CommandName: "simple",
+			CommandType: common.INLINE,
+			Command:     nr.BodyToString(),
+			IsRecover:   false,
+		}},
+	}
+
+	// Task 상태 설정
+	t = *common.TaskStatusAdd(&t)
+
+	// DTO -> entity
+	persistTask := *TaskDtoToPerist(&t)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 // getPrimaryAgent godoc

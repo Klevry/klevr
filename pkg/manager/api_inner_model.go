@@ -106,3 +106,8 @@ type ReservedCommand struct {
 	ResultModel    interface{} `json:"resultModel"`
 	HasRecover     bool        `json:"hasRecover"`
 }
+
+type SimpleReservedCommand struct {
+	Parameter string `json:"parameter"`
+	Command   string `json:"command"`
+}

@@ -81,7 +81,8 @@ docker-compose up -d
 │       ├── Makefile
 │       └── main.go             // main source code of the Manager
 ├── conf
-│   ├── Dump20200720.sql        // Database for Manager initializing & running
+│   ├── klevr-manager-db.sql.create        // Database for Manager initializing & running
+│   ├── klevr-manager-db.sql.modify        // Database for 
 │   └── klevr-manager-local.yml // Config file for Manager running
 ├── pkg
 │   ├── common                  // 'common' package directory

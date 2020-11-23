@@ -45,10 +45,11 @@ type Routes struct {
 
 // API api struct
 type API struct {
-	BaseRoutes *Routes
-	DB         *common.DB
-	Manager    *KlevrManager
-	APIKeyMap  *concurrent.ConcurrentMap
+	BaseRoutes  *Routes
+	DB          *common.DB
+	Manager     *KlevrManager
+	APIKeyMap   *concurrent.ConcurrentMap
+	BlockKeyMap *concurrent.ConcurrentMap
 }
 
 type apiDef struct {
@@ -68,10 +69,11 @@ func Init(ctx *common.Context) *API {
 	logger.Debug("API Init")
 
 	api := &API{
-		BaseRoutes: &Routes{},
-		DB:         CtxGetDbConn(ctx),
-		Manager:    CtxGetServer(ctx),
-		APIKeyMap:  concurrent.NewConcurrentMap(),
+		BaseRoutes:  &Routes{},
+		DB:          CtxGetDbConn(ctx),
+		Manager:     CtxGetServer(ctx),
+		APIKeyMap:   concurrent.NewConcurrentMap(),
+		BlockKeyMap: concurrent.NewConcurrentMap(),
 	}
 
 	ctx.Put(CtxAPI, api)

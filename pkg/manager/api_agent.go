@@ -10,7 +10,6 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	concurrent "github.com/fanliao/go-concurrentMap"
 	"github.com/gorilla/mux"
 )
 
@@ -53,7 +52,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 			// APIKey 인증
 			logger.Debug(r.RequestURI)
-			if !authenticate(ctx, ch.ZoneID, ch.APIKey, api.APIKeyMap) {
+			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey) {
 				return
 			}
 
@@ -76,10 +75,16 @@ func (api *API) InitAgent(agent *mux.Router) {
 	})
 }
 
-func authenticate(ctx *common.Context, zoneID uint64, apiKey string, apiKeyMap *concurrent.ConcurrentMap) bool {
+func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
+	apiKeyMap := api.APIKeyMap
 	exist, _ := apiKeyMap.ContainsKey(zoneID)
 
 	if !exist {
+		blockExist, _ := api.BlockKeyMap.ContainsKey(apiKey)
+		if blockExist {
+			return false
+		}
+
 		tx := GetDBConn(ctx)
 		apiKey, ok := tx.getAPIKey(zoneID)
 
@@ -91,6 +96,11 @@ func authenticate(ctx *common.Context, zoneID uint64, apiKey string, apiKeyMap *
 	}
 
 	ifval, _ := apiKeyMap.Get(zoneID)
+	if ifval == nil {
+		api.BlockKeyMap.Put(apiKey, zoneID)
+		panic(common.NewHTTPError(401, "authentication failed"))
+	}
+
 	val := ifval.(string)
 
 	if apiKey != "" && val == apiKey {
