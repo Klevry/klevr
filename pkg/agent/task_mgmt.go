@@ -74,7 +74,7 @@ func Polling(agent *KlevrAgent) {
 	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
 	errcheck := provcheck.Run()
 	if errcheck != nil {
-		logger.Errorf("provbee-service is not running: %v", errcheck)
+		logger.Errorf("provbee-service is not running!!!: %v", errcheck)
 	}
 
 	hi := ReadFile("/tmp/con")
