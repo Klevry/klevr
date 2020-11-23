@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -11,13 +12,13 @@ import (
 	"github.com/NexClipper/logger"
 )
 
-var agent_id_file = "/tmp/klevr_agent.id"
-var agent_id_string string
+var agentIdFile = "/tmp/klevr_agent.id"
+var agentIdString string
 
 // generate agent key
 func AgentKeyGen() (string, error) {
 
-	now_time := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	nowTime := strconv.FormatInt(time.Now().UTC().Unix(), 10)
 
 	uuid := make([]byte, 16)
 	n, err := io.ReadFull(rand.Reader, uuid)
@@ -29,19 +30,18 @@ func AgentKeyGen() (string, error) {
 	// version 4 (pseudo-random); see section 4.1.3
 	uuid[6] = uuid[6]&^0xf0 | 0x40
 
-	key := hex.EncodeToString(uuid) + now_time
+	key := hex.EncodeToString(uuid) + nowTime
 
 	return key, nil
-	//return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
 }
 
 func CheckAgentKey() string {
 	//if agent file exist
-	if _, err := os.Stat(agent_id_file); !os.IsNotExist(err) {
-		data := readFile(agent_id_file)
+	if _, err := os.Stat(agentIdFile); !os.IsNotExist(err) {
+		data := ReadFile(agentIdFile)
 
 		if string(data) != "" {
-			agent_id_string = string(data)
+			agentIdString = string(data)
 		} else {
 			logger.Error("There is no agent ID")
 		}
@@ -52,12 +52,15 @@ func CheckAgentKey() string {
 			logger.Error(err)
 		}
 
-		writeFile(agent_id_file, key)
+		err = ioutil.WriteFile(agentIdFile, []byte(key), os.FileMode(0644))
+		if err != nil {
+			logger.Error(err)
+		}
 
-		agent_id_string = key
+		agentIdString = key
 	}
 
-	return agent_id_string
+	return agentIdString
 }
 
 func Check_primary(prim string) bool {

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package agent;
+
+service TaskSend{
+  rpc SendTask(Message) returns (Message) {}
+  rpc StatusCheck(Status) returns (Status) {}
+}
+
+message Message{
+  bytes task = 1;
+}
+
+message Status{
+  string status = 1;
+}

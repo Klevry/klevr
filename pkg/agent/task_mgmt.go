@@ -40,7 +40,6 @@ func Polling(agent *KlevrAgent) {
 
 	for _, t := range tasks {
 		updateMap[t.ID] = t
-		logger.Debugf("updated task : [%+v]", t)
 	}
 
 	updateTasks := []common.KlevrTask{}
@@ -62,7 +61,7 @@ func Polling(agent *KlevrAgent) {
 	//logger.Debugf("%v", rb)
 
 	// polling API 호출
-	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
+	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
 
 	var body common.Body
 
@@ -78,7 +77,7 @@ func Polling(agent *KlevrAgent) {
 		logger.Errorf("provbee-service is not running: %v", errcheck)
 	}
 
-	hi := readFile("/tmp/con")
+	hi := ReadFile("/tmp/con")
 	str := strings.TrimRight(string(hi), "\n")
 
 	if strings.Compare(str, "hi") == 0 {
@@ -89,25 +88,25 @@ func Polling(agent *KlevrAgent) {
 				body.Task[i].Status = common.WaitExec
 			}
 
+			logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
+
 			if body.Task[i].ExeAgentChangeable {
 				executor.RunTask(&body.Task[i])
 			} else {
 				logger.Debugf("%v", &body.Task[i])
 
-				executor.RunTask(&body.Task[i])
+				for _, v := range agent.Agents {
+					if v.AgentKey == body.Task[i].AgentKey {
+						ip := v.IP
 
-				//for _, v := range agent.Agents {
-				//	if v.AgentKey == body.Task[i].AgentKey {
-				//		ip := v.IP
-				//
-				//		t := JsonMarshal(body.Task[i])
-				//
-				//		logger.Debugf("%v", body.Task[i])
-				//		//agent.PrimaryTaskSend(ip, t)
-				//	} else {
-				//		executor.RunTask(&body.Task[i])
-				//	}
-				//}
+						t := JsonMarshal(body.Task[i])
+
+						logger.Debugf("%v", body.Task[i])
+						agent.PrimaryTaskSend(ip, t)
+					} else {
+						executor.RunTask(&body.Task[i])
+					}
+				}
 			}
 		}
 

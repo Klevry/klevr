@@ -2,14 +2,14 @@ package agent
 
 import (
 	"encoding/json"
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
+	"github.com/mackerelio/go-osstat/memory"
+	"io/ioutil"
+	netutil "k8s.io/apimachinery/pkg/util/net"
 	"log"
 	"runtime"
 	"syscall"
-
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/mackerelio/go-osstat/memory"
-	netutil "k8s.io/apimachinery/pkg/util/net"
 )
 
 const (
@@ -78,4 +78,13 @@ func JsonUnmarshal(a []byte) common.Body{
 	}
 
 	return body
+}
+
+func ReadFile(path string) []byte {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	return data
 }
