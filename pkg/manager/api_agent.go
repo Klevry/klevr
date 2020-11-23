@@ -472,7 +472,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 				panic("invalid task status - " + t.Status)
 			}
 
-			if t.EventHookSendingType == common.EventHookWithAll {
+			if t.EventHookSendingType == common.EventHookWithAll || t.EventHookSendingType == "" {
 				sendEvent = true
 			} else if t.EventHookSendingType == common.EventHookWithChangedResult && t.IsChangedResult {
 				sendEvent = true

@@ -82,6 +82,7 @@ func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Requ
 			Command:     rc.Command,
 			IsRecover:   false,
 		}},
+		EventHookSendingType: common.EventHookWithAll,
 	}
 
 	// Task 상태 설정
@@ -147,6 +148,7 @@ func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Reques
 			Command:     nr.BodyToString(),
 			IsRecover:   false,
 		}},
+		EventHookSendingType: common.EventHookWithAll,
 	}
 
 	// Task 상태 설정
@@ -358,6 +360,10 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			common.WriteHTTPError(400, w, err, "Invalid cron expression - "+t.Cron)
 		}
+	}
+
+	if t.EventHookSendingType == "" {
+		t.EventHookSendingType = common.EventHookWithAll
 	}
 
 	// DTO -> entity
