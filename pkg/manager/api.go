@@ -8,7 +8,7 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	_ "github.com/Klevry/klevr/pkg/manager/docs"
-	concurrent "github.com/fanliao/go-concurrentMap"
+	concurrent "github.com/orcaman/concurrent-map"
 	swagger "github.com/swaggo/http-swagger"
 
 	"github.com/NexClipper/logger"
@@ -48,8 +48,8 @@ type API struct {
 	BaseRoutes  *Routes
 	DB          *common.DB
 	Manager     *KlevrManager
-	APIKeyMap   *concurrent.ConcurrentMap
-	BlockKeyMap *concurrent.ConcurrentMap
+	APIKeyMap   concurrent.ConcurrentMap
+	BlockKeyMap concurrent.ConcurrentMap
 }
 
 type apiDef struct {
@@ -72,8 +72,8 @@ func Init(ctx *common.Context) *API {
 		BaseRoutes:  &Routes{},
 		DB:          CtxGetDbConn(ctx),
 		Manager:     CtxGetServer(ctx),
-		APIKeyMap:   concurrent.NewConcurrentMap(),
-		BlockKeyMap: concurrent.NewConcurrentMap(),
+		APIKeyMap:   concurrent.New(),
+		BlockKeyMap: concurrent.New(),
 	}
 
 	ctx.Put(CtxAPI, api)

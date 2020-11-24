@@ -1,6 +1,7 @@
 package common_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -76,7 +77,7 @@ func getFailTask() *common.KlevrTask {
 				Seq:         1,
 				CommandName: "COMMAND1",
 				CommandType: common.INLINE,
-				Command:     "echo ${TASK_ORIGIN_PARAM}\necho ${TASK_RESULT}\nTASK_RESULT='{\"step\"=\"command1\", \"success\"=true}'\nexit 1",
+				Command:     "echo ${TASK_ORIGIN_PARAM}\necho ${TASK_RESULT}\nTASK_RESULT='{\"step\"=\"command1\", \"success\"=true}'\n>&2 echo failed\nexit 1",
 				IsRecover:   false,
 			},
 		},
@@ -176,6 +177,8 @@ func TestFailRunTask(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 	}
+
+	fmt.Printf("%s%+v%s", "~~~", updatedTask, "~~~")
 
 	assert.Equal(t, common.Failed, updatedTask.Status, "")
 }

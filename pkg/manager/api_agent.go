@@ -76,37 +76,35 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	bVal, _ := api.BlockKeyMap.Get(apiKey)
-	logger.Debugf("bVal : %+v", bVal)
-	if bVal != nil {
+	_, bExist := api.BlockKeyMap.Get(apiKey)
+	if bExist {
 		return false
 	}
 
 	apiKeyMap := api.APIKeyMap
-	val, _ := apiKeyMap.Get(zoneID)
-	logger.Debugf("val : %+v", val)
-	if val == nil {
+
+	if !apiKeyMap.Has(strconv.FormatUint(zoneID, 10)) {
 		tx := GetDBConn(ctx)
 		apiKey, ok := tx.getAPIKey(zoneID)
 
 		if ok && apiKey.GroupId > 0 {
 			manager := ctx.Get(CtxServer).(*KlevrManager)
 
-			apiKeyMap.Put(zoneID, manager.decrypt(apiKey.ApiKey))
+			apiKeyMap.Set(strconv.FormatUint(zoneID, 10), manager.decrypt(apiKey.ApiKey))
 		}
 	}
 
-	ifval, _ := apiKeyMap.Get(zoneID)
-	if ifval == nil {
-		api.BlockKeyMap.Put(apiKey, zoneID)
-		panic(common.NewHTTPError(401, "authentication failed"))
+	ifval, aExist := apiKeyMap.Get(strconv.FormatUint(zoneID, 10))
+
+	if aExist {
+		val := ifval.(string)
+
+		if apiKey != "" && val == apiKey {
+			return true
+		}
 	}
 
-	val := ifval.(string)
-
-	if apiKey != "" && val == apiKey {
-		return true
-	}
+	api.BlockKeyMap.Set(apiKey, zoneID)
 
 	logger.Warningf("API key not matched - [%s]", apiKey)
 	panic(common.NewHTTPError(401, "authentication failed"))

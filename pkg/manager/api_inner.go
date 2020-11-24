@@ -644,7 +644,7 @@ func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	tx.updateAPIKey(auth)
 
 	ctxAPI := ctx.Get(CtxAPI).(*API)
-	ctxAPI.APIKeyMap.Put(groupID, apiKey)
+	ctxAPI.APIKeyMap.Set(strconv.FormatUint(groupID, 10), apiKey)
 
 	w.WriteHeader(200)
 }

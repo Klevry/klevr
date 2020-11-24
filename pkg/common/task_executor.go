@@ -18,8 +18,8 @@ import (
 	"github.com/gorhill/cronexpr"
 	"github.com/pkg/errors"
 
-	concurrent "github.com/fanliao/go-concurrentMap"
 	"github.com/fanliao/go-promise"
+	concurrent "github.com/orcaman/concurrent-map"
 )
 
 var once sync.Once
@@ -28,8 +28,8 @@ var tExecutor taskExecutor
 // taskExecutor task executor for KlevrTask. Use a constructor GetTaskExecutor() for creation.
 type taskExecutor struct {
 	sync.RWMutex
-	runningTasks *concurrent.ConcurrentMap // 실행중인 TASK map
-	updatedTasks Queue                     // 업데이트된 TASK map
+	runningTasks concurrent.ConcurrentMap // 실행중인 TASK map
+	updatedTasks Queue                    // 업데이트된 TASK map
 	closed       bool
 }
 
@@ -45,23 +45,23 @@ type TaskWrapper struct {
 func GetTaskExecutor() *taskExecutor {
 	once.Do(func() {
 		tExecutor = taskExecutor{
-			runningTasks: concurrent.NewConcurrentMap(), // *TaskWrapper
-			updatedTasks: *NewMutexQueue(),              // KlevrTask
+			runningTasks: concurrent.New(), // *TaskWrapper
+			updatedTasks: *NewMutexQueue(), // KlevrTask
 		}
 	})
 
 	return &tExecutor
 }
 
-func (executor *taskExecutor) getTaskWrapper(ID uint64) (*TaskWrapper, error) {
-	tw, err := executor.runningTasks.Get(ID)
+func (executor *taskExecutor) getTaskWrapper(ID uint64) (*TaskWrapper, bool) {
+	tw, exist := executor.runningTasks.Get(strconv.FormatUint(ID, 10))
 
-	return tw.(*TaskWrapper), err
+	return tw.(*TaskWrapper), exist
 }
 
 // GetRunningTaskCount 현재 진행중인 TASK의 개수를 반환
 func (executor *taskExecutor) GetRunningTaskCount() int {
-	return int(executor.runningTasks.Size())
+	return int(executor.runningTasks.Count())
 }
 
 // GetUpdatedTasks 진행 상태가 변경된 task 조회
@@ -92,10 +92,7 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 	tw := &TaskWrapper{KlevrTask: task}
 	tw.Status = Started
 
-	_, err := executor.runningTasks.Put(task.ID, tw)
-	if err != nil {
-		panic(err)
-	}
+	executor.runningTasks.Set(strconv.FormatUint(task.ID, 10), tw)
 
 	go executor.execute(tw)
 
@@ -105,7 +102,7 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// execute() 종료 시 runningTask에서 삭제 및 상태 업데이트
 	defer func() {
-		executor.runningTasks.Remove(tw.ID)
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
 		executor.updatedTasks.Push(*tw.KlevrTask)
 	}()
 
@@ -282,7 +279,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	} else { // 태스크 실행 without Timeout
 		_, err := future.Get()
 		if err != nil {
-			logger.Errorf("%+v", errors.WithStack(err))
+			logger.Errorf("task raised errors - [%+v] - \n %+v", tw.KlevrTask, errors.WithStack(err))
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
 		}
 	}
