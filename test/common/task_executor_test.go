@@ -127,7 +127,7 @@ func getIterationTask() *common.KlevrTask {
 	}
 }
 
-func TestSingleRunTask(t *testing.T) {
+func TestSingleStepRunTask(t *testing.T) {
 	task := getDefaultTask()
 
 	executor := common.GetTaskExecutor()
@@ -137,10 +137,16 @@ func TestSingleRunTask(t *testing.T) {
 
 	var updatedTask common.KlevrTask
 
+	expected := []common.TaskStatus{common.Started, common.Complete}
+
 	for {
 		updated, _ := executor.GetUpdatedTasks()
 
 		for _, u := range updated {
+			assert.Contains(t, expected, u.Status, "Invalid task status - "+u.Status)
+
+			fmt.Println(u)
+
 			updatedTask = u
 		}
 
@@ -148,13 +154,13 @@ func TestSingleRunTask(t *testing.T) {
 			break
 		}
 
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	assert.Equal(t, common.Complete, updatedTask.Status, "")
 }
 
-func TestFailRunTask(t *testing.T) {
+func TestSingleRunFailTask(t *testing.T) {
 	task := getFailTask()
 
 	executor := common.GetTaskExecutor()
