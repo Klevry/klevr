@@ -102,7 +102,7 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// execute() 종료 시 runningTask에서 삭제 및 상태 업데이트
 	defer func() {
-		executor.runningTasks.Remove(strconv.FormatUint(tw.ID,))
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
 		executor.updatedTasks.Push(*tw.KlevrTask)
 	}()
 

@@ -494,6 +494,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 		}
 
 		tx.updateTask(manager, oTask)
+		tx.Commit()
 	}
 
 	AddEvents(&events)
@@ -598,6 +599,8 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	// agent.LastAccessTime = time.Now().UTC()
 	// tx.updateAgent(agent)
 	tx.updateAccessAgent(agent.Id, time.Now().UTC())
+
+	tx.Commit()
 
 	return agent
 }
