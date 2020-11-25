@@ -363,9 +363,9 @@ func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 		panic(err)
 	}
 
-	task = rTask.Tasks
-	task.TaskDetail = &rTask.TaskDetail
-	task.Logs = &rTask.TaskLogs
+	task = *rTask.Tasks
+	task.TaskDetail = rTask.TaskDetail
+	task.Logs = rTask.TaskLogs
 
 	if task.TaskDetail.Parameter != "" {
 		task.TaskDetail.Parameter = manager.decrypt(task.TaskDetail.Parameter)
@@ -466,8 +466,8 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 	var tasks = make([]Tasks, 0, len(*rts))
 
 	for _, rt := range *rts {
-		rt.Tasks.TaskDetail = &rt.TaskDetail
-		rt.Tasks.Logs = &rt.TaskLogs
+		rt.Tasks.TaskDetail = rt.TaskDetail
+		rt.Tasks.Logs = rt.TaskLogs
 
 		if rt.Tasks.TaskDetail.Parameter != "" {
 			rt.Tasks.TaskDetail.Parameter = manager.decrypt(rt.Tasks.TaskDetail.Parameter)
@@ -483,7 +483,7 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 		logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
 		logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
 
-		tasks = append(tasks, rt.Tasks)
+		tasks = append(tasks, *rt.Tasks)
 	}
 
 	return &tasks

@@ -62,9 +62,9 @@ type TaskLock struct {
 }
 
 type RetriveTask struct {
-	Tasks      `xorm:"extends"`
-	TaskDetail `xorm:"extends"`
-	TaskLogs   `xorm:"extends"`
+	*Tasks      `xorm:"extends"`
+	*TaskDetail `xorm:"extends"`
+	*TaskLogs   `xorm:"extends"`
 }
 
 func (RetriveTask) TableName() string {
