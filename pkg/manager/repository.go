@@ -450,6 +450,7 @@ func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses 
 		}
 
 		(*tasks)[i].TaskSteps = &steps
+		logger.Debugf("tasks detail : [%+v]", t.TaskDetail)
 	}
 
 	logger.Debugf("tasks : [%+v]", tasks)

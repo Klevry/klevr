@@ -845,6 +845,8 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	detail := persist.TaskDetail
 
+	logger.Debugf("detail [%+v]", detail)
+
 	dto := &common.KlevrTask{
 		ID:          persist.Id,
 		ZoneID:      persist.ZoneId,
