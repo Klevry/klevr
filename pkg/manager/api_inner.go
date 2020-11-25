@@ -872,6 +872,8 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 		dto.FailedStep = detail.FailedStep
 		dto.IsFailedRecover = detail.IsFailedRecover
 		dto.ShowLog = detail.ShowLog
+
+		logger.Debugf("dto cron : [%s], detail cron : [%s]", dto.Cron, detail.Cron)
 	}
 
 	stepLen := 0

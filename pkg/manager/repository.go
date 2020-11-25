@@ -461,6 +461,8 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 	var tasks = make([]Tasks, 0, len(*rts))
 
 	for _, rt := range *rts {
+		logger.Debugf("retreive taskDetail : [%+v]", rt.TaskDetail)
+
 		rt.Tasks.TaskDetail = &rt.TaskDetail
 		rt.Tasks.Logs = &rt.TaskLogs
 
