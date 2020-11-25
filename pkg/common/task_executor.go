@@ -106,6 +106,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		executor.updatedTasks.Push(*tw.KlevrTask)
 	}()
 
+	logger.Debugf("task executed() : [%+v]", tw.KlevrTask)
+
 	// Promise function definition
 	f := func(canceller promise.Canceller) (interface{}, error) {
 		steps := tw.Steps
@@ -185,6 +187,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 					executor.updatedTasks.Push(*tw.KlevrTask)
 				}
+
+				logger.Debugf("task executed step[%d] : [%+v]", i, tw.KlevrTask)
 			}
 
 			// Iteration task 반복 수행
@@ -209,6 +213,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 					tw.Status = Started
 					tw.Log = ""
+
+					logger.Debugf("iteration re-run [%d] : [%+v]", tw.iterationCnt, tw.KlevrTask)
 
 					goto ITERATION
 				}
