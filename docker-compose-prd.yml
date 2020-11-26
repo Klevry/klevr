@@ -28,4 +28,4 @@ services:
          - -c
          - |
             /init-db.sh ${KLEVR_DB_USER} ${KLEVR_DB_PASSWD} ${KLEVR_DB_URL} ${KLEVR_DB_PORT} klevr ./conf/klevr-manager-db.sql /nexclipper
-            /klevr-manager -c ./conf/klevr-manager-compose.yml -hook "${NEXCLIPPER_INNER_URL}/events/klevr"
+            /klevr-manager -c ./conf/klevr-manager-compose.yml -hook "${NEXCLIPPER_INNER_URL}/events/klevr" -lp /nexclipper/log/klevr/klevr-manager.log
