@@ -418,6 +418,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 				if t.EventHookSendingType == common.EventHookWithSuccess {
 					sendEvent = true
 				}
+
+				success = true
 			case common.Recovering:
 				if t.EventHookSendingType == common.EventHookWithEachSteps {
 					sendEvent = true
