@@ -92,11 +92,17 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 	tw := &TaskWrapper{KlevrTask: task}
 	tw.Status = Started
 
-	executor.runningTasks.Set(strconv.FormatUint(task.ID, 10), tw)
+	key := strconv.FormatUint(task.ID, 10)
 
-	go executor.execute(tw)
+	if !executor.runningTasks.Has(key) {
+		executor.runningTasks.Set(key, tw)
 
-	return nil
+		go executor.execute(tw)
+
+		return nil
+	}
+
+	return errors.New(fmt.Sprintf("TaskID : [%s] is already running.", key))
 }
 
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
