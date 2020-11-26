@@ -277,6 +277,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Debugf("polling received data : [%+v]", param)
+
 	// response 데이터 생성
 	rb := &common.Body{}
 
