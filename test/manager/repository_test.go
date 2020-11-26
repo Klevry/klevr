@@ -29,19 +29,19 @@ func TestToTasks(t *testing.T) {
 	var tasks2 *[]manager.Tasks
 
 	for _, rt := range *nrts {
-		logger.Debugf("retreive task : [%+v], %v", rt.Tasks, unsafe.Pointer(&rt.Tasks))
-		logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
-		logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
+		// logger.Debugf("retreive task : [%+v], %v", rt.Tasks, unsafe.Pointer(&rt.Tasks))
+		// logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
+		// logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
 
-		fmt.Println()
+		// fmt.Println()
 
 		rt.Tasks.TaskDetail = rt.TaskDetail
 
-		logger.Debugf("retreive task : [%+v], %v", rt.Tasks, unsafe.Pointer(&rt.Tasks))
-		logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
-		logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
+		// logger.Debugf("retreive task : [%+v], %v", rt.Tasks, unsafe.Pointer(&rt.Tasks))
+		// logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
+		// logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
 
-		fmt.Println()
+		// fmt.Println()
 
 		tasks = append(tasks, *rt.Tasks)
 	}

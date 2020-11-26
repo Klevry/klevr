@@ -3,7 +3,6 @@ package manager
 import (
 	"strconv"
 	"time"
-	"unsafe"
 
 	"xorm.io/builder"
 
@@ -451,10 +450,6 @@ func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses 
 		}
 
 		(*tasks)[i].TaskSteps = &steps
-		logger.Debugf("tasks1 : [%+v]", (*tasks)[i])
-		logger.Debugf("tasks2 : [%+v]", t)
-		logger.Debugf("tasks detail1 : [%+v]", (*tasks)[i].TaskDetail)
-		logger.Debugf("tasks detail2 : [%+v]", t.TaskDetail)
 	}
 
 	logger.Debugf("tasks : [%+v]", tasks)
@@ -478,10 +473,6 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 		if rt.Tasks.Logs.Logs != "" {
 			rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
 		}
-
-		logger.Debugf("retreive task : [%+v], %v", rt.Tasks, unsafe.Pointer(&rt.Tasks))
-		logger.Debugf("retreive taskDetail : [%+v], %v", rt.TaskDetail, unsafe.Pointer(&rt.TaskDetail))
-		logger.Debugf("retreive taskDetail2 : [%+v], %v", rt.Tasks.TaskDetail, unsafe.Pointer(&rt.Tasks.TaskDetail))
 
 		tasks = append(tasks, *rt.Tasks)
 	}
