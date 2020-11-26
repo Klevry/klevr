@@ -8,8 +8,9 @@ services:
       volumes:
          - ./db_backup:/nexclipper
       environment:
-         LOG_LOGPATH: "/nexclipper/klevr_log/klevr-manager.log"
-         LOG_MAXSIZe: 5
+         LOG_PATH: "/nexclipper/klevr_log/klevr-manager.log"
+         LOG_LEVEL: "debug"
+         LOG_MAXSIZE: 5
          LOG_MAXBACKUPS: 10
          LOG_MAXAGE: 10
          KLEVR_DB_URL: "${KLEVR_DB_USER}:${KLEVR_DB_PASSWD}@tcp(${KLEVR_DB_URL}:${KLEVR_DB_PORT})/klevr?charset=utf8mb4&parseTime=True&loc=Local"
@@ -30,8 +31,9 @@ services:
       volumes:
          - ./db_backup:/nexclipper
       environment:
-         LOG_LOGPATH: "/nexclipper/klevr_log/klevr-manager.log"
-         LOG_MAXSIZe: 5
+         LOG_PATH: "/nexclipper/klevr_log/klevr-manager.log"
+         LOG_LEVEL: "debug"
+         LOG_MAXSIZE: 5
          LOG_MAXBACKUPS: 10
          LOG_MAXAGE: 10
          KLEVR_DB_URL: "${KLEVR_DB_USER}:${KLEVR_DB_PASSWD}@tcp(${KLEVR_DB_URL}:${KLEVR_DB_PORT})/klevr?charset=utf8mb4&parseTime=True&loc=Local"
