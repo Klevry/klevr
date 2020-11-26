@@ -292,7 +292,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if taskLength > 0 {
-		var pTaskMap = make(map[uint64]*Tasks)
+		var pTaskMap = make(map[uint64]Tasks)
 		var tIds = make([]uint64, len(param.Task))
 
 		for i, task := range param.Task {
@@ -301,8 +301,10 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		pTasks, _ := tx.getTasksByIds(manager, tIds)
 		for _, pt := range *pTasks {
-			pTaskMap[pt.Id] = &pt
+			pTaskMap[pt.Id] = pt
 		}
+
+		logger.Debugf("map for update - [%+v]", pTaskMap)
 
 		updateTaskStatus(ctx, pTaskMap, &param.Task)
 	}
@@ -368,7 +370,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(string(b))
 }
 
-func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]common.KlevrTask) {
+func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]common.KlevrTask) {
 	var length = len(*uTasks)
 	var events = make([]KlevrEvent, 0, length*2)
 
@@ -378,6 +380,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 
 	for _, t := range *uTasks {
 		oTask := oTasks[t.ID]
+
+		logger.Debugf("updateTaskStatus : [%+v]", oTask)
 
 		// Task 상태 이상으로 오류 종료 처리
 		if t.Status == common.Scheduled || t.Status == common.WaitPolling || t.Status == common.HandOver {
@@ -389,7 +393,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 					EventType: TaskCallback,
 					AgentKey:  oTask.AgentKey,
 					GroupID:   oTask.ZoneId,
-					Result:    NewKlevrEventTaskResultString(oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
+					Result:    NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
 					EventTime: &common.JSONTime{Time: time.Now().UTC()},
 				})
 			}
@@ -489,13 +493,13 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]c
 					EventType: TaskCallback,
 					AgentKey:  oTask.AgentKey,
 					GroupID:   oTask.ZoneId,
-					Result:    NewKlevrEventTaskResultString(oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
+					Result:    NewKlevrEventTaskResultString(&oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
 					EventTime: &common.JSONTime{Time: time.Now().UTC()},
 				})
 			}
 		}
 
-		tx.updateTask(manager, oTask)
+		tx.updateTask(manager, &oTask)
 		tx.Commit()
 	}
 

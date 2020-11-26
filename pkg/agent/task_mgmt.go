@@ -39,6 +39,7 @@ func Polling(agent *KlevrAgent) {
 	tasks, _ := executor.GetUpdatedTasks()
 
 	for _, t := range tasks {
+		logger.Debugf("polling updated task [%+v]", value)
 		updateMap[t.ID] = t
 	}
 
