@@ -17,7 +17,7 @@ docker-compose up -d
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
+ * [![Diagram Overview](assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## Features
  * **[Agent](./agent/)**
