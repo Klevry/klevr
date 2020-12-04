@@ -11,6 +11,7 @@ import (
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 )
 
 // IsDebug debugabble for all
@@ -465,11 +466,28 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						len := len(*agents)
 						ids := make([]uint64, len)
 
+						var events = make([]KlevrEvent, len)
+						var eventTime = &common.JSONTime{Time: time.Now().UTC()}
+
 						for i := 0; i < len; i++ {
-							ids[i] = (*agents)[i].Id
+							agent := (*agents)[i]
+
+							ids[i] = agent.Id
+
+							events[i] = KlevrEvent{
+								EventType: AgentDisconnect,
+								AgentKey:  agent.AgentKey,
+								GroupID:   agent.GroupId,
+								Result:    "",
+								EventTime: eventTime,
+							}
+
+							logger.Debugf("disconnected event : [%+v]", events[i])
 						}
 
 						tx.updateAgentStatus(ids)
+
+						AddEvents(&events)
 					}
 
 					tx.Commit()
@@ -525,4 +543,36 @@ func expired(lockDate time.Time, d time.Duration) bool {
 	}
 
 	return false
+}
+
+func (manager *KlevrManager) encrypt(msg string) string {
+	if msg == "" {
+		return ""
+	}
+
+	encKey := manager.Config.Server.EncryptionKey
+
+	enc, err := common.Encrypt(encKey, msg)
+	if err != nil {
+		logger.Errorf("An error occurred during encryption.\n%+v", errors.WithStack(err))
+		panic("Internal server error")
+	}
+
+	return enc
+}
+
+func (manager *KlevrManager) decrypt(encrypted string) string {
+	if encrypted == "" {
+		return ""
+	}
+
+	encKey := manager.Config.Server.EncryptionKey
+
+	dec, err := common.Decrypt(encKey, encrypted)
+	if err != nil {
+		logger.Errorf("An error occurred during decryption.\n%+v", errors.WithStack(err))
+		panic("Internal server error")
+	}
+
+	return dec
 }

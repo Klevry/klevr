@@ -12,12 +12,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/NexClipper/logger"
+	"github.com/gorhill/cronexpr"
 	"github.com/pkg/errors"
 
-	concurrent "github.com/fanliao/go-concurrentMap"
 	"github.com/fanliao/go-promise"
+	concurrent "github.com/orcaman/concurrent-map"
 )
 
 var once sync.Once
@@ -26,39 +28,40 @@ var tExecutor taskExecutor
 // taskExecutor task executor for KlevrTask. Use a constructor GetTaskExecutor() for creation.
 type taskExecutor struct {
 	sync.RWMutex
-	runningTasks *concurrent.ConcurrentMap // 실행중인 TASK map
-	updatedTasks *concurrent.ConcurrentMap // 업데이트된 TASK map
+	runningTasks concurrent.ConcurrentMap // 실행중인 TASK map
+	updatedTasks Queue                    // 업데이트된 TASK map
 	closed       bool
 }
 
 // TaskWrapper for running task management
 type TaskWrapper struct {
 	*KlevrTask
-	future  *promise.Future
-	recover *KlevrTaskStep
+	future       *promise.Future
+	recover      *KlevrTaskStep
+	iterationCnt int64
 }
 
 // GetTaskExecutor constructor for taskExecutor.
 func GetTaskExecutor() *taskExecutor {
 	once.Do(func() {
 		tExecutor = taskExecutor{
-			runningTasks: concurrent.NewConcurrentMap(), // *TaskWrapper
-			updatedTasks: concurrent.NewConcurrentMap(), // KlevrTask
+			runningTasks: concurrent.New(), // *TaskWrapper
+			updatedTasks: *NewMutexQueue(), // KlevrTask
 		}
 	})
 
 	return &tExecutor
 }
 
-func (executor *taskExecutor) getTaskWrapper(ID uint64) (*TaskWrapper, error) {
-	tw, err := executor.runningTasks.Get(ID)
+func (executor *taskExecutor) getTaskWrapper(ID uint64) (*TaskWrapper, bool) {
+	tw, exist := executor.runningTasks.Get(strconv.FormatUint(ID, 10))
 
-	return tw.(*TaskWrapper), err
+	return tw.(*TaskWrapper), exist
 }
 
 // GetRunningTaskCount 현재 진행중인 TASK의 개수를 반환
 func (executor *taskExecutor) GetRunningTaskCount() int {
-	return int(executor.runningTasks.Size())
+	return int(executor.runningTasks.Count())
 }
 
 // GetUpdatedTasks 진행 상태가 변경된 task 조회
@@ -66,20 +69,18 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 	executor.Lock()
 	defer executor.Unlock()
 
-	m := executor.updatedTasks
-	size := int(m.Size())
+	updates := executor.updatedTasks.PopAll()
 
+	size := len(updates)
 	tasks := make([]KlevrTask, 0, size)
 
 	if size > 0 {
-		for _, e := range m.ToSlice() {
-			v, _ := m.Remove(e.Key())
-
+		for _, v := range updates {
 			tasks = append(tasks, v.(KlevrTask))
 		}
 	}
 
-	return tasks, len(tasks)
+	return tasks, size
 }
 
 // RunTask Run the task.
@@ -89,24 +90,29 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 	}
 
 	tw := &TaskWrapper{KlevrTask: task}
-	tw.Status = Running
+	tw.Status = Started
 
-	_, err := executor.runningTasks.Put(task.ID, tw)
-	if err != nil {
-		panic(err)
+	key := strconv.FormatUint(task.ID, 10)
+
+	if !executor.runningTasks.Has(key) {
+		executor.runningTasks.Set(key, tw)
+
+		go executor.execute(tw)
+
+		return nil
 	}
 
-	go executor.execute(tw)
-
-	return nil
+	return errors.New(fmt.Sprintf("TaskID : [%s] is already running.", key))
 }
 
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// execute() 종료 시 runningTask에서 삭제 및 상태 업데이트
 	defer func() {
-		executor.runningTasks.Remove(tw.ID)
-		executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
+		executor.updatedTasks.Push(*tw.KlevrTask)
 	}()
+
+	logger.Debugf("task executed() : [%+v]", tw.KlevrTask)
 
 	// Promise function definition
 	f := func(canceller promise.Canceller) (interface{}, error) {
@@ -114,6 +120,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		size := len(steps)
 
 		var result string
+		var preResult string
 		var err error
 
 		if size > 0 {
@@ -122,15 +129,19 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				return steps[i].Seq < steps[j].Seq
 			})
 
+			// Recover 스텝을 제외한 정규 step 개수
 			regularCnt := size
 			if tw.HasRecover {
 				regularCnt--
 			}
 
+			// Iteration task 반복 수행 시작 지점
+		ITERATION:
+
 			tw.CurrentStep = 1
 
 			// Task 실행 시작 상태 업데이트
-			executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+			executor.updatedTasks.Push(*tw.KlevrTask)
 
 			// Task step 순차 실행
 			for i, step := range steps {
@@ -150,6 +161,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					continue
 				}
 
+				preResult = result
+
 				// task step 실행
 				if RESERVED == step.CommandType {
 					result, err = runReservedCommand(result, tw.KlevrTask, step)
@@ -162,16 +175,54 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				// task result 갱신 - task result는 최종 step의 result로 갱신된다.
 				tw.Result = result
 
+				if result != preResult {
+					tw.IsChangedResult = true
+				} else {
+					tw.IsChangedResult = false
+				}
+
 				// step의 처리 결과가 error인 경우 task 실행 중지 및 error return -> OnFailure 처리
 				if err != nil {
 					return tw, err
 				}
 
 				// 마지막 step이 아니면 task 진행상황 업데이트
-				if i < regularCnt {
+				if i < regularCnt-1 {
 					tw.CurrentStep++
+					tw.Status = Running
 
-					executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+					executor.updatedTasks.Push(*tw.KlevrTask)
+				}
+
+				logger.Debugf("task executed step[%d] : [%+v]", i, tw.KlevrTask)
+			}
+
+			// Iteration task 반복 수행
+			if Iteration == tw.TaskType {
+				expr, err := cronexpr.Parse(tw.Cron)
+
+				if err != nil {
+					tw.Log += "Invalid cron expression - " + tw.Cron + "\n"
+					return tw, err
+				}
+
+				curTime := time.Now()
+				nextTime := expr.Next(curTime)
+
+				if tw.UntilRun.IsZero() || tw.UntilRun.After(nextTime) {
+					tw.Status = WaitInterationSchedule
+					tw.iterationCnt = tw.iterationCnt + 1
+
+					executor.updatedTasks.Push(*tw.KlevrTask)
+
+					time.Sleep(nextTime.Sub(curTime))
+
+					tw.Status = Started
+					tw.Log = ""
+
+					logger.Debugf("iteration re-run [%d] : [%+v]", tw.iterationCnt, tw.KlevrTask)
+
+					goto ITERATION
 				}
 			}
 		}
@@ -184,8 +235,6 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	future := promise.Start(f).OnSuccess(func(v interface{}) {
 		tw.Status = Complete
 	}).OnFailure(func(v interface{}) {
-		tw := v.(*TaskWrapper)
-
 		tw.FailedStep = tw.CurrentStep
 
 		if tw.HasRecover {
@@ -194,7 +243,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 			tw.CurrentStep = uint(tw.recover.Seq)
 			tw.Status = Recovering
-			executor.updatedTasks.Put(tw.ID, *tw.KlevrTask)
+			executor.updatedTasks.Push(*tw.KlevrTask)
 
 			defer func(err error) {
 				v := recover()
@@ -242,7 +291,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	} else { // 태스크 실행 without Timeout
 		_, err := future.Get()
 		if err != nil {
-			logger.Errorf("%+v", errors.WithStack(err))
+			logger.Errorf("task raised errors - [%+v] - \n %+v", tw.KlevrTask, errors.WithStack(err))
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
 		}
 	}
@@ -297,7 +346,12 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 
 	// command wrapper 스크립트 파일 생성
 	wrapperFile := path + "/wrapper.sh"
-	ioutil.WriteFile(wrapperFile, []byte(wrapper), 0700)
+	wrapperErr := ioutil.WriteFile(wrapperFile, []byte(wrapper), 0700)
+	if wrapperErr != nil {
+		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(wrapperErr))
+		return "", wrapperErr
+	}
+
 	defer func() {
 		err := os.Remove(wrapperFile)
 		if err != nil {
@@ -308,18 +362,23 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	// 실행
 	cmd := exec.Command("sh", "-c", wrapperFile)
 
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
+	var stdOut bytes.Buffer
+	var errOut bytes.Buffer
+
+	cmd.Stdout = &stdOut
+	cmd.Stderr = &errOut
 
 	runErr := cmd.Run()
+
+	if task.ShowLog {
+		task.Log += stdOut.String() + "\n\n"
+	}
+
+	task.Log += errOut.String() + "\n\n"
+
 	if runErr != nil {
 		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(runErr))
 		return "", runErr
-	}
-
-	if task.ShowLog {
-		task.Log += out.String() + "\n\n"
 	}
 
 	// 결과 조회

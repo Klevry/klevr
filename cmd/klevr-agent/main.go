@@ -46,7 +46,7 @@ func main() {
 
 	instance := agent.NewKlevrAgent()
 
-	instance.API_key = *apikey
+	instance.ApiKey = *apikey
 	instance.Platform = *platform
 	instance.Zone = *zone
 	instance.Manager = *klevr_addr

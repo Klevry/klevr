@@ -1,8 +1,11 @@
 package agent
 
 import (
+	"encoding/json"
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/NexClipper/logger"
 	"github.com/mackerelio/go-osstat/memory"
+	"io/ioutil"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	"log"
 	"runtime"
@@ -53,4 +56,35 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Core = runtime.NumCPU()
 	body.Me.Resource.Memory = int(memory.Total / MB)
 	body.Me.Resource.Disk = int(disk.All / MB)
+}
+
+func JsonMarshal(a interface{}) []byte{
+	b, err := json.Marshal(a)
+	if err != nil{
+		logger.Debugf("%v", string(b))
+		logger.Error(err)
+	}
+
+	return b
+}
+
+func JsonUnmarshal(a []byte) common.Body{
+	var body common.Body
+
+	err := json.Unmarshal(a, &body)
+	if err != nil{
+		logger.Debugf("%v", string(a))
+		logger.Error(err)
+	}
+
+	return body
+}
+
+func ReadFile(path string) []byte {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	return data
 }

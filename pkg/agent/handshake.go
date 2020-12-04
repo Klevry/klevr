@@ -1,14 +1,10 @@
 package agent
 
 import (
-	"encoding/json"
-
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/NexClipper/logger"
 )
-
-//var agents_list = "/tmp/agents"
 
 /*
 send handshake to manager
@@ -16,7 +12,7 @@ send handshake to manager
 in: body.me
 out: body.me, body.agent.primary
 */
-func HandShake(agent *KlevrAgent) string {
+func HandShake(agent *KlevrAgent) common.Primary {
 	uri := agent.Manager + "/agents/handshake"
 
 	rb := &common.Body{}
@@ -25,31 +21,21 @@ func HandShake(agent *KlevrAgent) string {
 
 	logger.Debugf("%v", rb)
 
-	b, err := json.Marshal(rb)
-	if err != nil {
-		logger.Error(err)
-	}
+	b := JsonMarshal(rb)
 
 	// put in & get out
-	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.API_key, agent.Zone)
+	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
 
-	var body common.Body
-	err2 := json.Unmarshal(result, &body)
-	if err2 != nil {
-		logger.Error(err2)
-	}
+	body := JsonUnmarshal(result)
 
 	logger.Debugf("%v", body)
-	primary := body.Agent.Primary.IP
 	agent.schedulerInterval = body.Me.CallCycle
-
-	writeFile(agentsList, body.Agent)
 
 	if len(body.Agent.Nodes) > 0 {
 		for _, v := range body.Agent.Nodes {
-			agent.SecondaryIP = append(agent.SecondaryIP, Secondary{IP: v.IP})
+			agent.Agents = append(agent.Agents, v)
 		}
 	}
 
-	return primary
+	return body.Agent.Primary
 }

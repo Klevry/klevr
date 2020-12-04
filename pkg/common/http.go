@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/NexClipper/logger"
 )
 
@@ -71,5 +73,5 @@ func WriteHTTPError(statusCode int, w http.ResponseWriter, err error, message st
 	w.WriteHeader(statusCode)
 	fmt.Fprintf(w, "%s : %v", message, err)
 
-	logger.Warningf("%s : %+v", message, err)
+	logger.Warningf("%s : %+v", message, errors.WithStack(err))
 }

@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -17,13 +16,13 @@ type Tx struct {
 	*common.Session
 }
 
-func (tx *Tx) getPrimaryAgent(zoneID uint64) *PrimaryAgents {
+func (tx *Tx) getPrimaryAgent(zoneID uint64) (primary *PrimaryAgents, exist bool) {
 	var pa PrimaryAgents
 
-	common.CheckGetQuery(tx.Where("group_id = ?", zoneID).Get(&pa))
+	ok := common.CheckGetQuery(tx.Where("group_id = ?", zoneID).Get(&pa))
 	logger.Debugf("Selected PrimaryAgent : %v", pa)
 
-	return &pa
+	return &pa, ok
 }
 
 func (tx *Tx) insertPrimaryAgent(pa *PrimaryAgents) (int64, error) {
@@ -73,7 +72,7 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
-	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID").Find(&agents)
+	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID", "AGENT_KEY, GROUP_ID").Find(&agents)
 	if err != nil {
 		panic(err)
 	}
@@ -98,8 +97,6 @@ func (tx *Tx) updateAgentStatus(ids []uint64) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != int64(len(ids)) {
-		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }
 
@@ -118,14 +115,12 @@ func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
 
 func (tx *Tx) updateZoneStatus(arrAgent *[]Agents) {
 	for _, a := range *arrAgent {
-		cnt, err := tx.Where("AGENT_KEY = ?", a.AgentKey).
+		_, err := tx.Where("AGENT_KEY = ?", a.AgentKey).
 			Cols("LAST_ALIVE_CHECK_TIME", "IS_ACTIVE", "CPU", "MEMORY", "DISK").
 			Update(a)
 
 		if err != nil {
 			panic(err)
-		} else if cnt != 1 {
-			common.PanicForUpdate(fmt.Sprintf("updated - agentKey : %s", a.AgentKey), cnt, 1)
 		}
 	}
 }
@@ -157,8 +152,6 @@ func (tx *Tx) addAgentGroup(ag *AgentGroups) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -168,13 +161,11 @@ func (tx *Tx) addAgent(a *Agents) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
 func (tx *Tx) updateAgent(a *Agents) {
-	cnt, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
+	_, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
 		"CPU":                   a.Cpu,
 		"DISK":                  a.Disk,
 		"ENC_KEY":               a.EncKey,
@@ -194,17 +185,13 @@ func (tx *Tx) updateAgent(a *Agents) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
 	}
 }
 
 func (tx *Tx) addAPIKey(auth *ApiAuthentications) {
-	cnt, err := tx.Insert(auth)
+	_, err := tx.Insert(auth)
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -214,8 +201,6 @@ func (tx *Tx) updateAPIKey(auth *ApiAuthentications) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
 	}
 }
 
@@ -247,12 +232,10 @@ func (tx *Tx) getLock(task string) (*TaskLock, bool) {
 }
 
 func (tx *Tx) insertLock(tl *TaskLock) {
-	cnt, err := tx.Insert(tl)
+	_, err := tx.Insert(tl)
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
 	}
 }
 
@@ -262,12 +245,10 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 
 	if err != nil {
 		panic(err)
-	} else if cnt != 1 {
-		common.PanicForUpdate("updated", cnt, 1)
 	}
 }
 
-func (tx *Tx) insertTask(t *Tasks) *Tasks {
+func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 	result, err := tx.Exec("INSERT INTO `TASKS` (`zone_id`,`name`,`task_type`,`schedule`,`agent_key`,`exe_agent_key`,`status`) VALUES (?,?,?,?,?,?,?)",
 		t.ZoneId, t.Name, t.TaskType, t.Schedule, t.AgentKey, t.ExeAgentKey, t.Status)
 
@@ -275,11 +256,7 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 		panic(err)
 	}
 
-	cnt, _ := result.RowsAffected()
-
-	if cnt != 1 {
-		common.PanicForUpdate("inserted", cnt, 1)
-	}
+	result.RowsAffected()
 
 	id, _ := result.LastInsertId()
 
@@ -290,13 +267,12 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	if t.TaskDetail != nil {
 		t.TaskDetail.TaskId = t.Id
 
-		cnt, err = tx.Insert(t.TaskDetail)
+		t.TaskDetail.Parameter = manager.encrypt(t.TaskDetail.Parameter)
+		t.TaskDetail.Result = manager.encrypt(t.TaskDetail.Result)
+
+		_, err = tx.Insert(t.TaskDetail)
 		if err != nil {
 			panic(err)
-		}
-
-		if cnt != 1 {
-			common.PanicForUpdate("inserted", cnt, 1)
 		}
 	}
 
@@ -305,17 +281,16 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 	if t.TaskSteps != nil && taskStepLen > 0 {
 		for i, ts := range *t.TaskSteps {
 			(*t.TaskSteps)[i].TaskId = t.Id
+			(*t.TaskSteps)[i].ReservedCommand = manager.encrypt(ts.ReservedCommand)
+			(*t.TaskSteps)[i].InlineScript = manager.encrypt(ts.InlineScript)
+
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
 			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
 		}
 
-		cnt, err = tx.Insert(t.TaskSteps)
+		_, err = tx.Insert(t.TaskSteps)
 		if err != nil {
 			panic(err)
-		}
-
-		if cnt != taskStepLen {
-			common.PanicForUpdate("inserted", cnt, taskStepLen)
 		}
 	}
 
@@ -323,15 +298,13 @@ func (tx *Tx) insertTask(t *Tasks) *Tasks {
 }
 
 func (tx *Tx) updateHandoverTasks(ids []uint64) {
-	cnt, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
+	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
 	if err != nil {
 		panic(err)
-	} else if cnt > 1 {
-		common.PanicForUpdate("updated", cnt, int64(len(ids)))
 	}
 }
 
-func (tx *Tx) updateTask(t *Tasks) {
+func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
 	cnt, err := tx.Where("ID = ?", t.Id).
 		Cols("EXE_AGENT_KEY", "STATUS").
 		Update(t)
@@ -343,6 +316,8 @@ func (tx *Tx) updateTask(t *Tasks) {
 
 	detail := t.TaskDetail
 	if detail.Result != "" {
+		detail.Result = manager.encrypt(detail.Result)
+
 		cnt, err = tx.Where("TASK_ID = ?", t.Id).
 			Cols("CURRENT_STEP", "RESULT", "FAILED_STEP", "IS_FAILED_RECOVER").
 			Update(detail)
@@ -359,7 +334,9 @@ func (tx *Tx) updateTask(t *Tasks) {
 	if t.Logs.Logs != "" {
 		logs := t.Logs
 
-		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS=CONCAT_WS('\\n', LOGS, ?)",
+		logs.Logs = manager.encrypt(logs.Logs)
+
+		_, err := tx.Exec("INSERT INTO `TASK_LOGS` (`TASK_ID`,`LOGS`) VALUES (?,?) ON DUPLICATE KEY UPDATE TASK_ID = ?, LOGS= ?",
 			t.Id, logs.Logs, t.Id, logs.Logs)
 
 		if err != nil {
@@ -368,7 +345,7 @@ func (tx *Tx) updateTask(t *Tasks) {
 	}
 }
 
-func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
+func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 	var rTask RetriveTask
 	var task Tasks
 
@@ -385,15 +362,34 @@ func (tx *Tx) getTask(id uint64) (*Tasks, bool) {
 		panic(err)
 	}
 
-	task = rTask.Tasks
-	task.TaskDetail = &rTask.TaskDetail
-	task.Logs = &rTask.TaskLogs
+	task = *rTask.Tasks
+	task.TaskDetail = rTask.TaskDetail
+	task.Logs = rTask.TaskLogs
+
+	if task.TaskDetail.Parameter != "" {
+		task.TaskDetail.Parameter = manager.decrypt(task.TaskDetail.Parameter)
+	}
+	if task.TaskDetail.Result != "" {
+		task.TaskDetail.Result = manager.decrypt(task.TaskDetail.Result)
+	}
+	if task.Logs.Logs != "" {
+		task.Logs.Logs = manager.decrypt(task.Logs.Logs)
+	}
+
+	for i := 0; i < len(steps); i++ {
+		if steps[i].ReservedCommand != "" {
+			steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+		}
+		if steps[i].InlineScript != "" {
+			steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+		}
+	}
 	task.TaskSteps = &steps
 
 	return &task, exist
 }
 
-func (tx *Tx) getTasksByIds(ids []uint64) (*[]Tasks, int64) {
+func (tx *Tx) getTasksByIds(manager *KlevrManager, ids []uint64) (*[]Tasks, int64) {
 	var rts []RetriveTask
 	inqCnt := len(ids)
 
@@ -413,10 +409,10 @@ func (tx *Tx) getTasksByIds(ids []uint64) (*[]Tasks, int64) {
 			", selected count : " + strconv.Itoa(int(cnt)))
 	}
 
-	return toTasks(&rts), cnt
+	return toTasks(manager, &rts), cnt
 }
 
-func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, int64) {
+func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses []string) (*[]Tasks, int64) {
 	var tasks *[]Tasks
 
 	var rts []RetriveTask
@@ -432,7 +428,7 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 
 	logger.Debugf("selected retreive tasks : %d", cnt)
 
-	tasks = toTasks(&rts)
+	tasks = toTasks(manager, &rts)
 
 	for i, t := range *tasks {
 		var steps []TaskSteps
@@ -444,6 +440,15 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 
 		logger.Debugf("select steps for %d - %d", t.Id, cnt)
 
+		for i := 0; i < len(steps); i++ {
+			if steps[i].ReservedCommand != "" {
+				steps[i].ReservedCommand = manager.decrypt(steps[i].ReservedCommand)
+			}
+			if steps[i].InlineScript != "" {
+				steps[i].InlineScript = manager.decrypt(steps[i].InlineScript)
+			}
+		}
+
 		(*tasks)[i].TaskSteps = &steps
 	}
 
@@ -452,13 +457,24 @@ func (tx *Tx) getTasksWithSteps(groupID uint64, statuses []string) (*[]Tasks, in
 	return tasks, cnt
 }
 
-func toTasks(rts *[]RetriveTask) *[]Tasks {
+func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 	var tasks = make([]Tasks, 0, len(*rts))
 
 	for _, rt := range *rts {
-		rt.Tasks.TaskDetail = &rt.TaskDetail
-		rt.Tasks.Logs = &rt.TaskLogs
-		tasks = append(tasks, rt.Tasks)
+		rt.Tasks.TaskDetail = rt.TaskDetail
+		rt.Tasks.Logs = rt.TaskLogs
+
+		if rt.Tasks.TaskDetail.Parameter != "" {
+			rt.Tasks.TaskDetail.Parameter = manager.decrypt(rt.Tasks.TaskDetail.Parameter)
+		}
+		if rt.Tasks.TaskDetail.Result != "" {
+			rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
+		}
+		if rt.Tasks.Logs.Logs != "" {
+			rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+		}
+
+		tasks = append(tasks, *rt.Tasks)
 	}
 
 	return &tasks
@@ -526,20 +542,17 @@ func (tx *Tx) cancelTask(id uint64) bool {
 
 // Task 부가 데이터 삭제
 func (tx *Tx) purgeTask(id uint64) {
-	cnt, err := tx.Where("TASK_ID = ?").Delete(&TaskDetail{})
-	if err != nil {
-		panic(err)
-	}
-	if cnt != 1 {
-		common.PanicForUpdate("deleted", cnt, 1)
-	}
-
-	cnt, err = tx.Where("TASK_ID = ?").Delete(&TaskLogs{})
+	_, err := tx.Where("TASK_ID = ?").Delete(&TaskDetail{})
 	if err != nil {
 		panic(err)
 	}
 
-	cnt, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
+	_, err = tx.Where("TASK_ID = ?").Delete(&TaskLogs{})
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
 	if err != nil {
 		panic(err)
 	}

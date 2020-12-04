@@ -32,9 +32,9 @@ type Agents struct {
 	Port               int
 	HmacKey            string
 	EncKey             string
-	Cpu                int
-	Memory             int
-	Disk               int
+	Cpu                string
+	Memory             string
+	Disk               string
 	Version            string
 }
 
@@ -48,8 +48,8 @@ type PrimaryAgents struct {
 
 // ApiAuthentications model for API_AUTHENTICATIONS
 type ApiAuthentications struct {
-	ApiKey    string `xorm:"pk"`
-	GroupId   uint64
+	GroupId   uint64 `xorm:"pk"`
+	ApiKey    string
 	CreatedAt time.Time `xorm:"created"`
 	UpdatedAt time.Time `xorm:"updated"`
 }
@@ -62,9 +62,9 @@ type TaskLock struct {
 }
 
 type RetriveTask struct {
-	Tasks      `xorm:"extends"`
-	TaskDetail `xorm:"extends"`
-	TaskLogs   `xorm:"extends"`
+	*Tasks      `xorm:"extends"`
+	*TaskDetail `xorm:"extends"`
+	*TaskLogs   `xorm:"extends"`
 }
 
 func (RetriveTask) TableName() string {
@@ -105,20 +105,21 @@ type TaskSteps struct {
 }
 
 type TaskDetail struct {
-	TaskId             uint64 `xorm:"PK"`
-	Cron               string
-	UntilRun           time.Time
-	Timeout            uint
-	ExeAgentChangeable bool
-	TotalStepCount     uint
-	CurrentStep        uint
-	HasRecover         bool
-	Parameter          string
-	CallbackUrl        string
-	Result             string
-	FailedStep         uint
-	IsFailedRecover    bool
-	ShowLog            bool
+	TaskId               uint64 `xorm:"PK"`
+	Cron                 string
+	UntilRun             time.Time
+	Timeout              uint
+	ExeAgentChangeable   bool
+	TotalStepCount       uint
+	CurrentStep          uint
+	HasRecover           bool
+	Parameter            string
+	CallbackUrl          string
+	Result               string
+	FailedStep           uint
+	IsFailedRecover      bool
+	ShowLog              bool
+	EventHookSendingType string
 }
 
 func (tl *TaskLock) expired() bool {

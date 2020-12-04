@@ -15,12 +15,13 @@ import (
 
 // CustomHeader name constants
 const (
-	CHeaderAPIKey         = "X-API-KEY"
-	CHeaderAgentKey       = "X-AGENT-KEY"
-	CHeaderHashCode       = "X-HASH-CODE"
-	CHeaderZoneID         = "X-ZONE-ID"
-	CHeaderSupportVersion = "X-SUPPORT-AGENT-VERSION"
-	CHeaderTimestamp      = "X-TIMESTAMP"
+	CHeaderAPIKey           = "X-API-KEY"
+	CHeaderAgentKey         = "X-AGENT-KEY"
+	CHeaderHashCode         = "X-HASH-CODE"
+	CHeaderZoneID           = "X-ZONE-ID"
+	CHeaderSupportVersion   = "X-SUPPORT-AGENT-VERSION"
+	CHeaderTimestamp        = "X-TIMESTAMP"
+	CHeaderPayloadEncrypted = "X-PAYLOAD-ENC"
 )
 
 type agentAPI int
@@ -51,7 +52,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 			// APIKey 인증
 			logger.Debug(r.RequestURI)
-			if !authenticate(ctx, ch.ZoneID, ch.APIKey) {
+			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey) {
 				return
 			}
 
@@ -74,25 +75,54 @@ func (api *API) InitAgent(agent *mux.Router) {
 	})
 }
 
-func authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	if !GetDBConn(ctx).existAPIKey(apiKey, zoneID) {
-		panic(common.NewHTTPError(401, "authentication failed"))
+func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
+	_, bExist := api.BlockKeyMap.Get(apiKey)
+	if bExist {
+		return false
 	}
 
-	return true
+	apiKeyMap := api.APIKeyMap
+
+	if !apiKeyMap.Has(strconv.FormatUint(zoneID, 10)) {
+		tx := GetDBConn(ctx)
+		apiKey, ok := tx.getAPIKey(zoneID)
+
+		if ok && apiKey.GroupId > 0 {
+			manager := ctx.Get(CtxServer).(*KlevrManager)
+
+			apiKeyMap.Set(strconv.FormatUint(zoneID, 10), manager.decrypt(apiKey.ApiKey))
+		}
+	}
+
+	ifval, aExist := apiKeyMap.Get(strconv.FormatUint(zoneID, 10))
+
+	if aExist {
+		val := ifval.(string)
+
+		if apiKey != "" && val == apiKey {
+			return true
+		}
+	}
+
+	api.BlockKeyMap.Set(apiKey, zoneID)
+
+	logger.Warningf("API key not matched - [%s]", apiKey)
+	panic(common.NewHTTPError(401, "authentication failed"))
 }
 
 func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	zoneID, _ := strconv.ParseUint(strings.Join(r.Header.Values(CHeaderZoneID), ""), 10, 64)
 	ts, _ := strconv.ParseInt(strings.Join(r.Header.Values(CHeaderTimestamp), ""), 10, 64)
+	payloadEncrypted, _ := strconv.ParseBool(strings.Join(r.Header.Values(CHeaderPayloadEncrypted), ""))
 
 	h := &common.CustomHeader{
-		APIKey:         strings.Join(r.Header.Values(CHeaderAPIKey), ""),
-		AgentKey:       strings.Join(r.Header.Values(CHeaderAgentKey), ""),
-		HashCode:       strings.Join(r.Header.Values(CHeaderHashCode), ""),
-		ZoneID:         uint64(zoneID),
-		SupportVersion: strings.Join(r.Header.Values(CHeaderSupportVersion), ""),
-		Timestamp:      ts,
+		APIKey:           strings.Join(r.Header.Values(CHeaderAPIKey), ""),
+		AgentKey:         strings.Join(r.Header.Values(CHeaderAgentKey), ""),
+		HashCode:         strings.Join(r.Header.Values(CHeaderHashCode), ""),
+		ZoneID:           uint64(zoneID),
+		SupportVersion:   strings.Join(r.Header.Values(CHeaderSupportVersion), ""),
+		Timestamp:        ts,
+		PayloadEncrypted: payloadEncrypted,
 	}
 
 	ctx := *CtxGetFromRequest(r)
@@ -101,13 +131,15 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func UpdateTaskStatus(tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
+func UpdateTaskStatus(ctx *common.Context, tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
 	len := len(*tasks)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if len > 0 {
 		for _, t := range *tasks {
 
-			tx.updateTask(&Tasks{
+			tx.updateTask(manager, &Tasks{
 				Id:          t.ID,
 				ExeAgentKey: t.AgentKey,
 				Status:      t.Status,
@@ -159,7 +191,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
-	upsertAgent(tx, agent, ch, &paramAgent)
+	upsertAgent(ctx, tx, agent, ch, &paramAgent)
 
 	tx.Commit()
 
@@ -170,18 +202,19 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
 
-
 	// 접속한 agent 정보
 	me := &rb.Me
 
-	me.HmacKey = agent.HmacKey
-	me.EncKey = agent.EncKey
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	me.HmacKey = manager.decrypt(agent.HmacKey)
+	me.EncKey = manager.decrypt(agent.EncKey)
 	// me.CallCycle = 0 // seconds
 	// me.LogLevel = "DEBUG"
 
 	// Primary agent인 경우 node 정보 추가
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
+		rb.Agent.Nodes = getNodes(ctx, tx, ch.ZoneID)
 	}
 
 	b, err := json.Marshal(rb)
@@ -199,19 +232,19 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		EventTime: &common.JSONTime{Time: time.Now().UTC()},
 	})
 
-	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
-			AgentKey:  agent.AgentKey,
+			EventType: PrimaryRetire,
+			AgentKey:  oldPrimaryAgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 
-	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
-			EventType: PrimaryRetire,
-			AgentKey:  oldPrimaryAgentKey,
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
 			GroupID:   agent.GroupId,
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
@@ -244,6 +277,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Debugf("polling received data : [%+v]", param)
+
 	// response 데이터 생성
 	rb := &common.Body{}
 
@@ -254,18 +289,22 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	// 수행한 task 상태 정보 업데이트
 	var taskLength = len(param.Task)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	if taskLength > 0 {
-		var pTaskMap = make(map[uint64]*Tasks)
+		var pTaskMap = make(map[uint64]Tasks)
 		var tIds = make([]uint64, len(param.Task))
 
 		for i, task := range param.Task {
 			tIds[i] = task.ID
 		}
 
-		pTasks, _ := tx.getTasksByIds(tIds)
+		pTasks, _ := tx.getTasksByIds(manager, tIds)
 		for _, pt := range *pTasks {
-			pTaskMap[pt.Id] = &pt
+			pTaskMap[pt.Id] = pt
 		}
+
+		logger.Debugf("map for update - [%+v]", pTaskMap)
 
 		updateTaskStatus(ctx, pTaskMap, &param.Task)
 	}
@@ -282,12 +321,14 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		nodeLength := len(nodes)
 		arrAgent := make([]Agents, nodeLength)
 
+		manager := ctx.Get(CtxServer).(*KlevrManager)
+
 		for i, a := range nodes {
 			arrAgent[i].AgentKey = a.AgentKey
 			arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
-			arrAgent[i].Cpu = a.Core
-			arrAgent[i].Memory = a.Memory
-			arrAgent[i].Disk = a.Disk
+			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
+			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
+			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
 
 			if agent.AgentKey == a.AgentKey {
 				arrAgent[i].IsActive = 1
@@ -301,7 +342,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		tx.Commit()
 
 		// 신규 task 할당
-		nTasks, cnt := tx.getTasksWithSteps(ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
+		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
 		if cnt > 0 {
 			var dtos []common.KlevrTask = make([]common.KlevrTask, len(*nTasks))
 
@@ -315,7 +356,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// node 정보 추가
-		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
+		rb.Agent.Nodes = getNodes(ctx, tx, ch.ZoneID)
 	}
 
 	b, err := json.Marshal(rb)
@@ -325,86 +366,143 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+
+	logger.Debug(string(b))
 }
 
-func updateTaskStatus(ctx *common.Context, oTasks map[uint64]*Tasks, uTasks *[]common.KlevrTask) {
+func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]common.KlevrTask) {
 	var length = len(*uTasks)
 	var events = make([]KlevrEvent, 0, length*2)
 
 	tx := GetDBConn(ctx)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	for _, t := range *uTasks {
 		oTask := oTasks[t.ID]
 
+		logger.Debugf("updateTaskStatus : [%+v]", oTask)
+
 		// Task 상태 이상으로 오류 종료 처리
 		if t.Status == common.Scheduled || t.Status == common.WaitPolling || t.Status == common.HandOver {
-			oTask.Status = common.Failed
-			oTask.Logs.Logs = "Invalid Task Status Updated. - " + string(t.Status)
+			if t.EventHookSendingType != common.EventHookWithSuccess {
+				oTask.Status = common.Failed
+				oTask.Logs.Logs = "Invalid Task Status Updated. - " + string(t.Status)
 
-			events = append(events, KlevrEvent{
-				EventType: TaskCallback,
-				AgentKey:  oTask.AgentKey,
-				GroupID:   oTask.ZoneId,
-				Result:    NewKlevrEventTaskResultString(oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
-				EventTime: &common.JSONTime{Time: time.Now().UTC()},
-			})
+				events = append(events, KlevrEvent{
+					EventType: TaskCallback,
+					AgentKey:  oTask.AgentKey,
+					GroupID:   oTask.ZoneId,
+					Result:    NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
+					EventTime: &common.JSONTime{Time: time.Now().UTC()},
+				})
+			}
 		} else {
 			var complete = false
 			var success = false
 			var isCommandError = false
-			var sendEvent = true
+			var sendEvent = false
 			var errorMessage string
 
 			switch t.Status {
 			case common.WaitExec:
-				sendEvent = false
-			case common.Running:
-				// 한 단계 이상이 완료 되어야 event 발송
-				if t.CurrentStep < 2 {
-					sendEvent = false
+			case common.Started:
+				if t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
 				}
+			case common.Running:
+				if t.EventHookSendingType == common.EventHookWithEachSteps {
+					sendEvent = true
+				}
+			case common.WaitInterationSchedule:
+				if t.EventHookSendingType == common.EventHookWithSuccess {
+					sendEvent = true
+				}
+
+				success = true
 			case common.Recovering:
+				if t.EventHookSendingType == common.EventHookWithEachSteps {
+					sendEvent = true
+				}
+
 				if t.FailedStep > 0 {
 					isCommandError = true
 					errorMessage = "Error occurred during task step execution"
 				}
 				oTask.TaskDetail.FailedStep = t.FailedStep
 			case common.Complete:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithSuccess {
+					sendEvent = true
+				}
+
 				complete = true
 				success = true
 			case common.FailedRecover:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithFailed {
+					sendEvent = true
+				}
+
 				oTask.TaskDetail.IsFailedRecover = true
+				isCommandError = true
 				complete = true
 			case common.Failed:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds ||
+					t.EventHookSendingType == common.EventHookWithFailed {
+					sendEvent = true
+				}
+
 				if t.FailedStep > 0 {
 					isCommandError = true
 					errorMessage = "Error occurred during task step execution"
 				}
 				complete = true
 			case common.Canceled:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
+				}
+
 				complete = true
 			case common.Stopped:
+				if t.EventHookSendingType == common.EventHookWithConclusion ||
+					t.EventHookSendingType == common.EventHookWithBothEnds {
+					sendEvent = true
+				}
+
 				complete = true
 			default:
 				panic("invalid task status - " + t.Status)
 			}
 
+			if t.EventHookSendingType == common.EventHookWithAll || t.EventHookSendingType == "" {
+				sendEvent = true
+			} else if t.EventHookSendingType == common.EventHookWithChangedResult && t.IsChangedResult {
+				sendEvent = true
+			}
+
 			oTask.TaskDetail.CurrentStep = t.CurrentStep
 			oTask.Status = t.Status
 			oTask.Logs.Logs = t.Log
+			oTask.TaskDetail.Result = t.Result
 
 			if sendEvent {
 				events = append(events, KlevrEvent{
 					EventType: TaskCallback,
 					AgentKey:  oTask.AgentKey,
 					GroupID:   oTask.ZoneId,
-					Result:    NewKlevrEventTaskResultString(oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
+					Result:    NewKlevrEventTaskResultString(&oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
 					EventTime: &common.JSONTime{Time: time.Now().UTC()},
 				})
 			}
 		}
 
-		tx.updateTask(oTask)
+		tx.updateTask(manager, &oTask)
+		tx.Commit()
 	}
 
 	AddEvents(&events)
@@ -428,13 +526,6 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	// var cr = &common.Request{r}
 	tx := GetDBConn(ctx)
-	var param common.Body
-
-	err := json.NewDecoder(r.Body).Decode(&param)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "JSON parsing error")
-		return
-	}
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -446,7 +537,7 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		rb.Agent.Nodes = getNodes(tx, ch.ZoneID)
+		rb.Agent.Nodes = getNodes(ctx, tx, ch.ZoneID)
 	}
 
 	b, err := json.Marshal(rb)
@@ -457,15 +548,6 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 
-	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
-			AgentKey:  agent.AgentKey,
-			GroupID:   agent.GroupId,
-			EventTime: &common.JSONTime{Time: time.Now().UTC()},
-		})
-	}
-
 	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
 		AddEvent(&KlevrEvent{
 			EventType: PrimaryRetire,
@@ -474,11 +556,22 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
 	}
+
+	if ch.AgentKey == rb.Agent.Primary.AgentKey {
+		AddEvent(&KlevrEvent{
+			EventType: PrimaryElected,
+			AgentKey:  agent.AgentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		})
+	}
 }
 
-func getNodes(tx *Tx, zoneID uint64) []common.Agent {
+func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	cnt, agents := tx.getAgentsByGroupId(zoneID)
 	nodes := make([]common.Agent, cnt)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if cnt > 0 {
 		for i, a := range *agents {
@@ -487,12 +580,17 @@ func getNodes(tx *Tx, zoneID uint64) []common.Agent {
 				IP:       a.Ip,
 				Port:     a.Port,
 				Version:  a.Version,
-				Resource: &common.Resource{
-					Core:   a.Cpu,
-					Memory: a.Memory,
-					Disk:   a.Disk,
-				},
+				IsActive: byteToBool(a.IsActive),
+				Resource: &common.Resource{},
 			}
+
+			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
+			disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+
+			nodes[i].Core = core
+			nodes[i].Memory = memory
+			nodes[i].Disk = disk
 		}
 
 		return nodes
@@ -510,13 +608,15 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	// tx.updateAgent(agent)
 	tx.updateAccessAgent(agent.Id, time.Now().UTC())
 
+	tx.Commit()
+
 	return agent
 }
 
 func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
 
 	// primary agent 정보
-	groupPrimary := tx.getPrimaryAgent(zoneID)
+	groupPrimary, _ := tx.getPrimaryAgent(zoneID)
 	var primaryAgent *Agents
 	var oldPrimaryAgentKey string
 
@@ -569,7 +669,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			cnt, err := tx.insertPrimaryAgent(pa)
 
 			if err != nil {
-				pa = tx.getPrimaryAgent(zoneID)
+				pa, _ = tx.getPrimaryAgent(zoneID)
 			} else if cnt != 1 {
 				logger.Warning(fmt.Sprintf("insert primary agent cnt : %d", cnt))
 				common.Throw(common.NewStandardError("elect primary failed."))
@@ -607,7 +707,9 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 	return agent
 }
 
-func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
+func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
 		agent.GroupId = ch.ZoneID
@@ -615,11 +717,11 @@ func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *com
 		agent.LastAccessTime = time.Now().UTC()
 		agent.Ip = paramAgent.IP
 		agent.Port = paramAgent.Port
-		agent.Cpu = paramAgent.Resource.Core
-		agent.Memory = paramAgent.Resource.Memory
-		agent.Disk = paramAgent.Resource.Disk
-		agent.HmacKey = common.GetKey(16)
-		agent.EncKey = common.GetKey(32)
+		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
+		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
+		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.HmacKey = manager.encrypt(common.GetKey(16))
+		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		tx.addAgent(agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
@@ -627,11 +729,11 @@ func upsertAgent(tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *com
 		agent.LastAccessTime = time.Now().UTC()
 		agent.Ip = paramAgent.IP
 		agent.Port = paramAgent.Port
-		agent.Cpu = paramAgent.Resource.Core
-		agent.Memory = paramAgent.Resource.Memory
-		agent.Disk = paramAgent.Resource.Disk
-		agent.HmacKey = common.GetKey(16)
-		agent.EncKey = common.GetKey(32)
+		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
+		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
+		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.HmacKey = manager.encrypt(common.GetKey(16))
+		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		tx.updateAgent(agent)
 	}

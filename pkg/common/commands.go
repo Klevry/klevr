@@ -39,7 +39,7 @@ func stopTask() Command {
 	}
 
 	type ParamModel struct {
-		TargetTaskID interface{} `json:"targetTaskID"`
+		TargetTaskID interface{} `json:"targetTaskId"`
 	}
 
 	type ResultModel struct {
@@ -82,12 +82,9 @@ func stopTask() Command {
 
 			executor := GetTaskExecutor()
 
-			tw, err := executor.getTaskWrapper(taskID)
-			if err != nil {
-				return "", err
-			}
+			tw, exist := executor.getTaskWrapper(taskID)
 
-			if tw == nil {
+			if !exist {
 				b, err := json.Marshal(ResultModel{StopTaskResult: stopTaskResultValues[0]})
 				if err != nil {
 					return "", err
@@ -138,8 +135,8 @@ func gracefuleShutdownAgent() Command {
 			for !complete {
 				complete = true
 
-				for _, e := range executor.runningTasks.ToSlice() {
-					tw := e.Value().(*TaskWrapper)
+				for _, e := range executor.runningTasks.Items() {
+					tw := e.(*TaskWrapper)
 
 					if AtOnce == tw.TaskType {
 						complete = false

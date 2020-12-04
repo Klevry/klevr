@@ -1,9 +1,10 @@
 package agent
 
 import (
-	"net/http"
-
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/jasonlvhit/gocron"
+	"net"
+	"net/http"
 )
 
 const defaultSchedulerInterval int = 5
@@ -15,21 +16,17 @@ type DiskStatus struct {
 }
 
 type KlevrAgent struct {
-	API_key           string
+	ApiKey            string
 	Platform          string
 	Zone              string
 	Manager           string
 	AgentKey          string
 	Version           string
 	schedulerInterval int
-	initialized       bool
+	connect           net.Listener
 	scheduler         *gocron.Scheduler
-	PrimaryIP         string
-	SecondaryIP       []Secondary
-}
-
-type Secondary struct {
-	IP string
+	Primary           common.Primary
+	Agents            []common.Agent
 }
 
 func NewKlevrAgent() *KlevrAgent {
@@ -43,8 +40,7 @@ func NewKlevrAgent() *KlevrAgent {
 }
 
 func (agent *KlevrAgent) Run() {
-
-	agent.PrimaryIP = HandShake(agent)
+	agent.Primary = HandShake(agent)
 	agent.startScheduler()
 
 	http.ListenAndServe(":18800", nil)
@@ -55,25 +51,18 @@ func (agent *KlevrAgent) startScheduler() {
 
 	s := gocron.NewScheduler()
 
-	if Check_primary(agent.PrimaryIP) {
+	if Check_primary(agent.Primary.IP) {
 		var interval int
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval
 		}
 
-		//go getCommand(agent)
-
 		s.Every(5).Seconds().Do(Polling, agent)
 
-		//scheduleFunc = agent.tempHealthCheck
-		//scheduleFunc = Polling
 	} else {
-		//scheduleFunc = PrimaryStatusReport
+		go agent.SecondaryServer()
+		s.Every(5).Seconds().Do(StatusCheck, agent)
 	}
-
-	//s.Every(5).Seconds().Do(scheduleFunc)
-
-	agent.scheduler = s
 
 	go func() {
 		<-s.Start()

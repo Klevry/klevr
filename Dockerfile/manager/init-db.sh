@@ -27,6 +27,13 @@ if [[ ${EXISTS} != "" && ${EXPORT_PATH} != "" ]] ; then
 fi
 
 
+if [[ ${EXISTS} != "" ]] ; then
+	SQL_PATH="${SQL_PATH}.modify"
+else
+	SQL_PATH="${SQL_PATH}.create"
+fi
+
+
 if [ -s "${EXPORT_FILE}" ] ; then
     echo "=============== start import scheme ==============="
     CMD=$(${CMD_PRE} --execute "source ${SQL_PATH}")

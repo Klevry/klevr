@@ -89,6 +89,8 @@ func NewKlevrEventTaskResultString(task *Tasks, complete bool, success bool, isC
 		IsCommandError:   isCommandError,
 		ExceptionMessage: exceptionMessage,
 		ExceptionTrace:   exceptionTrace,
+		Result:           result,
+		Log:              log,
 	})
 
 	if err != nil {
@@ -103,4 +105,9 @@ type ReservedCommand struct {
 	ParameterModel interface{} `json:"parameterModel"`
 	ResultModel    interface{} `json:"resultModel"`
 	HasRecover     bool        `json:"hasRecover"`
+}
+
+type SimpleReservedCommand struct {
+	Parameter string `json:"parameter"`
+	Command   string `json:"command"`
 }

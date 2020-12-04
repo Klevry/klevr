@@ -15,6 +15,7 @@ const (
 	CtxRequestContext = CtxPrefix + "REQUEST"
 
 	CtxServer    = CtxPrefix + "SERVER"
+	CtxAPI       = CtxPrefix + "API"
 	CtxDbConn    = CtxPrefix + "DB"
 	CtxDbSession = CtxPrefix + "TX"
 )

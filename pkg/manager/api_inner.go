@@ -8,6 +8,7 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
+	"github.com/gorhill/cronexpr"
 	"github.com/gorilla/mux"
 )
 
@@ -29,10 +30,151 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/groups/{groupID}/agents", serversAPI.getAgents)
 	registURI(inner, GET, "/groups/{groupID}/primary", serversAPI.getPrimaryAgent)
 	registURI(inner, POST, "/tasks", serversAPI.addTask)
+	registURI(inner, POST, "/tasks/{groupID}/simple/inline", serversAPI.addSimpleInlineTask)
+	registURI(inner, POST, "/tasks/{groupID}/simple/reserved", serversAPI.addSimpleReservedTask)
 	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.cancelTask)
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
+}
+
+// addSimpleReservedTask godoc
+// @Summary reserved simple TASK를 등록한다.
+// @Description 간단하게 실행할 수 있는 reserved simple TASK를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{groupID}/simple/reserved [post]
+// @Param b body manager.SimpleReservedCommand true "TASK"
+// @Success 200 {object} common.KlevrTask
+func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	var rc SimpleReservedCommand
+
+	err = json.NewDecoder(r.Body).Decode(&rc)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	t := common.KlevrTask{
+		ZoneID:         groupID,
+		Name:           "simple",
+		TaskType:       common.AtOnce,
+		TotalStepCount: 1,
+		Parameter:      rc.Parameter,
+		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+			Seq:         1,
+			CommandName: "simple",
+			CommandType: common.RESERVED,
+			Command:     rc.Command,
+			IsRecover:   false,
+		}},
+		EventHookSendingType: common.EventHookWithAll,
+	}
+
+	// Task 상태 설정
+	t = *common.TaskStatusAdd(&t)
+
+	// DTO -> entity
+	persistTask := *TaskDtoToPerist(&t)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// addSimpleInlineTask godoc
+// @Summary inline simple TASK를 등록한다.
+// @Description 간단하게 실행할 수 있는 inline script 형태의 simple TASK를 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{groupID}/simple/inline [post]
+// @Param b body string true "inline script"
+// @Success 200 {object} common.KlevrTask
+func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	logger.Debugf("request variables : [%+v]", vars)
+
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id : %+v", vars["groupID"]))
+		return
+	}
+
+	nr := &common.Request{Request: r}
+
+	t := common.KlevrTask{
+		ZoneID:         groupID,
+		Name:           "simple",
+		TaskType:       common.AtOnce,
+		TotalStepCount: 1,
+		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+			Seq:         1,
+			CommandName: "simple",
+			CommandType: common.INLINE,
+			Command:     nr.BodyToString(),
+			IsRecover:   false,
+		}},
+		EventHookSendingType: common.EventHookWithAll,
+	}
+
+	// Task 상태 설정
+	t = *common.TaskStatusAdd(&t)
+
+	// DTO -> entity
+	persistTask := *TaskDtoToPerist(&t)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }
 
 // getPrimaryAgent godoc
@@ -58,10 +200,10 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	primary := tx.getPrimaryAgent(groupID)
+	primary, exist := tx.getPrimaryAgent(groupID)
 	var agent common.Agent
 
-	if primary != nil {
+	if exist {
 		a := tx.getAgentByID(primary.AgentId)
 
 		agent = common.Agent{
@@ -71,12 +213,18 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 			IP:                 a.Ip,
 			Port:               a.Port,
 			Version:            a.Version,
-			Resource: &common.Resource{
-				Core:   a.Cpu,
-				Memory: a.Memory,
-				Disk:   a.Disk,
-			},
+			Resource:           &common.Resource{},
 		}
+
+		manager := ctx.Get(CtxServer).(*KlevrManager)
+
+		core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+		memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+		disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+
+		agent.Core = core
+		agent.Memory = memory
+		agent.Disk = disk
 	}
 
 	b, err := json.Marshal(agent)
@@ -145,6 +293,8 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	cnt, agents := tx.getAgentsByGroupId(groupID)
 	nodes := make([]common.Agent, cnt)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	if cnt > 0 {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
@@ -154,12 +304,16 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
-				Resource: &common.Resource{
-					Core:   a.Cpu,
-					Memory: a.Memory,
-					Disk:   a.Disk,
-				},
+				Resource:           &common.Resource{},
 			}
+
+			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+
+			nodes[i].Core = core
+			nodes[i].Memory = memory
+			nodes[i].Disk = disk
 		}
 	}
 
@@ -199,13 +353,28 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	// Task 상태 설정
 	t = *common.TaskStatusAdd(&t)
 
+	// Task validation
+	if common.Iteration == t.TaskType {
+		_, err := cronexpr.Parse(t.Cron)
+
+		if err != nil {
+			common.WriteHTTPError(400, w, err, "Invalid cron expression - "+t.Cron)
+		}
+	}
+
+	if t.EventHookSendingType == "" {
+		t.EventHookSendingType = common.EventHookWithAll
+	}
+
 	// DTO -> entity
 	persistTask := *TaskDtoToPerist(&t)
 
-	// DB insert
-	persistTask = *tx.insertTask(&persistTask)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 
-	task, _ := tx.getTask(persistTask.Id)
+	// DB insert
+	persistTask = *tx.insertTask(manager, &persistTask)
+
+	task, _ := tx.getTask(manager, persistTask.Id)
 
 	dto := TaskPersistToDto(task)
 
@@ -274,7 +443,9 @@ func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, exist := tx.getTask(taskID)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	task, exist := tx.getTask(manager, taskID)
 
 	if exist {
 		dto := TaskPersistToDto(task)
@@ -352,7 +523,7 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 			dtos[i] = *TaskPersistToDto(&t)
 		}
 
-		b, err := json.Marshal(dtos)
+		b, err = json.Marshal(dtos)
 		if err != nil {
 			panic(err)
 		}
@@ -360,8 +531,11 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 		logger.Debugf("response : [%s]", string(b))
 	}
 
+	// fmt.Fprintf(w, "%s", b)
+	w.Write(b)
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", b)
+
+	logger.Debugf("response : [%s]", string(b))
 }
 
 // getKlevrVariables godoc
@@ -424,8 +598,10 @@ func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	auth := &ApiAuthentications{
-		ApiKey:  nr.BodyToString(),
+		ApiKey:  manager.encrypt(nr.BodyToString()),
 		GroupId: groupID,
 	}
 
@@ -457,12 +633,18 @@ func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+	apiKey := nr.BodyToString()
+
 	auth := &ApiAuthentications{
-		ApiKey:  nr.BodyToString(),
+		ApiKey:  manager.encrypt(apiKey),
 		GroupId: groupID,
 	}
 
 	tx.updateAPIKey(auth)
+
+	ctxAPI := ctx.Get(CtxAPI).(*API)
+	ctxAPI.APIKeyMap.Set(strconv.FormatUint(groupID, 10), apiKey)
 
 	w.WriteHeader(200)
 }
@@ -493,8 +675,10 @@ func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", auth.ApiKey)
+	fmt.Fprintf(w, "%s", manager.decrypt(auth.ApiKey))
 }
 
 // addGroup godoc
@@ -661,6 +845,8 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	detail := persist.TaskDetail
 
+	logger.Debugf("detail [%+v]", detail)
+
 	dto := &common.KlevrTask{
 		ID:          persist.Id,
 		ZoneID:      persist.ZoneId,
@@ -688,6 +874,8 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 		dto.FailedStep = detail.FailedStep
 		dto.IsFailedRecover = detail.IsFailedRecover
 		dto.ShowLog = detail.ShowLog
+
+		logger.Debugf("dto cron : [%s], detail cron : [%s]", dto.Cron, detail.Cron)
 	}
 
 	stepLen := 0
