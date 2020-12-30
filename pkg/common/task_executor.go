@@ -234,6 +234,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// Promise function 실행 및 handler 정의
 	future := promise.Start(f).OnSuccess(func(v interface{}) {
 		tw.Status = Complete
+		logger.Debugf("task execution onSuccess : [%+v]", tw.KlevrTask)
 	}).OnFailure(func(v interface{}) {
 		tw.FailedStep = tw.CurrentStep
 
@@ -272,8 +273,12 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		} else {
 			tw.Status = Failed
 		}
+
+		logger.Debugf("task execution onFailure : [%+v]", tw.KlevrTask)
 	}).OnCancel(func() {
 		tw.Status = Stopped
+
+		logger.Debugf("task execution onCancel : [%+v]", tw.KlevrTask)
 	})
 
 	tw.future = future
@@ -295,6 +300,8 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
 		}
 	}
+
+	logger.Debugf("task execution complete : [%+v]", tw.KlevrTask)
 
 	// CallbackURL 이 존재하는 경우 비동기 callback 처리
 	if tw.CallbackURL != "" {

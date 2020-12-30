@@ -184,8 +184,6 @@ func TestSingleRunFailTask(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 
-	fmt.Printf("%s%+v%s", "~~~", updatedTask, "~~~")
-
 	assert.Equal(t, common.Failed, updatedTask.Status, "")
 }
 
