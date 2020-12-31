@@ -8,11 +8,12 @@
    * Laptop at everywhere
    * Public-cloud
 
-## Kickstart for webconsole & KVstore
+## Kickstart for klevr demo
 * docker-compose command
 ```
-git clone https://github.com/ralfyang/klevr.git
-docker-compose up -d
+git clone https://github.com/klevry/klevr.git
+docker-compose -f docker-compose-demo.yml up -d
+http://localhost:8090/swagger/index.html
 ```
 
 ## Diagram Overview
@@ -20,11 +21,11 @@ docker-compose up -d
  * [![Diagram Overview](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## Features
- * **[Agent](./agent/)**
+ * **Agent**
    * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
    * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon, Helm chart
    * Metric data aggregate & delivery
-  * **[Web console](./webconsole/)**
+  * **Manager**
    * Host pool management
    * Resource management
    * Primary host management 
@@ -32,14 +33,8 @@ docker-compose up -d
    * Service catalog management(To be)
    * Service delivery to Dev./Stg./Prod.(To be)
  * **Docker images**
-   * [Webconsole](./Dockerfile/klevr_websonsole)(Webserver): [klevry:webconsole:latest](https://hub.docker.com/repository/docker/klevry/webconsole)
-   * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
-   * [Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)
-   * Prometheus operator(Service discovery)
-   * ProvBee(nexclipper/provbee)
-   * ~~Metric crawler~~
-   * Task manager
- * **KV store([Consul](https://github.com/hashicorp/consul))**
+   * [Agent](./Dockerfile/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
+   * [Manager](./Dockerfile/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
    
 ## Simple logic of asynchronous task management - (Click to Youtube for details)
  * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
