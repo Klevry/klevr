@@ -2,14 +2,15 @@ package agent
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
+	"runtime"
+
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/mackerelio/go-osstat/memory"
-	"io/ioutil"
+	"github.com/shirou/gopsutil/disk"
 	netutil "k8s.io/apimachinery/pkg/util/net"
-	"log"
-	"runtime"
-	"syscall"
 )
 
 const (
@@ -31,15 +32,16 @@ func Local_ip_add() string {
 }
 
 // disk usage of path/disk
-func DiskUsage(path string) (disk DiskStatus) {
-	fs := syscall.Statfs_t{}
-	err := syscall.Statfs(path, &fs)
+func DiskUsage(path string) (d DiskStatus) {
+	u, err := disk.Usage(path)
 	if err != nil {
 		return
 	}
-	disk.All = fs.Blocks * uint64(fs.Bsize)
-	disk.Free = fs.Bfree * uint64(fs.Bsize)
-	disk.Used = disk.All - disk.Free
+
+	d.All = u.Total
+	d.Free = u.Free
+	d.Used = u.Used
+
 	return
 }
 
@@ -58,9 +60,9 @@ func SendMe(body *common.Body) {
 	body.Me.Resource.Disk = int(disk.All / MB)
 }
 
-func JsonMarshal(a interface{}) []byte{
+func JsonMarshal(a interface{}) []byte {
 	b, err := json.Marshal(a)
-	if err != nil{
+	if err != nil {
 		logger.Debugf("%v", string(b))
 		logger.Error(err)
 	}
@@ -68,11 +70,11 @@ func JsonMarshal(a interface{}) []byte{
 	return b
 }
 
-func JsonUnmarshal(a []byte) common.Body{
+func JsonUnmarshal(a []byte) common.Body {
 	var body common.Body
 
 	err := json.Unmarshal(a, &body)
-	if err != nil{
+	if err != nil {
 		logger.Debugf("%v", string(a))
 		logger.Error(err)
 	}
