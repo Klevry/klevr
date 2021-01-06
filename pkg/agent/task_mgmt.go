@@ -63,7 +63,7 @@ func Polling(agent *KlevrAgent) {
 	//logger.Debugf("%v", rb)
 
 	// polling API 호출
-	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, _ := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
 
 	var body common.Body
 

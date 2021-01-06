@@ -1,11 +1,12 @@
 package agent
 
 import (
-	"github.com/Klevry/klevr/pkg/communicator"
-	"github.com/NexClipper/logger"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/Klevry/klevr/pkg/communicator"
+	"github.com/NexClipper/logger"
 )
 
 func StatusCheck(agent *KlevrAgent) {
@@ -23,11 +24,11 @@ out: body.me, body.agent.primary
 func PrimaryStatusReport(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/reports/" + agent.AgentKey
 
-	result := communicator.Get_Json_http(uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, _ := communicator.Get_Json_http(uri, agent.AgentKey, agent.ApiKey, agent.Zone)
 
 	body := JsonUnmarshal(result)
 
-	if body.Agent.Primary.IP == Local_ip_add(){
+	if body.Agent.Primary.IP == Local_ip_add() {
 		agent.Primary = body.Agent.Primary
 		agent.startScheduler()
 	}

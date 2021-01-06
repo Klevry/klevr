@@ -24,7 +24,7 @@ func HandShake(agent *KlevrAgent) common.Primary {
 	b := JsonMarshal(rb)
 
 	// put in & get out
-	result := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, _ := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
 
 	body := JsonUnmarshal(result)
 
