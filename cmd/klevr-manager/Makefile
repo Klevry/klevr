@@ -11,7 +11,7 @@ init: ## Run "go mod init"
 require: ## Check go requirement
 	go get -u
 #	curl -sL bit.ly/go_req | bash
-build: require
+build: ##require
 	#go build -o ./Docker/klevr-manager ./main.go
 	GOOS=linux GOARCH=amd64 go build -o ./Docker/klevr-manager ./main.go
 

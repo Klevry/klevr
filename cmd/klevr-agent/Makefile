@@ -14,7 +14,7 @@ init: ## Run "go mod init"
 require: ## Check go requirement
 	go get -u
 
-build: require ## Build main.go
+build: ##require ## Build main.go
 	env GOOS=linux GOARCH=amd64 go build -o ./Dockerfile/klevr ./main.go
 
 run: ## Run main.go with some args 
