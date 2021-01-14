@@ -1,6 +1,6 @@
 ![klevr_logo.png](https://raw.githubusercontent.com/Klevry/klevr/master/assets/klevr_logo.png)
 # Klevr: Kloud-native everywhere
-## Interconnector for the Platform based SaaS delivery
+## Hyper-connected Cloud-native delivery solution for SaaS
  * Asynchronous distributed infrastructure management console and agent for separated networks.
  * Supports for:
    * Baremetal server in the On-premise datacenter
@@ -23,7 +23,7 @@ http://localhost:8090/swagger/index.html
 ## Features
  * **Agent**
    * Provisioning: Docker, Kubernetes, Micro K8s(on Linux laptop) with Vagrant & VirtualBox, Prometheus 
-   * Get & Run: Hypervisor(via libvirt container), Terraform, Prometheus, Beacon, Helm chart
+   * Get & Run: Hypervisor(via libvirt container or Multipass), Terraform, Prometheus, Beacon, Helm chart
    * Metric data aggregate & delivery
   * **Manager**
    * Host pool management
@@ -35,6 +35,13 @@ http://localhost:8090/swagger/index.html
  * **Docker images**
    * [Agent](./Dockerfile/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
    * [Manager](./Dockerfile/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
+   * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
+   * ~~[Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)~~
+   * ~~Prometheus operator(Service discovery)~~
+   * [ProvBee](https://github.com/NexClipper/provbee)(nexclipper/provbee)  
+   * ~~Metric crawler~~
+   * Task manager
+ * **KV store([Consul](https://github.com/hashicorp/consul))**
    
 ## Simple logic of asynchronous task management - (Click to Youtube for details)
  * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
@@ -45,12 +52,13 @@ http://localhost:8090/swagger/index.html
    * [x] Libvirt
    * [x] Task manage to [ProvBee](https://github.com/NexClipper/provbee)
  * [x] Terraform of container by [ProvBee](https://github.com/NexClipper/provbee)
- * [x] KVM(libvirt)
+ * [x] KVM(libvirt) by [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Multipass for Hosted Virtual-machine
  * [x] ~~Micro K8s~~ K3s
- * [x] Prometheus 
- * [x] Grafana
- * [ ] Helm
- * [ ] Vault(maybe)
+ * [x] Prometheus by [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Grafana by [ProvBee](https://github.com/NexClipper/provbee)
+ * [x] Helm by [ProvBee](https://github.com/NexClipper/provbee)
+ * [ ] ~~Vault(maybe)~~
  * [ ] ~~Packer(maybe)~~
  * [x] ~~Vagrant~~
  * [x] ~~Consul~~ 
