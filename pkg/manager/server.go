@@ -37,6 +37,7 @@ type Config struct {
 	Server ServerInfo
 	Agent  AgentInfo
 	DB     common.DBInfo
+	Page   PageInfo
 }
 
 // ServerInfo klevr manager server info struct
@@ -60,6 +61,10 @@ type Webhook struct {
 type AgentInfo struct {
 	LogLevel  string // 로그 레벨
 	CallCycle int    // 호출 간격
+}
+
+type PageInfo struct {
+	Secret string
 }
 
 func init() {
