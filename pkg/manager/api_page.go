@@ -31,6 +31,7 @@ func (api *API) InitPage(page *mux.Router) {
 	pageAPI := &PageAPI{}
 
 	registURI(page, POST, "/signin", pageAPI.SignIn)
+	registURI(page, GET, "/signout", pageAPI.SignOut)
 }
 
 func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -81,4 +82,16 @@ func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{Name: "token", Value: tks, Expires: expirationTime})
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", resp)
+}
+
+func (api *PageAPI) SignOut(w http.ResponseWriter, r *http.Request) {
+	cookie := &http.Cookie{
+		Name:    "token",
+		Value:   "",
+		Expires: time.Now(),
+		MaxAge:  -1,
+	}
+
+	http.SetCookie(w, cookie)
+	w.WriteHeader(200)
 }
