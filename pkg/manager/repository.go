@@ -585,3 +585,12 @@ func (tx *Tx) insertPageMember(p *PageMembers) *PageMembers {
 
 	return p
 }
+
+func (tx *Tx) updatePageMember(p *PageMembers) {
+	cnt, err := tx.Where("USER_ID = ?", p.UserId).Cols("ACTIVATED").Update(p)
+	logger.Debugf("Updated PageMember(%d) : %v", cnt, p)
+
+	if err != nil {
+		panic(err)
+	}
+}
