@@ -33,6 +33,7 @@ func (api *API) InitPage(page *mux.Router) {
 	registURI(page, POST, "/signin", pageAPI.SignIn)
 	registURI(page, GET, "/signout", pageAPI.SignOut)
 	registURI(page, POST, "/changepassword", pageAPI.ChangePassword)
+	registURI(page, GET, "/activated/{id}", pageAPI.Activated)
 }
 
 func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -138,4 +139,39 @@ func (api *PageAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	tx.updatePageMember(&pm)
 
 	w.WriteHeader(200)
+}
+
+func (api *PageAPI) Activated(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+	userID := vars["id"]
+
+	cnt, pms := tx.getPageMember(userID)
+	if cnt == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	pm := (*pms)[0]
+	var activatedStatus string
+	if pm.Activated == true {
+		activatedStatus = "activated"
+	} else {
+		activatedStatus = "initialized"
+	}
+
+	resp, err := json.Marshal(struct {
+		Status string `json:"status"`
+	}{
+		activatedStatus,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", resp)
 }
