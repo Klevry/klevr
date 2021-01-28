@@ -172,6 +172,8 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	var requestBody common.Body
 	var paramAgent common.Me
 
+	logger.Debug(fmt.Sprintf("Handshake Request.Body: %v", r.Body))
+
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
