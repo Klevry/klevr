@@ -23,6 +23,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/groups", serversAPI.addGroup)
 	registURI(inner, GET, "/groups", serversAPI.getGroups)
 	registURI(inner, GET, "/groups/{groupID}", serversAPI.getGroup)
+	registURI(inner, DELETE, "/groups/{groupID}", serversAPI.deleteGroup)
 	registURI(inner, POST, "/groups/{groupID}/apikey", serversAPI.addAPIKey)
 	registURI(inner, PUT, "/groups/{groupID}/apikey", serversAPI.updateAPIKey)
 	registURI(inner, GET, "/groups/{groupID}/apikey", serversAPI.getAPIKey)
@@ -773,6 +774,61 @@ func (api *serversAPI) getGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+// deleteGroup godoc
+// @Summary ZONE을 삭제한다.
+// @Description KLEVR ZONE을 삭제한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID} [delete]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} string "{\"deleted\":true/false}"
+func (api *serversAPI) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	qryOperation := r.URL.Query()["op"]
+
+	if qryOperation[0] == "db" {
+		vars := mux.Vars(r)
+		groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+		if err != nil {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["groupID"]))
+			return
+		}
+
+		// logger.Debug("%v", time.Now().UTC())
+
+		tx.deletePrimaryAgent(groupID)
+		_, ok := tx.getPrimaryAgent(groupID)
+		if ok == true {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(primaryagent) of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteApiAuthentication(groupID)
+		cnt, _ := tx.getApiAuthenticationsByGroupId(groupID)
+		if cnt > 0 {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(apiauthentication) of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteAgent(groupID)
+		cnt, _ = tx.getAgentsByGroupId(groupID)
+		if cnt > 0 {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteAgentGroup(groupID)
+
+		w.WriteHeader(200)
+		fmt.Fprintf(w, "{\"deleted\":%v}", true)
+	} else {
+		// TODO: agent와 db를 모두 제거하는 로직
+	}
 }
 
 func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {

@@ -38,7 +38,6 @@ func (tx *Tx) deletePrimaryAgent(zoneID uint64) {
 	}
 
 	logger.Debug(res)
-
 }
 
 func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
@@ -113,6 +112,17 @@ func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
 	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, id)
 }
 
+func (tx *Tx) deleteAgent(zoneID uint64) {
+	sql := "delete a from AGENTS a where a.GROUP_ID = ?"
+	res, err := tx.Exec(sql, zoneID)
+	if err != nil {
+		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+		panic(err)
+	}
+
+	logger.Debug(res)
+}
+
 func (tx *Tx) updateZoneStatus(arrAgent *[]Agents) {
 	for _, a := range *arrAgent {
 		_, err := tx.Where("AGENT_KEY = ?", a.AgentKey).
@@ -150,6 +160,13 @@ func (tx *Tx) addAgentGroup(ag *AgentGroups) {
 
 	logger.Debugf("Inserted AgentGroup(%d) : %v", cnt, ag)
 
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (tx *Tx) deleteAgentGroup(groupID uint64) {
+	_, err := tx.Where("ID = ?", groupID).Delete(&AgentGroups{})
 	if err != nil {
 		panic(err)
 	}
@@ -593,4 +610,26 @@ func (tx *Tx) updatePageMember(p *PageMembers) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (tx *Tx) deleteApiAuthentication(zoneID uint64) {
+	sql := "delete a from API_AUTHENTICATIONS a where a.GROUP_ID = ?"
+	res, err := tx.Exec(sql, zoneID)
+	if err != nil {
+		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+		panic(err)
+	}
+
+	logger.Debug(res)
+}
+
+func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthentications) {
+	var apiAuths []ApiAuthentications
+
+	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&apiAuths)
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt, &apiAuths
 }
