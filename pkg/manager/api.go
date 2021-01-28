@@ -109,7 +109,9 @@ func Init(ctx *common.Context) *API {
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 	api.InitInner(api.BaseRoutes.Inner)
-	api.InitPage(api.BaseRoutes.Page)
+	if api.Manager.Config.Page.Secret != "" {
+		api.InitPage(api.BaseRoutes.Page)
+	}
 
 	// health check handler(~/health)
 	api.BaseRoutes.Root.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

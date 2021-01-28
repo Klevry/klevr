@@ -29,5 +29,5 @@ klevr:
         maxConnLifeTime: 1
         showSql: false
         logLevel: warn
-    page:
-        secret: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
+    #page:
+    #    secret: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
