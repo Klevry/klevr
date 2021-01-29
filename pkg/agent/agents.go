@@ -1,10 +1,11 @@
 package agent
 
 import (
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/jasonlvhit/gocron"
 	"net"
 	"net/http"
+
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/jasonlvhit/gocron"
 )
 
 const defaultSchedulerInterval int = 5
@@ -40,9 +41,12 @@ func NewKlevrAgent() *KlevrAgent {
 }
 
 func (agent *KlevrAgent) Run() {
-	agent.Primary = HandShake(agent)
+	primary := HandShake(agent)
+	if primary == nil {
+		return
+	}
+	agent.Primary = *primary
 	agent.startScheduler()
-
 	http.ListenAndServe(":18800", nil)
 }
 
