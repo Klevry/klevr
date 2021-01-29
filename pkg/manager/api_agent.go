@@ -53,6 +53,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 			// APIKey 인증
 			logger.Debug(r.RequestURI)
 			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey) {
+				logger.Debug(fmt.Sprintf("failed authenticate: %v", ch))
 				return
 			}
 
@@ -76,6 +77,8 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
+	logger.Debug(fmt.Sprintf("API Key(authenticate): %s", apiKey))
+
 	_, bExist := api.BlockKeyMap.Get(apiKey)
 	if bExist {
 		return false
@@ -172,7 +175,9 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	var requestBody common.Body
 	var paramAgent common.Me
 
-	logger.Debug(fmt.Sprintf("Handshake Request.Body: %v", r.Body))
+	logger.Debug(fmt.Sprintf("Handshake Body: %+v", r.Body))
+	logger.Debug(fmt.Sprintf("Agent: %v", requestBody.Me))
+	logger.Debug(fmt.Sprintf("CustomHeader: %v", ch))
 
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
@@ -181,7 +186,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paramAgent = requestBody.Me
-	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
 	_, exist := tx.getAgentGroup(ch.ZoneID)
 

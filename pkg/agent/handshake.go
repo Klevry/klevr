@@ -1,6 +1,9 @@
 package agent
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/NexClipper/logger"
@@ -12,7 +15,7 @@ send handshake to manager
 in: body.me
 out: body.me, body.agent.primary
 */
-func HandShake(agent *KlevrAgent) common.Primary {
+func HandShake(agent *KlevrAgent) *common.Primary {
 	uri := agent.Manager + "/agents/handshake"
 
 	rb := &common.Body{}
@@ -23,8 +26,21 @@ func HandShake(agent *KlevrAgent) common.Primary {
 
 	b := JsonMarshal(rb)
 
+	retryCnt := 0
+RETRY:
 	// put in & get out
-	result, _ := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, err := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	if err != nil {
+		logger.Debug(fmt.Sprintf("Failed Handshake %v", err))
+		if retryCnt < 3 {
+			time.Sleep(time.Second * 1)
+			retryCnt++
+			goto RETRY
+		}
+		return nil
+	}
+
+	logger.Debug("%s", string(result))
 
 	body := JsonUnmarshal(result)
 
@@ -37,5 +53,5 @@ func HandShake(agent *KlevrAgent) common.Primary {
 		}
 	}
 
-	return body.Agent.Primary
+	return &body.Agent.Primary
 }
