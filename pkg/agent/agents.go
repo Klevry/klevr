@@ -17,17 +17,18 @@ type DiskStatus struct {
 }
 
 type KlevrAgent struct {
-	ApiKey            string
-	Platform          string
-	Zone              string
-	Manager           string
-	AgentKey          string
-	Version           string
-	schedulerInterval int
-	connect           net.Listener
-	scheduler         *gocron.Scheduler
-	Primary           common.Primary
-	Agents            []common.Agent
+	ApiKey               string
+	Platform             string
+	Zone                 string
+	Manager              string
+	NetworkInterfaceName string
+	AgentKey             string
+	Version              string
+	schedulerInterval    int
+	connect              net.Listener
+	scheduler            *gocron.Scheduler
+	Primary              common.Primary
+	Agents               []common.Agent
 }
 
 func NewKlevrAgent() *KlevrAgent {
