@@ -20,7 +20,7 @@ func HandShake(agent *KlevrAgent) *common.Primary {
 
 	rb := &common.Body{}
 
-	SendMe(rb)
+	agent.SendMe(rb)
 
 	logger.Debugf("%v", rb)
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/NexClipper/logger"
 	"github.com/jasonlvhit/gocron"
 )
 
@@ -44,6 +45,7 @@ func NewKlevrAgent() *KlevrAgent {
 func (agent *KlevrAgent) Run() {
 	primary := HandShake(agent)
 	if primary == nil || primary.IP == "" {
+		logger.Error("Failed Handshake: Invalid Primary")
 		return
 	}
 	agent.Primary = *primary
@@ -56,7 +58,7 @@ func (agent *KlevrAgent) startScheduler() {
 
 	s := gocron.NewScheduler()
 
-	if Check_primary(agent.Primary.IP) {
+	if agent.checkPrimary(agent.Primary.IP) {
 		var interval int
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval

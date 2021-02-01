@@ -24,7 +24,7 @@ func main() {
 	platform := flag.String("platform", "", "[baremetal|aws] - Service Platform for Host build up")
 	zone := flag.String("zoneId", "", "zone will be a [Dev/Stg/Prod]")
 	klevr_addr := flag.String("manager", "", "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
-	//iface := flag.String("iface", "", "The name of the network interface to use.(If the value is empty, the first searched name is used.)")
+	iface := flag.String("iface", "", "The name of the network interface to use.(If the value is empty, the first searched name is used.)")
 
 	flag.Parse() // Important for parsing
 
@@ -52,11 +52,11 @@ func main() {
 	instance.Platform = *platform
 	instance.Zone = *zone
 	instance.Manager = *klevr_addr
-	//instance.NetworkInterfaceName = *iface
+	instance.NetworkInterfaceName = *iface
 
 	logger.Debug("platform: ", instance.Platform)
-	logger.Debug("Local_ip_add:", agent.Local_ip_add())
-	//logger.Debug("Local_ip_add:", agent.LocalIPAddress(instance.NetworkInterfaceName))
+	//logger.Debug("Local_ip_add:", agent.Local_ip_add())
+	logger.Debug("Local_ip_add:", agent.LocalIPAddress(instance.NetworkInterfaceName))
 	logger.Debug("Agent UniqID:", instance.AgentKey)
 
 	instance.Run()

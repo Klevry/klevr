@@ -21,7 +21,7 @@ func Polling(agent *KlevrAgent) {
 
 	rb := &common.Body{}
 
-	SendMe(rb)
+	agent.SendMe(rb)
 
 	for i := 0; i < len(agent.Agents); i++ {
 		agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}

@@ -3,9 +3,10 @@ package agent
 import (
 	"context"
 	"encoding/json"
-	"github.com/Klevry/klevr/pkg/common"
 	"net"
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
 
 	"github.com/NexClipper/logger"
 	"google.golang.org/grpc"
@@ -25,7 +26,7 @@ func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, err
 	var t common.KlevrTask
 
 	err := json.Unmarshal(in.Task, &t)
-	if err != nil{
+	if err != nil {
 		logger.Debugf("%v", string(in.Task))
 		logger.Error(err)
 	}
@@ -50,7 +51,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	var errLis error
 
-	_, err := net.DialTimeout("tcp", net.JoinHostPort(Local_ip_add(), port), time.Second)
+	_, err := net.DialTimeout("tcp", net.JoinHostPort(LocalIPAddress(agent.NetworkInterfaceName), port), time.Second)
 	if err != nil {
 		logger.Errorf("not open port!@#!@#!@@#")
 

@@ -81,8 +81,8 @@ func DiskUsage(path string) (d DiskStatus) {
 }
 
 // send agent info to manager
-func SendMe(body *common.Body) {
-	body.Me.IP = Local_ip_add()
+func (agent *KlevrAgent) SendMe(body *common.Body) {
+	body.Me.IP = LocalIPAddress(agent.NetworkInterfaceName)
 	body.Me.Port = 18800
 	body.Me.Version = "0.1.0"
 
