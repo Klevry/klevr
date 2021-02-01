@@ -43,7 +43,7 @@ func NewKlevrAgent() *KlevrAgent {
 
 func (agent *KlevrAgent) Run() {
 	primary := HandShake(agent)
-	if primary == nil {
+	if primary == nil || primary.IP == "" {
 		return
 	}
 	agent.Primary = *primary
