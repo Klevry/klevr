@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net"
 	"runtime"
 
 	"github.com/Klevry/klevr/pkg/common"
@@ -31,6 +32,40 @@ func Local_ip_add() string {
 	return default_ip.String()
 }
 
+func LocalIPAddress(networkInterfaceName string) string {
+	var ipAddress string
+	if networkInterfaceName == "" {
+		ipAddress = Local_ip_add()
+	} else {
+		nifs, err := net.Interfaces()
+		if err != nil {
+			log.Fatalf("Failed to get Network Interfaces: %v", err)
+		}
+
+		for _, ni := range nifs {
+			if ni.Name == networkInterfaceName {
+				addrs, err := ni.Addrs()
+				if err != nil {
+					log.Fatalf("Failed to get Address: %v", err)
+				}
+
+				for _, a := range addrs {
+					v := a.(*net.IPNet)
+					if ipv4addr := v.IP.To4(); ipv4addr != nil {
+						ipAddress = ipv4addr.String()
+						break
+					}
+				}
+			}
+		}
+	}
+	if ipAddress == "" {
+		log.Fatalf("Failed to get IP address")
+	}
+
+	return ipAddress
+}
+
 // disk usage of path/disk
 func DiskUsage(path string) (d DiskStatus) {
 	u, err := disk.Usage(path)
@@ -46,8 +81,8 @@ func DiskUsage(path string) (d DiskStatus) {
 }
 
 // send agent info to manager
-func SendMe(body *common.Body) {
-	body.Me.IP = Local_ip_add()
+func (agent *KlevrAgent) SendMe(body *common.Body) {
+	body.Me.IP = LocalIPAddress(agent.NetworkInterfaceName)
 	body.Me.Port = 18800
 	body.Me.Version = "0.1.0"
 
