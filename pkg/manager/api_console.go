@@ -37,6 +37,16 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.DeleteAgent)
 }
 
+// SignIn godoc
+// @Summary SignIn
+// @Description Klevr Console 사용자 SignIn.
+// @Tags Console
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Router /console/signin [post]
+// @Param id formData string true "User ID"
+// @Param pw formData string true "Current Password"
+// @Success 200
 func (api *ConsoleAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -87,6 +97,14 @@ func (api *ConsoleAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", resp)
 }
 
+// SignOut godoc
+// @Summary Sign Out
+// @Description Klevr Console 사용자 SignOut.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/signout [get]
+// @Success 200
 func (api *ConsoleAPI) SignOut(w http.ResponseWriter, r *http.Request) {
 	cookie := &http.Cookie{
 		Name:    "token",
@@ -99,6 +117,17 @@ func (api *ConsoleAPI) SignOut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// ChangePassword godoc
+// @Summary Password 변경
+// @Description Klevr Console 사용자의 패스워드를 변경한다.
+// @Tags Console
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Router /console/changepassword [post]
+// @Param id formData string true "User ID"
+// @Param pw formData string false "Current Password"
+// @Param cpw formData string true "Confirmed Password"
+// @Success 200
 func (api *ConsoleAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -142,6 +171,15 @@ func (api *ConsoleAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// Activated godoc
+// @Summary 사용자 활성화 상태
+// @Description Klevr Console 사용자의 활성화 상태를 확인한다.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/activated/{id} [get]
+// @Param id path string true "User ID"
+// @Success 200 {object} string "{\"status\":activated/initialized}"
 func (api *ConsoleAPI) Activated(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)

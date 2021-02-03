@@ -203,6 +203,80 @@ var doc = `{
                 }
             }
         },
+        "/console/activated/{id}": {
+            "get": {
+                "description": "Klevr Console 사용자의 활성화 상태를 확인한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "사용자 활성화 상태",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"status\\\":activated/initialized}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/changepassword": {
+            "post": {
+                "description": "Klevr Console 사용자의 패스워드를 변경한다.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Password 변경",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current Password",
+                        "name": "pw",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Confirmed Password",
+                        "name": "cpw",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/console/groups/{groupID}/agents/{agentKey}": {
             "delete": {
                 "description": "agentKey에 해당하는 Agent를 종료한다.",
@@ -238,6 +312,62 @@ var doc = `{
                         "schema": {
                             "type": "string"
                         }
+                    }
+                }
+            }
+        },
+        "/console/signin": {
+            "post": {
+                "description": "Klevr Console 사용자 SignIn.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "SignIn",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current Password",
+                        "name": "pw",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/console/signout": {
+            "get": {
+                "description": "Klevr Console 사용자 SignOut.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Sign Out",
+                "responses": {
+                    "200": {
+                        "description": ""
                     }
                 }
             }
