@@ -331,6 +331,55 @@ paths:
       summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
+  /console/activated/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Klevr Console 사용자의 활성화 상태를 확인한다.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"status\":activated/initialized}'
+          schema:
+            type: string
+      summary: 사용자 활성화 상태
+      tags:
+      - Console
+  /console/changepassword:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Klevr Console 사용자의 패스워드를 변경한다.
+      parameters:
+      - description: User ID
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: Current Password
+        in: formData
+        name: pw
+        type: string
+      - description: Confirmed Password
+        in: formData
+        name: cpw
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Password 변경
+      tags:
+      - Console
   /console/groups/{groupID}/agents/{agentKey}:
     delete:
       consumes:
@@ -355,6 +404,43 @@ paths:
           schema:
             type: string
       summary: Klevr Agent를 종료한다.
+      tags:
+      - Console
+  /console/signin:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Klevr Console 사용자 SignIn.
+      parameters:
+      - description: User ID
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: Current Password
+        in: formData
+        name: pw
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: SignIn
+      tags:
+      - Console
+  /console/signout:
+    get:
+      consumes:
+      - application/json
+      description: Klevr Console 사용자 SignOut.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Sign Out
       tags:
       - Console
   /inner/commands:
