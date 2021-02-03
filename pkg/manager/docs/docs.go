@@ -19,7 +19,6 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -318,6 +317,36 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "KLEVR ZONE을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "ZONE을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/inner/groups/{groupID}/agents": {
@@ -417,7 +446,9 @@ var doc = `{
                     }
                 ],
                 "responses": {
-                    "200": {}
+                    "200": {
+                        "description": ""
+                    }
                 }
             },
             "post": {
@@ -451,7 +482,9 @@ var doc = `{
                     }
                 ],
                 "responses": {
-                    "200": {}
+                    "200": {
+                        "description": ""
+                    }
                 }
             }
         },
@@ -585,6 +618,74 @@ var doc = `{
                 }
             }
         },
+        "/inner/tasks/{groupID}/simple/inline": {
+            "post": {
+                "description": "간단하게 실행할 수 있는 inline script 형태의 simple TASK를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "inline simple TASK를 등록한다.",
+                "parameters": [
+                    {
+                        "description": "inline script",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/tasks/{groupID}/simple/reserved": {
+            "post": {
+                "description": "간단하게 실행할 수 있는 reserved simple TASK를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "reserved simple TASK를 등록한다.",
+                "parameters": [
+                    {
+                        "description": "TASK",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.SimpleReservedCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/tasks/{taskID}": {
             "get": {
                 "description": "taskID에 해당하는 TASK를 조회한다.",
@@ -673,9 +774,9 @@ var doc = `{
                 }
             }
         },
-        "/temp": {
-            "get": {
-                "description": "에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.",
+        "/page/groups/{groupID}/agents/{agentKey}": {
+            "delete": {
+                "description": "agentKey에 해당하는 Agent를 종료한다.",
                 "consumes": [
                     "application/json"
                 ],
@@ -683,9 +784,33 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "temp"
+                    "Page"
                 ],
-                "summary": "에이전트의 handshake 요청을 받아 처리한다."
+                "summary": "Klevr Agent를 종료한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "agent key",
+                        "name": "agentKey",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"canceld\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         }
     },
@@ -696,6 +821,12 @@ var doc = `{
                 "agentKey": {
                     "type": "string"
                 },
+                "core": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },
@@ -703,7 +834,10 @@ var doc = `{
                     "type": "boolean"
                 },
                 "lastAliveCheckTime": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "memory": {
+                    "type": "integer"
                 },
                 "port": {
                     "type": "integer"
@@ -717,16 +851,38 @@ var doc = `{
             "type": "object",
             "properties": {
                 "agent": {
-                    "type": "BodyAgent"
+                    "$ref": "#/definitions/common.BodyAgent"
                 },
                 "me": {
-                    "type": "Me"
+                    "$ref": "#/definitions/common.Me"
                 },
                 "task": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/common.KlevrTask"
                     }
+                }
+            }
+        },
+        "common.BodyAgent": {
+            "type": "object",
+            "properties": {
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/common.Agent"
+                    }
+                },
+                "primary": {
+                    "$ref": "#/definitions/common.Primary"
+                }
+            }
+        },
+        "common.JSONTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
+                    "type": "string"
                 }
             }
         },
@@ -740,13 +896,16 @@ var doc = `{
                     "type": "string"
                 },
                 "createdAt": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "cron": {
                     "type": "string"
                 },
                 "currentStep": {
                     "type": "integer"
+                },
+                "eventHookSendingType": {
+                    "type": "string"
                 },
                 "exeAgentChangeable": {
                     "type": "boolean"
@@ -762,6 +921,9 @@ var doc = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "isChangedResult": {
+                    "type": "boolean"
                 },
                 "isFailedRecover": {
                     "type": "boolean"
@@ -779,22 +941,22 @@ var doc = `{
                     "type": "string"
                 },
                 "schedule": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "showLog": {
                     "type": "boolean"
                 },
                 "status": {
-                    "type": "TaskStatus"
+                    "type": "string"
                 },
                 "steps": {
                     "type": "array",
                     "items": {
-                        "type": "KlevrTaskStep"
+                        "$ref": "#/definitions/common.KlevrTaskStep"
                     }
                 },
                 "taskType": {
-                    "type": "TaskType"
+                    "type": "string"
                 },
                 "timeout": {
                     "type": "integer"
@@ -803,12 +965,93 @@ var doc = `{
                     "type": "integer"
                 },
                 "untilRun": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "updatedAt": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.KlevrTaskStep": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "commandName": {
+                    "type": "string"
+                },
+                "commandType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isRecover": {
+                    "type": "boolean"
+                },
+                "seq": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.Me": {
+            "type": "object",
+            "properties": {
+                "callCycle": {
+                    "type": "integer"
+                },
+                "core": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "boolean"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "encKey": {
+                    "type": "string"
+                },
+                "hmacKey": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "logLevel": {
+                    "type": "string"
+                },
+                "memory": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "common.Primary": {
+            "type": "object",
+            "properties": {
+                "agentKey": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "lastAccessTime": {
+                    "type": "integer"
+                },
+                "port": {
                     "type": "integer"
                 }
             }
@@ -876,6 +1119,17 @@ var doc = `{
                 },
                 "resultModel": {
                     "type": "object"
+                }
+            }
+        },
+        "manager.SimpleReservedCommand": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "parameter": {
+                    "type": "string"
                 }
             }
         }
