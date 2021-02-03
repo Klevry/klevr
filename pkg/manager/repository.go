@@ -575,7 +575,7 @@ func (tx *Tx) purgeTask(id uint64) {
 	}
 }
 
-func (tx *Tx) getPageMember(userID string) (int64, *[]PageMembers) {
+func (tx *Tx) getConsoleMember(userID string) (int64, *[]PageMembers) {
 	var members []PageMembers
 
 	cnt, err := tx.Where("USER_ID = ?", userID).FindAndCount(&members)
@@ -586,7 +586,7 @@ func (tx *Tx) getPageMember(userID string) (int64, *[]PageMembers) {
 	return cnt, &members
 }
 
-func (tx *Tx) insertPageMember(p *PageMembers) *PageMembers {
+func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
 	result, err := tx.Exec("INSERT INTO `PAGE_MEMBERS` (`user_id`,`user_password`, `activated`, `api_key`) VALUES (?,?,?,?)", p.UserId, p.UserPassword, p.Activated, p.ApiKey)
 	if err != nil {
 		panic(err)
@@ -603,7 +603,7 @@ func (tx *Tx) insertPageMember(p *PageMembers) *PageMembers {
 	return p
 }
 
-func (tx *Tx) updatePageMember(p *PageMembers) {
+func (tx *Tx) updateConsoleMember(p *PageMembers) {
 	cnt, err := tx.Where("USER_ID = ?", p.UserId).Cols("ACTIVATED").Update(p)
 	logger.Debugf("Updated PageMember(%d) : %v", cnt, p)
 

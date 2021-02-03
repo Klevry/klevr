@@ -331,6 +331,32 @@ paths:
       summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
+  /console/groups/{groupID}/agents/{agentKey}:
+    delete:
+      consumes:
+      - application/json
+      description: agentKey에 해당하는 Agent를 종료한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: agent key
+        in: path
+        name: agentKey
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"canceld\":true/false}'
+          schema:
+            type: string
+      summary: Klevr Agent를 종료한다.
+      tags:
+      - Console
   /inner/commands:
     get:
       consumes:
@@ -707,30 +733,4 @@ paths:
       summary: Klevr에서 제공하는 시스템 변수 목록을 조회한다.
       tags:
       - servers
-  /page/groups/{groupID}/agents/{agentKey}:
-    delete:
-      consumes:
-      - application/json
-      description: agentKey에 해당하는 Agent를 종료한다.
-      parameters:
-      - description: ZONE ID
-        in: path
-        name: groupID
-        required: true
-        type: integer
-      - description: agent key
-        in: path
-        name: agentKey
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: '{\"canceld\":true/false}'
-          schema:
-            type: string
-      summary: Klevr Agent를 종료한다.
-      tags:
-      - Page
 swagger: "2.0"
