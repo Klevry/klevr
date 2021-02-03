@@ -11,33 +11,33 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type PageAPI struct{}
+type ConsoleAPI struct{}
 
-func (api *API) InitPage(page *mux.Router) {
-	logger.Debug("API InitPage - init URI")
+func (api *API) InitConsole(console *mux.Router) {
+	logger.Debug("API InitConsole - init URI")
 
 	tx := &Tx{api.DB.NewSession()}
-	cnt, _ := tx.getPageMember("admin")
+	cnt, _ := tx.getConsoleMember("admin")
 	if cnt == 0 {
 		encPassword, err := common.Encrypt(api.Manager.Config.Server.EncryptionKey, "admin")
 		if err == nil {
 			p := &PageMembers{UserId: "admin", UserPassword: encPassword}
-			tx.insertPageMember(p)
+			tx.insertConsoleMember(p)
 		} else {
 			logger.Error(err)
 		}
 	}
 
-	pageAPI := &PageAPI{}
+	consoleAPI := &ConsoleAPI{}
 
-	registURI(page, POST, "/signin", pageAPI.SignIn)
-	registURI(page, GET, "/signout", pageAPI.SignOut)
-	registURI(page, POST, "/changepassword", pageAPI.ChangePassword)
-	registURI(page, GET, "/activated/{id}", pageAPI.Activated)
-	registURI(page, DELETE, "/groups/{groupID}/agents/{agentKey}", pageAPI.DeleteAgent)
+	registURI(console, POST, "/signin", consoleAPI.SignIn)
+	registURI(console, GET, "/signout", consoleAPI.SignOut)
+	registURI(console, POST, "/changepassword", consoleAPI.ChangePassword)
+	registURI(console, GET, "/activated/{id}", consoleAPI.Activated)
+	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.DeleteAgent)
 }
 
-func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
+func (api *ConsoleAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -51,7 +51,7 @@ func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cnt, pms := tx.getPageMember(id)
+	cnt, pms := tx.getConsoleMember(id)
 	if cnt == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -65,7 +65,7 @@ func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expirationTime := time.Now().Add(1 * time.Hour)
-	jwtHelper := common.NewJWTHelper([]byte(manager.Config.Page.Secret)).AddClaims("id", id).SetExpirationTime(expirationTime.Unix())
+	jwtHelper := common.NewJWTHelper([]byte(manager.Config.Console.Secret)).AddClaims("id", id).SetExpirationTime(expirationTime.Unix())
 	tks, err := jwtHelper.GenToken()
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -87,7 +87,7 @@ func (api *PageAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", resp)
 }
 
-func (api *PageAPI) SignOut(w http.ResponseWriter, r *http.Request) {
+func (api *ConsoleAPI) SignOut(w http.ResponseWriter, r *http.Request) {
 	cookie := &http.Cookie{
 		Name:    "token",
 		Value:   "",
@@ -99,7 +99,7 @@ func (api *PageAPI) SignOut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func (api *PageAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (api *ConsoleAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
@@ -114,7 +114,7 @@ func (api *PageAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cnt, pms := tx.getPageMember(id)
+	cnt, pms := tx.getConsoleMember(id)
 	if cnt == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -137,19 +137,19 @@ func (api *PageAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	pm.UserPassword = encPassword
 	pm.Activated = true
-	tx.updatePageMember(&pm)
+	tx.updateConsoleMember(&pm)
 
 	w.WriteHeader(200)
 }
 
-func (api *PageAPI) Activated(w http.ResponseWriter, r *http.Request) {
+func (api *ConsoleAPI) Activated(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
 
 	vars := mux.Vars(r)
 	userID := vars["id"]
 
-	cnt, pms := tx.getPageMember(userID)
+	cnt, pms := tx.getConsoleMember(userID)
 	if cnt == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -180,14 +180,14 @@ func (api *PageAPI) Activated(w http.ResponseWriter, r *http.Request) {
 // DeleteAgent godoc
 // @Summary Klevr Agent를 종료한다.
 // @Description agentKey에 해당하는 Agent를 종료한다.
-// @Tags Page
+// @Tags Console
 // @Accept json
 // @Produce json
-// @Router /page/groups/{groupID}/agents/{agentKey} [delete]
+// @Router /console/groups/{groupID}/agents/{agentKey} [delete]
 // @Param groupID path uint64 true "ZONE ID"
 // @Param agentKey path string true "agent key"
 // @Success 200 {object} string "{\"canceld\":true/false}"
-func (api *PageAPI) DeleteAgent(w http.ResponseWriter, r *http.Request) {
+func (api *ConsoleAPI) DeleteAgent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "{\"canceled\":%v}", true)
 

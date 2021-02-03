@@ -34,10 +34,10 @@ type KlevrManager struct {
 
 // Config klevr manager config struct
 type Config struct {
-	Server ServerInfo
-	Agent  AgentInfo
-	DB     common.DBInfo
-	Page   PageInfo
+	Server  ServerInfo
+	Agent   AgentInfo
+	DB      common.DBInfo
+	Console ConsoleInfo
 }
 
 // ServerInfo klevr manager server info struct
@@ -63,7 +63,7 @@ type AgentInfo struct {
 	CallCycle int    // 호출 간격
 }
 
-type PageInfo struct {
+type ConsoleInfo struct {
 	Secret string
 }
 

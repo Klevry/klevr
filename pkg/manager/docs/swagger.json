@@ -183,6 +183,45 @@
                 }
             }
         },
+        "/console/groups/{groupID}/agents/{agentKey}": {
+            "delete": {
+                "description": "agentKey에 해당하는 Agent를 종료한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Klevr Agent를 종료한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "agent key",
+                        "name": "agentKey",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"canceld\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/commands": {
             "get": {
                 "description": "Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.",
@@ -749,45 +788,6 @@
                             "items": {
                                 "$ref": "#/definitions/manager.KlevrVariable"
                             }
-                        }
-                    }
-                }
-            }
-        },
-        "/page/groups/{groupID}/agents/{agentKey}": {
-            "delete": {
-                "description": "agentKey에 해당하는 Agent를 종료한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Page"
-                ],
-                "summary": "Klevr Agent를 종료한다.",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ZONE ID",
-                        "name": "groupID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "agent key",
-                        "name": "agentKey",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\\\"canceld\\\":true/false}",
-                        "schema": {
-                            "type": "string"
                         }
                     }
                 }
