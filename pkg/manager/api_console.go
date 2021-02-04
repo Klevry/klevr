@@ -35,6 +35,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, POST, "/changepassword", consoleAPI.ChangePassword)
 	registURI(console, GET, "/activated/{id}", consoleAPI.Activated)
 	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.DeleteAgent)
+	registURI(console, DELETE, "/groups/{groupID}", consoleAPI.DeleteGroup)
 }
 
 // SignIn godoc
@@ -224,10 +225,10 @@ func (api *ConsoleAPI) Activated(w http.ResponseWriter, r *http.Request) {
 // @Router /console/groups/{groupID}/agents/{agentKey} [delete]
 // @Param groupID path uint64 true "ZONE ID"
 // @Param agentKey path string true "agent key"
-// @Success 200 {object} string "{\"canceld\":true/false}"
+// @Success 200 {object} string "{\"deleted\":true/false}"
 func (api *ConsoleAPI) DeleteAgent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "{\"canceled\":%v}", true)
+	fmt.Fprintf(w, "{\"deleted\":%v}", true)
 
 	/*ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -293,4 +294,18 @@ func (api *ConsoleAPI) DeleteAgent(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b) */
+}
+
+// DeleteGroup godoc
+// @Summary Klevr Group(Zone)을 제거한다.
+// @Description groupID에 해당하는 Group(Zone)을 제거한다.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/groups/{groupID} [delete]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} string "{\"deleted\":true/false}"
+func (api *ConsoleAPI) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"deleted\":%v}", true)
 }

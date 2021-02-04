@@ -277,6 +277,38 @@ var doc = `{
                 }
             }
         },
+        "/console/groups/{groupID}": {
+            "delete": {
+                "description": "groupID에 해당하는 Group(Zone)을 제거한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Klevr Group(Zone)을 제거한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/console/groups/{groupID}/agents/{agentKey}": {
             "delete": {
                 "description": "agentKey에 해당하는 Agent를 종료한다.",
@@ -308,7 +340,7 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "{\\\"canceld\\\":true/false}",
+                        "description": "{\\\"deleted\\\":true/false}",
                         "schema": {
                             "type": "string"
                         }
