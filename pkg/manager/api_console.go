@@ -39,6 +39,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, POST, "/credentials", consoleAPI.AddCredential)
 	registURI(console, DELETE, "/credentials/{key}", consoleAPI.DeleteCredential)
 	registURI(console, GET, "/credentials", consoleAPI.ListCredential)
+	registURI(console, GET, "/taskstatus", consoleAPI.ListTaskStatus)
 }
 
 // SignIn godoc
@@ -377,6 +378,65 @@ func (api *ConsoleAPI) ListCredential(w http.ResponseWriter, r *http.Request) {
 	}
 
 	b, err := json.Marshal(credentials)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+type TaskStatus struct {
+	Date   string `json:"date"`
+	Agent  string `json:"agent"`
+	TaskID string `json:"taskid"`
+	Status string `json:"status"`
+}
+
+// ListTaskStatus godoc
+// @Summary Task Status 리스트.
+// @Description Task Status 리스트.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/taskstatus [get]
+// @Success 200 {object} []manager.TaskStatus
+func (api *ConsoleAPI) ListTaskStatus(w http.ResponseWriter, r *http.Request) {
+	taskstatus := []*TaskStatus{
+		{
+			Date:   "21/jan/09",
+			Agent:  "n8lbnas",
+			TaskID: "00179",
+			Status: "done",
+		},
+		{
+			Date:   "21/jan/09",
+			Agent:  "n8lbnas",
+			TaskID: "00180",
+			Status: "done",
+		},
+		{
+			Date:   "21/jan/09",
+			Agent:  "n8lbnas",
+			TaskID: "00181",
+			Status: "done",
+		},
+		{
+			Date:   "21/jan/09",
+			Agent:  "n8lbnas",
+			TaskID: "00182",
+			Status: "done",
+		},
+		{
+			Date:   "21/jan/09",
+			Agent:  "n8lbnas",
+			TaskID: "00183",
+			Status: "done",
+		},
+	}
+
+	b, err := json.Marshal(taskstatus)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
 		return
