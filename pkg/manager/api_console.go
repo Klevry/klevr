@@ -38,6 +38,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, DELETE, "/groups/{groupID}", consoleAPI.DeleteGroup)
 	registURI(console, POST, "/credentials", consoleAPI.AddCredential)
 	registURI(console, DELETE, "/credentials/{key}", consoleAPI.DeleteCredential)
+	registURI(console, GET, "/credentials", consoleAPI.ListCredential)
 }
 
 // SignIn godoc
@@ -353,4 +354,34 @@ func (api *ConsoleAPI) AddCredential(w http.ResponseWriter, r *http.Request) {
 func (api *ConsoleAPI) DeleteCredential(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "{\"deleted\":%v}", true)
+}
+
+// ListCredential godoc
+// @Summary Credential 리스트.
+// @Description 등록되어 있는 Credential 리스트.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/credentials [get]
+// @Success 200 {object} []manager.Credential
+func (api *ConsoleAPI) ListCredential(w http.ResponseWriter, r *http.Request) {
+	credentials := []*Credential{
+		{
+			Key:   "Duration",
+			Value: "10",
+		},
+		{
+			Key:   "UserName",
+			Value: "admin",
+		},
+	}
+
+	b, err := json.Marshal(credentials)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
 }

@@ -388,6 +388,22 @@ paths:
       tags:
       - Console
   /console/credentials:
+    get:
+      consumes:
+      - application/json
+      description: 등록되어 있는 Credential 리스트.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.Credential'
+            type: array
+      summary: Credential 리스트.
+      tags:
+      - Console
     post:
       consumes:
       - application/json
