@@ -37,6 +37,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.DeleteAgent)
 	registURI(console, DELETE, "/groups/{groupID}", consoleAPI.DeleteGroup)
 	registURI(console, POST, "/credentials", consoleAPI.AddCredential)
+	registURI(console, DELETE, "/credentials/{key}", consoleAPI.DeleteCredential)
 }
 
 // SignIn godoc
@@ -338,4 +339,18 @@ func (api *ConsoleAPI) AddCredential(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+// DeleteCredential godoc
+// @Summary Credential을 삭제한다.
+// @Description Key Name에 해당하는 Credential을 삭제한다.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/credentials/{key} [delete]
+// @Param key path string true "Credential Name"
+// @Success 200 {object} string "{\"deleted\":true/false}"
+func (api *ConsoleAPI) DeleteCredential(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"deleted\":%v}", true)
 }
