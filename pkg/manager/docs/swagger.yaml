@@ -380,6 +380,27 @@ paths:
       summary: Password 변경
       tags:
       - Console
+  /console/groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: groupID에 해당하는 Group(Zone)을 제거한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: Klevr Group(Zone)을 제거한다.
+      tags:
+      - Console
   /console/groups/{groupID}/agents/{agentKey}:
     delete:
       consumes:
@@ -400,7 +421,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: '{\"canceld\":true/false}'
+          description: '{\"deleted\":true/false}'
           schema:
             type: string
       summary: Klevr Agent를 종료한다.
