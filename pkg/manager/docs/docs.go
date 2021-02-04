@@ -277,6 +277,40 @@ var doc = `{
                 }
             }
         },
+        "/console/credentials": {
+            "post": {
+                "description": "신규 Credential을 추가한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Credential을 추가한다.",
+                "parameters": [
+                    {
+                        "description": "Credential(Key, Value)",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.Credential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.Credential"
+                        }
+                    }
+                }
+            }
+        },
         "/console/groups/{groupID}": {
             "delete": {
                 "description": "groupID에 해당하는 Group(Zone)을 제거한다.",
@@ -1241,6 +1275,17 @@ var doc = `{
                 },
                 "userId": {
                     "type": "integer"
+                }
+            }
+        },
+        "manager.Credential": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
