@@ -311,6 +311,38 @@ var doc = `{
                 }
             }
         },
+        "/console/credentials/{key}": {
+            "delete": {
+                "description": "Key Name에 해당하는 Credential을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Credential을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Credential Name",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/console/groups/{groupID}": {
             "delete": {
                 "description": "groupID에 해당하는 Group(Zone)을 제거한다.",

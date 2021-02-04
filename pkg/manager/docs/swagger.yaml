@@ -409,6 +409,27 @@ paths:
       summary: Credential을 추가한다.
       tags:
       - Console
+  /console/credentials/{key}:
+    delete:
+      consumes:
+      - application/json
+      description: Key Name에 해당하는 Credential을 삭제한다.
+      parameters:
+      - description: Credential Name
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: Credential을 삭제한다.
+      tags:
+      - Console
   /console/groups/{groupID}:
     delete:
       consumes:
