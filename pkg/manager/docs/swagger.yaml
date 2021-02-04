@@ -214,6 +214,17 @@ definitions:
       parameter:
         type: string
     type: object
+  manager.TaskStatus:
+    properties:
+      agent:
+        type: string
+      date:
+        type: string
+      status:
+        type: string
+      taskid:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -528,6 +539,23 @@ paths:
         "200":
           description: ""
       summary: Sign Out
+      tags:
+      - Console
+  /console/taskstatus:
+    get:
+      consumes:
+      - application/json
+      description: Task Status 리스트.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.TaskStatus'
+            type: array
+      summary: Task Status 리스트.
       tags:
       - Console
   /inner/commands:

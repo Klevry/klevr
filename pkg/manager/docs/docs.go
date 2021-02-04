@@ -494,6 +494,32 @@ var doc = `{
                 }
             }
         },
+        "/console/taskstatus": {
+            "get": {
+                "description": "Task Status 리스트.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Task Status 리스트.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.TaskStatus"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inner/commands": {
             "get": {
                 "description": "Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.",
@@ -1392,6 +1418,23 @@ var doc = `{
                     "type": "string"
                 },
                 "parameter": {
+                    "type": "string"
+                }
+            }
+        },
+        "manager.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "taskid": {
                     "type": "string"
                 }
             }
