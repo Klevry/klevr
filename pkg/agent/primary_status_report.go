@@ -28,7 +28,7 @@ func PrimaryStatusReport(agent *KlevrAgent) {
 
 	body := JsonUnmarshal(result)
 
-	if body.Agent.Primary.IP == Local_ip_add() {
+	if body.Agent.Primary.IP == LocalIPAddress(agent.NetworkInterfaceName) {
 		agent.Primary = body.Agent.Primary
 		agent.startScheduler()
 	}

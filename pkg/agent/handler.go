@@ -51,12 +51,17 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	var errLis error
 
-	_, err := net.DialTimeout("tcp", net.JoinHostPort(LocalIPAddress(agent.NetworkInterfaceName), port), time.Second)
+	addressAndPort := net.JoinHostPort(LocalIPAddress(agent.NetworkInterfaceName), port)
+	_, err := net.DialTimeout("tcp", addressAndPort, time.Second)
 	if err != nil {
 		logger.Errorf("not open port!@#!@#!@@#")
 
 		// grpc server start
-		agent.connect, errLis = net.Listen("tcp", ":"+port)
+		if agent.NetworkInterfaceName == "" {
+			agent.connect, errLis = net.Listen("tcp", ":"+port)
+		} else {
+			agent.connect, errLis = net.Listen("tcp", addressAndPort)
+		}
 		if errLis != nil {
 			logger.Fatalf("failed to liesten: %v", err)
 		}
