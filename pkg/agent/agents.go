@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 
@@ -50,7 +51,19 @@ func (agent *KlevrAgent) Run() {
 	}
 	agent.Primary = *primary
 	agent.startScheduler()
-	http.ListenAndServe(":18800", nil)
+
+	if agent.NetworkInterfaceName == "" {
+		err := http.ListenAndServe(":18800", nil)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		address := LocalIPAddress(agent.NetworkInterfaceName)
+		err := http.ListenAndServe(fmt.Sprintf("%s:18800", address), nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (agent *KlevrAgent) startScheduler() {
