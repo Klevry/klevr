@@ -77,7 +77,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 }
 
 func (agent *KlevrAgent) PrimaryTaskSend(ip string, task []byte) {
-	serverAddr := ip + port
+	serverAddr := net.JoinHostPort(ip, port)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		logger.Errorf("did not connect :%v", err)
