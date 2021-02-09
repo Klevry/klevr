@@ -98,17 +98,22 @@ func Polling(agent *KlevrAgent) {
 			} else {
 				logger.Debugf("%v", &body.Task[i])
 
+				sendCompleted := false
 				for _, v := range agent.Agents {
 					if v.AgentKey == body.Task[i].AgentKey {
 						ip := v.IP
 
-						t := JsonMarshal(body.Task[i])
+						t := JsonMarshal(&body.Task[i])
 
 						logger.Debugf("%v", body.Task[i])
 						agent.PrimaryTaskSend(ip, t)
-					} else {
-						executor.RunTask(&body.Task[i])
+						sendCompleted = true
+						break
 					}
+				}
+
+				if sendCompleted == false {
+					executor.RunTask(&body.Task[i])
 				}
 			}
 		}
