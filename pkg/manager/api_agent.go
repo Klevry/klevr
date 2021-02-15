@@ -77,10 +77,11 @@ func (api *API) InitAgent(agent *mux.Router) {
 }
 
 func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	logger.Debug(fmt.Sprintf("API Key(authenticate): %s", apiKey))
+	logger.Debug(fmt.Sprintf("[authenticate info] zoneID:%d, apiKey:%s", zoneID, apiKey))
 
 	_, bExist := api.BlockKeyMap.Get(apiKey)
 	if bExist {
+		logger.Debugf("[BlockKeyMap(Get)] zoneID(%d), apiKey(%s)", zoneID, apiKey)
 		return false
 	}
 
@@ -94,6 +95,7 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 			manager := ctx.Get(CtxServer).(*KlevrManager)
 
 			apiKeyMap.Set(strconv.FormatUint(zoneID, 10), manager.decrypt(apiKey.ApiKey))
+			logger.Debugf("[apiKeyMap(Set)] zoneID(%d), apiKey(%s)", zoneID, apiKey.ApiKey)
 		}
 	}
 
@@ -101,6 +103,7 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 
 	if aExist {
 		val := ifval.(string)
+		logger.Debugf("[apiKeyMap(Get)] apiKey.db(%s), apiKey.in(%s)", val, apiKey)
 
 		if apiKey != "" && val == apiKey {
 			return true
@@ -108,6 +111,7 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 	}
 
 	api.BlockKeyMap.Set(apiKey, zoneID)
+	logger.Debugf("[BlockKeyMap(Set)] zoneID(%d), apiKey(%s)", zoneID, apiKey)
 
 	logger.Warningf("API key not matched - [%s]", apiKey)
 	panic(common.NewHTTPError(401, "authentication failed"))

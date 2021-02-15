@@ -224,6 +224,8 @@ func (tx *Tx) updateAPIKey(auth *ApiAuthentications) {
 func (tx *Tx) getAPIKey(groupID uint64) (*ApiAuthentications, bool) {
 	var auth ApiAuthentications
 	exist := common.CheckGetQuery(tx.Where("group_id = ?", groupID).Get(&auth))
+	qry, args := tx.LastSQL()
+	logger.Debugf("query: %s, args: %v", qry, args)
 	logger.Debugf("Selected ApiAuthentications : %v", auth)
 
 	return &auth, exist
