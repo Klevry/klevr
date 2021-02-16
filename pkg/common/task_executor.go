@@ -299,14 +299,16 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 	if tw.Timeout > 0 { // 태스크 실행 with Timeout
 		_, err, timeout := future.GetOrTimeout(tw.Timeout * 1000)
+		if timeout {
+			// Cancel()을 호출하지 않으면 future blocking만 해제되고 백그라운드에서 future goroutine은 계속 수행된다.
+			future.Cancel()
+			tw.Status = Timeout
+		}
+
 		logger.Debugf("execution complete with timeout : [%+v]", tw.KlevrTask)
 		if err != nil {
 			logger.Errorf("%+v", errors.WithStack(err))
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
-		}
-
-		if timeout {
-			tw.Status = Timeout
 		}
 	} else { // 태스크 실행 without Timeout
 		_, err := future.Get()
