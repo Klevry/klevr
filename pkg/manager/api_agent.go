@@ -52,7 +52,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 			// APIKey 인증
 			logger.Debug(r.RequestURI)
-			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey) {
+			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey, ch.AgentKey) {
 				logger.Debug(fmt.Sprintf("failed authenticate: %v", ch))
 				return
 			}
@@ -76,12 +76,12 @@ func (api *API) InitAgent(agent *mux.Router) {
 	})
 }
 
-func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	logger.Debug(fmt.Sprintf("[authenticate info] zoneID:%d, apiKey:%s", zoneID, apiKey))
+func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey, agentKey string) bool {
+	logger.Debug(fmt.Sprintf("[authenticate info] zoneID:%d, apiKey:%s, agentKey:%s", zoneID, apiKey, agentKey))
 
-	_, bExist := api.BlockKeyMap.Get(apiKey)
-	if bExist {
-		logger.Debugf("[BlockKeyMap(Get)] zoneID(%d), apiKey(%s)", zoneID, apiKey)
+	value, bExist := api.BlockKeyMap.Get(agentKey)
+	if bExist && apiKey == value.(string) {
+		logger.Debugf("[BlockKeyMap(Get)] zoneID(%d), apiKey(%s), agentKey(%s)", zoneID, apiKey, agentKey)
 		return false
 	}
 
@@ -110,10 +110,10 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 		}
 	}
 
-	api.BlockKeyMap.Set(apiKey, zoneID)
-	logger.Debugf("[BlockKeyMap(Set)] zoneID(%d), apiKey(%s)", zoneID, apiKey)
+	api.BlockKeyMap.Set(agentKey, apiKey)
+	logger.Debugf("[BlockKeyMap(Set)] zoneID(%d), apiKey(%s), agentKey(%s)", zoneID, apiKey, agentKey)
 
-	logger.Warningf("API key not matched - [%s]", apiKey)
+	logger.Warningf("API key not matched - apiKey(%s), agentKey(%s)", apiKey, agentKey)
 	panic(common.NewHTTPError(401, "authentication failed"))
 }
 
