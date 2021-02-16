@@ -108,8 +108,11 @@ func (executor *taskExecutor) RunTask(task *KlevrTask) error {
 func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	// execute() 종료 시 runningTask에서 삭제 및 상태 업데이트
 	defer func() {
-		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
-		executor.updatedTasks.Push(*tw.KlevrTask)
+		r := recover()
+
+		if r != nil {
+			logger.Warningf("excution complete with error : [%+v]", r)
+		}
 	}()
 
 	logger.Debugf("task executed() : [%+v]", tw.KlevrTask)
@@ -235,6 +238,9 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 	future := promise.Start(f).OnSuccess(func(v interface{}) {
 		tw.Status = Complete
 		logger.Debugf("task execution onSuccess : [%+v]", tw.KlevrTask)
+
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
+		executor.updatedTasks.Push(*tw.KlevrTask)
 	}).OnFailure(func(v interface{}) {
 		tw.FailedStep = tw.CurrentStep
 
@@ -275,16 +281,25 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		}
 
 		logger.Debugf("task execution onFailure : [%+v]", tw.KlevrTask)
+
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
+		executor.updatedTasks.Push(*tw.KlevrTask)
 	}).OnCancel(func() {
 		tw.Status = Stopped
 
 		logger.Debugf("task execution onCancel : [%+v]", tw.KlevrTask)
+
+		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
+		executor.updatedTasks.Push(*tw.KlevrTask)
+	}).OnComplete(func(v interface{}) {
+		logger.Debugf("task execution onComplete : [%+v]", v)
 	})
 
 	tw.future = future
 
 	if tw.Timeout > 0 { // 태스크 실행 with Timeout
 		_, err, timeout := future.GetOrTimeout(tw.Timeout * 1000)
+		logger.Debugf("execution complete with timeout : [%+v]", tw.KlevrTask)
 		if err != nil {
 			logger.Errorf("%+v", errors.WithStack(err))
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
@@ -295,6 +310,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		}
 	} else { // 태스크 실행 without Timeout
 		_, err := future.Get()
+		logger.Debugf("execution complete without timeout: [%+v]", tw.KlevrTask)
 		if err != nil {
 			logger.Errorf("task raised errors - [%+v] - \n %+v", tw.KlevrTask, errors.WithStack(err))
 			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
@@ -401,6 +417,8 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 }
 
 func callback(url string, data KlevrTaskCallback) {
+	logger.Debugf("task completed & callback : [%+v]", data)
+
 	b, err := json.Marshal(data)
 	if err != nil {
 		logger.Errorf("%+v", errors.WithStack(err))
