@@ -767,6 +767,21 @@ paths:
       summary: primary agent 정보를 반환한다.
       tags:
       - servers
+  /inner/health:
+    get:
+      consumes:
+      - application/json
+      description: klevr manager 상태 체크
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"health\":ok}'
+          schema:
+            type: string
+      summary: klevr manager 확인용
+      tags:
+      - servers
   /inner/tasks:
     get:
       consumes:

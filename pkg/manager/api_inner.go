@@ -37,6 +37,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
+	registURI(inner, GET, "/health", serversAPI.healthCheck)
 }
 
 // addSimpleReservedTask godoc
@@ -266,6 +267,19 @@ func (api *serversAPI) getReservedCommands(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+// healthCheck godoc
+// @Summary klevr manager 확인용
+// @Description klevr manager 상태 체크
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/health [get]
+// @Success 200 {object} string "{\"health\":ok}"
+func (api *serversAPI) healthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"health\":ok}")
 }
 
 // getAgents godoc
