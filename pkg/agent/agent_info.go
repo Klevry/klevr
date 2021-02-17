@@ -105,16 +105,15 @@ func JsonMarshal(a interface{}) []byte {
 	return b
 }
 
-func JsonUnmarshal(a []byte) common.Body {
+func JsonUnmarshal(a []byte) (*common.Body, error) {
 	var body common.Body
 
 	err := json.Unmarshal(a, &body)
 	if err != nil {
-		logger.Debugf("%v", string(a))
-		logger.Error(err)
+		return nil, err
 	}
 
-	return body
+	return &body, nil
 }
 
 func ReadFile(path string) []byte {
