@@ -20,7 +20,6 @@ func Polling(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/" + agent.AgentKey
 
 	rb := &common.Body{}
-
 	agent.SendMe(rb)
 
 	for i := 0; i < len(agent.Agents); i++ {
@@ -45,7 +44,6 @@ func Polling(agent *KlevrAgent) {
 	updateTasks := []common.KlevrTask{}
 	for _, value := range updateMap {
 		logger.Debugf("polling updated task [%+v]", value)
-
 		updateTasks = append(updateTasks, value)
 	}
 
@@ -63,11 +61,15 @@ func Polling(agent *KlevrAgent) {
 	//logger.Debugf("%v", rb)
 
 	// polling API 호출
-	result, _ := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, err := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	if err != nil {
+		logger.Debugf("Polling url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+		logger.Error(err)
+	}
 
 	var body common.Body
 
-	err := json.Unmarshal(result, &body)
+	err = json.Unmarshal(result, &body)
 	if err != nil {
 		logger.Debugf("%v", string(result))
 		logger.Error(err)

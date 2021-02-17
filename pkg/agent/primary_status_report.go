@@ -24,9 +24,19 @@ out: body.me, body.agent.primary
 func PrimaryStatusReport(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/reports/" + agent.AgentKey
 
-	result, _ := communicator.Get_Json_http(uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+	result, err := communicator.Get_Json_http(uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+	if err != nil {
+		logger.Debugf("PrimaryStatusReport url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+		logger.Errorf("Failed PrimaryStatusReport (%v)", err)
+		return
+	}
 
-	body := JsonUnmarshal(result)
+	body, err := JsonUnmarshal(result)
+	if err != nil {
+		logger.Debugf("PrimaryStatusReport url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+		logger.Errorf("The content of payload passed after primarystatusreport is unknown (%v)", err)
+		return
+	}
 
 	if body.Agent.Primary.IP == LocalIPAddress(agent.NetworkInterfaceName) {
 		agent.Primary = body.Agent.Primary
