@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
@@ -38,6 +39,8 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
 	registURI(inner, GET, "/health", serversAPI.healthCheck)
+	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
+	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
 }
 
 // addSimpleReservedTask godoc
@@ -280,6 +283,68 @@ func (api *serversAPI) getReservedCommands(w http.ResponseWriter, r *http.Reques
 func (api *serversAPI) healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "{\"health\":ok}")
+}
+
+// updateLogLevel godoc
+// @Summary klevr manager 로그 레벨
+// @Description klevr manager의 로그 레벨 변경
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/loglevel [put]
+// @Param b body string true "Log Level(debug, info, warn, error, fatal)"
+// @Success 200 {object} string "{\"updated\":true|false}"
+func (api *serversAPI) updateLogLevel(w http.ResponseWriter, r *http.Request) {
+	nr := &common.Request{Request: r}
+	targetLevel := nr.BodyToString()
+	var level logger.Level
+
+	switch strings.ToLower(targetLevel) {
+	case "debug":
+		level = 0
+	case "info":
+		level = 1
+	case "warn", "warning":
+		level = 2
+	case "error":
+		level = 3
+	case "fatal":
+		level = 4
+	}
+
+	logger.SetLevel(level)
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"updated\":ok}")
+}
+
+// getLogLevel godoc
+// @Summary klevr manager 로그 레벨
+// @Description klevr manager의 현재 로그 레벨
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/loglevel [get]
+// @Success 200 {object} string"
+func (api *serversAPI) getLogLevel(w http.ResponseWriter, r *http.Request) {
+	level := logger.GetLevel()
+
+	var levelValue string
+	switch int(level) {
+	case 0:
+		levelValue = "debug"
+	case 1:
+		levelValue = "info"
+	case 2:
+		levelValue = "warn"
+	case 3:
+		levelValue = "error"
+	case 4:
+		levelValue = "fatal"
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, levelValue)
 }
 
 // getAgents godoc
