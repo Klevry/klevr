@@ -782,6 +782,42 @@ paths:
       summary: klevr manager 확인용
       tags:
       - servers
+  /inner/loglevel:
+    get:
+      consumes:
+      - application/json
+      description: klevr manager의 현재 로그 레벨
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: klevr manager 로그 레벨
+      tags:
+      - servers
+    put:
+      consumes:
+      - application/json
+      description: klevr manager의 로그 레벨 변경
+      parameters:
+      - description: Log Level(debug, info, warn, error, fatal)
+        in: body
+        name: b
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"updated\":true|false}'
+          schema:
+            type: string
+      summary: klevr manager 로그 레벨
+      tags:
+      - servers
   /inner/tasks:
     get:
       consumes:

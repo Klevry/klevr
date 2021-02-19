@@ -840,6 +840,61 @@
                 }
             }
         },
+        "/inner/loglevel": {
+            "get": {
+                "description": "klevr manager의 현재 로그 레벨",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "klevr manager 로그 레벨",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "klevr manager의 로그 레벨 변경",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "klevr manager 로그 레벨",
+                "parameters": [
+                    {
+                        "description": "Log Level(debug, info, warn, error, fatal)",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"updated\\\":true|false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/tasks": {
             "get": {
                 "description": "검색조건에 해당하는 TASK 목록을 반환한다.",
