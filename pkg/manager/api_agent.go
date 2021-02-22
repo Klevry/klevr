@@ -632,7 +632,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 
 	if groupPrimary.AgentId == curAgent.Id {
 		primaryAgent = curAgent
-	} else if groupPrimary.AgentId == 0 {
+	} else if groupPrimary.GroupId == 0 && groupPrimary.AgentId == 0 {
 		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
@@ -658,7 +658,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 
 // primary agent 선출
 func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel bool) *Agents {
-	logger.Debugf("electPrimary for %d", zoneID)
+	logger.Debugf("electPrimary for zone(%d), agent(%d)", zoneID, agentID)
 
 	var tx *Tx
 	var agent *Agents
