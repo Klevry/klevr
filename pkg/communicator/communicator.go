@@ -7,24 +7,78 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/NexClipper/logger"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-func Put_http(url, data, apiKey string) error {
-	req, err := retryablehttp.NewRequest("PUT", url, strings.NewReader(string(data)))
+type Http struct {
+	URL string
+
+	APIKey   string
+	AgentKey string
+	ZoneID   string
+
+	RetryCount int
+	Timeout    int
+}
+
+// Timeout이 0이면 기본 타임아웃을 기본값(3초)로 한다.
+func (h *Http) request(req *retryablehttp.Request) (*http.Response, error) {
+	if h.Timeout == 0 {
+		// polling을 5초 주기로 하고 있다. 그 시간안에 응답을 받지 못 하면 타임아웃으로 한다.
+		h.Timeout = 3
+	}
+	client := retryablehttp.NewClient()
+	client.RetryMax = h.RetryCount
+	if h.Timeout > 0 {
+		client.HTTPClient.Timeout = time.Duration(h.Timeout) * time.Second
+	}
+
+	return client.Do(req)
+}
+
+func (h *Http) newJsonRequest(method string, data []byte) (*retryablehttp.Request, error) {
+	m := strings.ToUpper(method)
+	req, err := retryablehttp.NewRequest(m, h.URL, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "json/application; charset=utf-8")
+	req.Header.Add("X-AGENT-KEY", h.AgentKey)
+	req.Header.Add("X-ZONE-ID", h.ZoneID)
+	req.Header.Add("X-API-KEY", h.APIKey)
+
+	return req, nil
+}
+
+func (h *Http) newRequest(method string, data string) (*retryablehttp.Request, error) {
+	var rawBody interface{}
+	if data == "" {
+		rawBody = nil
+	} else {
+		rawBody = strings.NewReader(string(data))
+	}
+
+	req, err := retryablehttp.NewRequest(strings.ToUpper(method), h.URL, rawBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("nexcloud-auth-token", h.APIKey)
+	req.Header.Add("cache-control", "no-cache")
+
+	return req, nil
+}
+
+func (h *Http) Put(data string) error {
+	req, err := h.newRequest("PUT", data)
 	if err != nil {
 		logger.Errorf("HTTP PUT Request error: %v", err)
 		return err
 	}
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Add("nexcloud-auth-token", apiKey)
-	req.Header.Add("cache-control", "no-cache")
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return err
@@ -40,22 +94,16 @@ func Put_http(url, data, apiKey string) error {
 	return nil
 }
 
-func Put_Json_http(url string, data []byte, agentKey, apiKey, zoneID string) ([]byte, error) {
+func (h *Http) PutJson(data []byte) ([]byte, error) {
 	var body []byte
 
-	req, err := retryablehttp.NewRequest("PUT", url, bytes.NewBuffer(data))
+	req, err := h.newJsonRequest("PUT", data)
 	if err != nil {
 		logger.Errorf("HTTP PUT Request error: %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "json/application; charset=utf-8")
-	req.Header.Add("X-AGENT-KEY", agentKey)
-	req.Header.Add("X-ZONE-ID", zoneID)
-	req.Header.Add("X-API-KEY", apiKey)
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return nil, err
@@ -73,19 +121,16 @@ func Put_Json_http(url string, data []byte, agentKey, apiKey, zoneID string) ([]
 	return body, nil
 }
 
-func Get_http(url, apiKey string) ([]byte, error) {
+func (h *Http) Get() ([]byte, error) {
 	var body []byte
-	req, err := retryablehttp.NewRequest("GET", url, nil)
+
+	req, err := h.newRequest("GET", "")
 	if err != nil {
 		logger.Errorf("HTTP GET Request error: %v", err)
 		return nil, err
 	}
-	req.Header.Add("nexcloud-auth-token", apiKey)
-	req.Header.Add("cache-control", "no-cache")
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return nil, err
@@ -103,22 +148,16 @@ func Get_http(url, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-func Get_Json_http(url, agentKey, apiKey, zoneID string) ([]byte, error) {
+func (h *Http) GetJson() ([]byte, error) {
 	var body []byte
 
-	req, err := retryablehttp.NewRequest("GET", url, nil)
+	req, err := h.newJsonRequest("GET", nil)
 	if err != nil {
 		logger.Errorf("HTTP GET Request error: %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "json/application; charset=utf-8")
-	req.Header.Add("X-AGENT-KEY", agentKey)
-	req.Header.Add("X-ZONE-ID", zoneID)
-	req.Header.Add("X-API-KEY", apiKey)
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return nil, err
@@ -136,18 +175,14 @@ func Get_Json_http(url, agentKey, apiKey, zoneID string) ([]byte, error) {
 	return body, nil
 }
 
-func Delete_http(url, apiKey string) error {
-	req, err := retryablehttp.NewRequest("DELETE", url, nil)
+func (h *Http) Delete() error {
+	req, err := h.newRequest("DELETE", "")
 	if err != nil {
 		logger.Errorf("HTTP DELETE Request error: %v", err)
 		return err
 	}
-	req.Header.Add("nexcloud-auth-token", apiKey)
-	req.Header.Add("cache-control", "no-cache")
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return err
@@ -163,19 +198,14 @@ func Delete_http(url, apiKey string) error {
 	return nil
 }
 
-func Post_http(url, data, apiKey string) error {
-	req, err := retryablehttp.NewRequest("POST", url, strings.NewReader(string(data)))
+func (h *Http) Post(data string) error {
+	req, err := h.newRequest("POST", data)
 	if err != nil {
 		logger.Errorf("HTTP POST Request error: %v", err)
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("nexcloud-auth-token", apiKey)
-	req.Header.Add("cache-control", "no-cache")
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return err
@@ -191,21 +221,16 @@ func Post_http(url, data, apiKey string) error {
 	return nil
 }
 
-func Post_Json_http(url string, data []byte, agentKey, apiKey, zoneID string) ([]byte, error) {
+func (h *Http) PostJson(data []byte) ([]byte, error) {
 	var body []byte
-	req, err := retryablehttp.NewRequest("POST", url, bytes.NewBuffer(data))
+
+	req, err := h.newJsonRequest("POST", data)
 	if err != nil {
 		logger.Errorf("HTTP POST Request error: %v", err)
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "json/application; charset=utf-8")
-	req.Header.Add("X-AGENT-KEY", agentKey)
-	req.Header.Add("X-ZONE-ID", zoneID)
-	req.Header.Add("X-API-KEY", apiKey)
 
-	client := retryablehttp.NewClient()
-	client.RetryMax = 3
-	res, err := client.Do(req)
+	res, err := h.request(req)
 	if err != nil {
 		logger.Errorf("Server connection error: %v", err)
 		return nil, err

@@ -61,7 +61,16 @@ func Polling(agent *KlevrAgent) {
 	//logger.Debugf("%v", rb)
 
 	// polling API 호출
-	result, err := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 1인 이유)
+	httpHandler := communicator.Http{
+		URL:        uri,
+		AgentKey:   agent.AgentKey,
+		APIKey:     agent.ApiKey,
+		ZoneID:     agent.Zone,
+		RetryCount: 0,
+		Timeout:    agent.HttpTimeout,
+	}
+	result, err := httpHandler.PutJson(b)
 	if err != nil {
 		logger.Debugf("Polling url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
 		logger.Error(err)

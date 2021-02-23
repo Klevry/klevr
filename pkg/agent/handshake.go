@@ -20,7 +20,15 @@ func HandShake(agent *KlevrAgent) *common.Primary {
 	logger.Debugf("%v", rb)
 	b := JsonMarshal(rb)
 	// put in & get out
-	result, err := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	httpHandler := communicator.Http{
+		URL:        uri,
+		AgentKey:   agent.AgentKey,
+		APIKey:     agent.ApiKey,
+		ZoneID:     agent.Zone,
+		RetryCount: 3,
+		Timeout:    agent.HttpTimeout,
+	}
+	result, err := httpHandler.PutJson(b)
 	if err != nil {
 		logger.Debugf("Handshake url:%s, agent:%s, api:%s, zone:%s",
 			uri, agent.AgentKey, agent.ApiKey, agent.Zone)

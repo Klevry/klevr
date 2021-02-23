@@ -25,6 +25,7 @@ type KlevrAgent struct {
 	Zone                 string
 	Manager              string
 	NetworkInterfaceName string
+	HttpTimeout          int
 	AgentKey             string
 	Version              string
 	schedulerInterval    int
