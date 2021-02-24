@@ -1028,6 +1028,13 @@ var doc = `{
                 "summary": "inline simple TASK를 등록한다.",
                 "parameters": [
                     {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "inline script",
                         "name": "b",
                         "in": "body",
@@ -1061,6 +1068,13 @@ var doc = `{
                 ],
                 "summary": "reserved simple TASK를 등록한다.",
                 "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "TASK",
                         "name": "b",

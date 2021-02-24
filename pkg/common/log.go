@@ -20,6 +20,10 @@ const (
 	reset   = "\033[0m"
 )
 
+var (
+	LoggerEnvironment *LoggerEnv
+)
+
 // LoggerEnv logger environment structure
 type LoggerEnv struct {
 	Level      string `envconfig:"LOG_LEVEL"`
@@ -44,6 +48,8 @@ func NewLoggerEnv() *LoggerEnv {
 
 // InitLogger init logger
 func InitLogger(env *LoggerEnv) {
+	LoggerEnvironment = env
+
 	setting := &lumberjack.Logger{
 		Filename:   env.LogPath,
 		MaxSize:    env.MaxSize,

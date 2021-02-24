@@ -50,6 +50,7 @@ func (api *API) InitInner(inner *mux.Router) {
 // @Accept json
 // @Produce json
 // @Router /inner/tasks/{groupID}/simple/reserved [post]
+// @Param groupID path uint64 true "ZONE ID"
 // @Param b body manager.SimpleReservedCommand true "TASK"
 // @Success 200 {object} common.KlevrTask
 func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +124,7 @@ func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Requ
 // @Accept json
 // @Produce json
 // @Router /inner/tasks/{groupID}/simple/inline [post]
+// @Param groupID path uint64 true "ZONE ID"
 // @Param b body string true "inline script"
 // @Success 200 {object} common.KlevrTask
 func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Request) {
