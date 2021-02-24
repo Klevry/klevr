@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/NexClipper/logger"
 )
 
 func init() {
@@ -69,7 +71,8 @@ func collectAgentLog() Command {
 		Run: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
 			data, err := ioutil.ReadFile(LoggerEnvironment.LogPath)
 
-			// logger.Debugf("read original : [%d]", len(string(data)))
+			logger.Debugf("log path : [%s]", LoggerEnvironment.LogPath)
+			logger.Debugf("read original : [%d]", len(string(data)))
 
 			if err != nil {
 				return "", err
@@ -105,7 +108,7 @@ func collectAgentLog() Command {
 				data = cutData
 			}
 
-			// logger.Debugf("CollectAgentLog : [%d]", len(string(data)))
+			logger.Debugf("CollectAgentLog : [%d]", len(string(data)))
 
 			return string(data), nil
 		},

@@ -110,9 +110,9 @@ func Polling(agent *KlevrAgent) {
 		agent.Agents = body.Agent.Nodes
 	}()
 
-	if checkWorkerActivate(agent.WorkerHealthCheck) == false {
-		return
-	}
+	// if checkWorkerActivate(agent.WorkerHealthCheck) == false {
+	// 	return
+	// }
 
 	// change task status
 	logger.Debugf("%+v", body.Task)
