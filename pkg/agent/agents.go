@@ -26,6 +26,7 @@ type KlevrAgent struct {
 	Manager              string
 	NetworkInterfaceName string
 	HttpTimeout          int
+	WorkerHealthCheck    bool
 	AgentKey             string
 	Version              string
 	schedulerInterval    int

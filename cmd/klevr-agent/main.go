@@ -26,6 +26,7 @@ func main() {
 	klevr_addr := flag.String("manager", "", "Klevr webconsole(server) address (URL or IP, Optional: Port) for connect")
 	iface := flag.String("iface", "", "The name of the network interface to use.(If the value is empty, the first searched name is used.)")
 	requestTimeout := flag.Int("timeout", 0, "Timeout(seconds) for an http request to receive a response")
+	checkWorker := flag.String("checkWorker", "", "select whether to check the status of worker(if it is empty, check provbee)")
 
 	flag.Parse() // Important for parsing
 
@@ -55,6 +56,11 @@ func main() {
 	instance.Manager = *klevr_addr
 	instance.NetworkInterfaceName = *iface
 	instance.HttpTimeout = *requestTimeout
+	if len(*checkWorker) == 0 {
+		instance.WorkerHealthCheck = true
+	} else {
+		instance.WorkerHealthCheck = false
+	}
 
 	logger.Debug("platform: ", instance.Platform)
 	//logger.Debug("Local_ip_add:", agent.Local_ip_add())

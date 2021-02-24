@@ -16,6 +16,28 @@ var executor = common.GetTaskExecutor()
 
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 
+func checkWorkerActivate(check bool) bool {
+	if check == true {
+		provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
+		errcheck := provcheck.Run()
+		if errcheck != nil {
+			logger.Errorf("provbee-service is not running!!!: %v", errcheck)
+			return false
+		}
+
+		hi := ReadFile("/tmp/con")
+		str := strings.TrimRight(string(hi), "\n")
+
+		if strings.Compare(str, "hi") == 0 {
+			return true
+		}
+
+		return false
+	}
+
+	return true
+}
+
 func Polling(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/" + agent.AgentKey
 
@@ -61,7 +83,7 @@ func Polling(agent *KlevrAgent) {
 	//logger.Debugf("%v", rb)
 
 	// polling API 호출
-	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 1인 이유)
+	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 0인 이유)
 	httpHandler := communicator.Http{
 		URL:        uri,
 		AgentKey:   agent.AgentKey,
@@ -84,53 +106,48 @@ func Polling(agent *KlevrAgent) {
 		logger.Error(err)
 	}
 
-	provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
-	errcheck := provcheck.Run()
-	if errcheck != nil {
-		logger.Errorf("provbee-service is not running!!!: %v", errcheck)
+	defer func() {
+		agent.Agents = body.Agent.Nodes
+	}()
+
+	if checkWorkerActivate(agent.WorkerHealthCheck) == false {
+		return
 	}
 
-	hi := ReadFile("/tmp/con")
-	str := strings.TrimRight(string(hi), "\n")
+	// change task status
+	logger.Debugf("%+v", body.Task)
 
-	if strings.Compare(str, "hi") == 0 {
-		// change task status
-		logger.Debugf("%+v", body.Task)
-
-		for i := 0; i < len(body.Task); i++ {
-			if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
-				body.Task[i].Status = common.WaitExec
-			}
-
-			logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
-
-			if body.Task[i].ExeAgentChangeable {
-				executor.RunTask(&body.Task[i])
-			} else {
-				logger.Debugf("%v", &body.Task[i])
-
-				sendCompleted := false
-				for _, v := range agent.Agents {
-					if v.AgentKey == body.Task[i].AgentKey {
-						ip := v.IP
-
-						t := JsonMarshal(&body.Task[i])
-
-						logger.Debugf("%v", body.Task[i])
-						agent.PrimaryTaskSend(ip, t)
-						sendCompleted = true
-						break
-					}
-				}
-
-				if sendCompleted == false {
-					executor.RunTask(&body.Task[i])
-				}
-			}
+	for i := 0; i < len(body.Task); i++ {
+		if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
+			body.Task[i].Status = common.WaitExec
 		}
 
-		receivedTasks = body.Task
+		logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
+
+		if body.Task[i].ExeAgentChangeable {
+			executor.RunTask(&body.Task[i])
+		} else {
+			logger.Debugf("%v", &body.Task[i])
+
+			sendCompleted := false
+			for _, v := range agent.Agents {
+				if v.AgentKey == body.Task[i].AgentKey {
+					ip := v.IP
+
+					t := JsonMarshal(&body.Task[i])
+
+					logger.Debugf("%v", body.Task[i])
+					agent.PrimaryTaskSend(ip, t)
+					sendCompleted = true
+					break
+				}
+			}
+
+			if sendCompleted == false {
+				executor.RunTask(&body.Task[i])
+			}
+		}
 	}
 
-	agent.Agents = body.Agent.Nodes
+	receivedTasks = body.Task
 }
