@@ -505,15 +505,17 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
 
 	// condition 추가
-	if statuses != nil {
+	if statuses != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("STATUS", statuses))
 	}
-	if agentKeys != nil {
+	if agentKeys != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("AGENT_KEY", agentKeys))
 	}
-	if taskNames != nil {
+	if taskNames != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("NAME", taskNames))
 	}
+
+	tx.Engine().ShowSQL(true)
 
 	cnt, err := stmt.FindAndCount(&tasks)
 	if err != nil {

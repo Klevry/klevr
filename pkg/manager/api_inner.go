@@ -373,16 +373,17 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cnt, agents := tx.getAgentsByGroupId(groupID)
-	nodes := make([]common.Agent, cnt)
+	nodes := make([]Agent, cnt)
 
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if cnt > 0 {
 		for i, a := range *agents {
-			nodes[i] = common.Agent{
+			nodes[i] = Agent{
 				AgentKey:           a.AgentKey,
 				IsActive:           byteToBool(a.IsActive),
 				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
+				LastAccessTime:     &common.JSONTime{a.LastAccessTime},
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
