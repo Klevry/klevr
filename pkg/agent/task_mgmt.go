@@ -15,6 +15,7 @@ var agentsList = "/tmp/agents"
 var executor = common.GetTaskExecutor()
 
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
+var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
 
 func checkWorkerActivate(check bool) bool {
 	if check == true {
@@ -52,6 +53,12 @@ func Polling(agent *KlevrAgent) {
 
 	for _, t := range receivedTasks {
 		updateMap[t.ID] = t
+	}
+
+	// 전송하지 못 했던 task
+	for k, v := range notSentTasks {
+		updateMap[k] = v
+		delete(notSentTasks, k)
 	}
 
 	rb.Agent.Nodes = agent.Agents
@@ -94,16 +101,24 @@ func Polling(agent *KlevrAgent) {
 	}
 	result, err := httpHandler.PutJson(b)
 	if err != nil {
+		for k, v := range updateMap {
+			notSentTasks[k] = v
+		}
 		logger.Debugf("Polling url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
 		logger.Error(err)
+		return
 	}
 
 	var body common.Body
 
 	err = json.Unmarshal(result, &body)
 	if err != nil {
+		for k, v := range updateMap {
+			notSentTasks[k] = v
+		}
 		logger.Debugf("%v", string(result))
 		logger.Error(err)
+		return
 	}
 
 	defer func() {
