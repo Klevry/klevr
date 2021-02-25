@@ -99,9 +99,9 @@ func (tx *Tx) updateAgentStatus(ids []uint64) {
 	}
 }
 
-func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
-	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = ? WHERE ID = ?",
-		accessTime, 1, id)
+func (tx *Tx) updateAccessAgent(agentKey string, accessTime time.Time) int64 {
+	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = 1 WHERE AGENT_KEY = ? AND IS_ACTIVE = 0",
+		accessTime, agentKey)
 
 	if err != nil {
 		panic(err)
@@ -109,7 +109,9 @@ func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
 
 	cnt, _ := result.RowsAffected()
 
-	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, id)
+	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, agentKey)
+
+	return cnt
 }
 
 func (tx *Tx) deleteAgent(zoneID uint64) {

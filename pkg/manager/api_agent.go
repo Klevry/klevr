@@ -612,11 +612,22 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	agent := tx.getAgentByAgentKey(agentKey, zoneID)
 
+	curTime := time.Now().UTC()
+
 	// agent 접속 시간 갱신
 	// agent.IsActive = 1
 	// agent.LastAccessTime = time.Now().UTC()
 	// tx.updateAgent(agent)
-	tx.updateAccessAgent(agent.Id, time.Now().UTC())
+	cnt := tx.updateAccessAgent(agentKey, curTime)
+
+	if cnt > 0 {
+		AddEvent(&KlevrEvent{
+			EventType: AgentConnect,
+			AgentKey:  agentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: curTime},
+		})
+	}
 
 	tx.Commit()
 
