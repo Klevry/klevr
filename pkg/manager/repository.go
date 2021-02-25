@@ -100,7 +100,7 @@ func (tx *Tx) updateAgentStatus(ids []uint64) {
 }
 
 func (tx *Tx) updateAccessAgent(agentKey string, accessTime time.Time) int64 {
-	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = 1 WHERE AGENT_KEY = ? AND IS_ACTIVE = 0",
+	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = 1 WHERE AGENT_KEY = ?",
 		accessTime, agentKey)
 
 	if err != nil {
