@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/NexClipper/logger"
 	"github.com/kelseyhightower/envconfig"
@@ -45,10 +44,6 @@ func main() {
 	// TimeZone UTC로 설정
 	os.Setenv("TZ", "")
 
-	common.InitLogger(common.NewLoggerEnv())
-
-	logger.Info("Start Klevr-manager")
-
 	var exit int = 0
 
 	app := &cli.App{
@@ -84,8 +79,8 @@ func main() {
 			&cli.StringFlag{
 				Name:     "port",
 				Aliases:  []string{"p"},
-				Value:    "debug",
-				Usage:    "Logging level(default:debug, info, warn, error, fatal)",
+				Value:    "8090",
+				Usage:    "default port used by the klevr-manager(default:8090)",
 				Required: false,
 			},
 			&cli.StringFlag{
@@ -99,16 +94,13 @@ func main() {
 			// 설정파일 반영
 			config, err := loadConfig(c.String("config"))
 			if err != nil {
-				logger.Fatal(err)
 				exit = 1
-
 				panic("Can not start klevr-manager")
 			}
 
 			// 환경변수 반영
 			envconfig.Process("", config)
-
-			logger.Debug("ENV assembled config : ", *config)
+			envAssembledConfig := *config
 
 			// 실행 파라미터 반영 (실행 파라미터>환경변수>설정파일)
 			if c.String("log.level") != "" {
@@ -124,21 +116,18 @@ func main() {
 				config.Klevr.Server.Webhook.Url = c.String("webhook.url")
 			}
 
-			var level logger.Level
-			switch strings.ToLower(config.Log.Level) {
-			case "debug":
-				level = 0
-			case "info":
-				level = 1
-			case "warn", "warning":
-				level = 2
-			case "error":
-				level = 3
-			case "fatal":
-				level = 4
+			loggerEnv := &common.LoggerEnv{
+				Level:      config.Log.Level,
+				LogPath:    config.Log.LogPath,
+				MaxSize:    config.Log.MaxSize,
+				MaxBackups: config.Log.MaxBackups,
+				MaxAge:     config.Log.MaxAge,
+				Compress:   config.Log.Compress,
 			}
+			common.InitLogger(loggerEnv)
 
-			logger.SetLevel(level)
+			logger.Info("Start Klevr-manager")
+			logger.Debug("ENV assembled config : ", &envAssembledConfig)
 
 			// common.ContextPut("appConfig", config)
 			// common.ContextPut("cliContext", c)
