@@ -12,6 +12,7 @@ import (
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/streadway/amqp"
 )
 
 // IsDebug debugabble for all
@@ -30,6 +31,12 @@ type KlevrManager struct {
 	HasLock           bool
 	EventQueue        *common.Queue
 	HandOverTaskQueue *common.Queue
+	Mq                *ManagerMQ
+}
+
+type ManagerMQ struct {
+	Connection *amqp.Connection
+	Queue      *amqp.Queue
 }
 
 // Config klevr manager config struct
@@ -48,13 +55,22 @@ type ServerInfo struct {
 	EncryptionKey     string
 	TransEncKey       string
 	StatusUpdateCycle int
+	EventHandler      string
 	Webhook           Webhook
+	Mq                Mq
 }
 
 type Webhook struct {
 	Url       string
 	HookTerm  int
 	HookCount int
+}
+
+type Mq struct {
+	Url        string
+	Name       string
+	Durable    bool
+	AutoDelete bool
 }
 
 //AgentInfo klevr agent info struct
@@ -112,6 +128,37 @@ func (manager *KlevrManager) Run() error {
 	ctx.Put(CtxServer, manager)
 	ctx.Put(CtxDbConn, db)
 
+	if serverConfig.EventHandler == "mq" {
+		mqConfig := serverConfig.Mq
+
+		mqConn, err := amqp.Dial(mqConfig.Url)
+		if err != nil {
+			logger.Error("Failed to connect to MQ - %+v", errors.Cause(err))
+			panic(err)
+		}
+
+		defer mqConn.Close()
+
+		mqChannel, err := mqConn.Channel()
+		if err != nil {
+			logger.Error("Failed to open a channel to MQ - %+v", errors.Cause(err))
+			panic(err)
+		}
+
+		queue, err := mqChannel.QueueDeclare(mqConfig.Name, mqConfig.Durable, mqConfig.AutoDelete, false, false, nil)
+		if err != nil {
+			logger.Error("Failed to declare queue from MQ - %+v", errors.Cause(err))
+			panic(err)
+		}
+
+		mqChannel.Close()
+
+		manager.Mq = &ManagerMQ{
+			Connection: mqConn,
+			Queue:      &queue,
+		}
+	}
+
 	s := &http.Server{
 		Addr:         ":8090",
 		Handler:      manager.RootRouter,
@@ -121,7 +168,9 @@ func (manager *KlevrManager) Run() error {
 
 	go manager.getLock(common.FromContext(ctx))
 	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
-	go manager.startEventHandler()
+	if serverConfig.EventHandler != "mq" {
+		go manager.startEventHandler()
+	}
 	// klevr 에이전트 상태 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
 	go manager.updateAgentStatus(common.FromContext(ctx), manager.Config.Server.StatusUpdateCycle)
 	// klevr task 스케쥴 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
@@ -350,33 +399,45 @@ func AddEvent(event *KlevrEvent) {
 	logger.Debugf("add event : [%+v]", *event)
 
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-	hookConfig := manager.Config.Server.Webhook
 
-	logger.Debugf("hookConfig : [%+v]", hookConfig)
+	if manager.Mq != nil {
+		arr := []KlevrEvent{*event}
 
-	if hookConfig.Url == "" {
-		return
-	}
-
-	if hookConfig.HookCount <= 1 && hookConfig.HookTerm < 1 {
-		go sendSingleEventWebHook(hookConfig.Url, event)
+		go sendBulkEventMQ(&arr)
 	} else {
-		q := *manager.EventQueue
-		q.Push(event)
+		hookConfig := manager.Config.Server.Webhook
+
+		logger.Debugf("hookConfig : [%+v]", hookConfig)
+
+		if hookConfig.Url == "" {
+			return
+		}
+
+		if hookConfig.HookCount <= 1 && hookConfig.HookTerm < 1 {
+			go sendSingleEventWebHook(hookConfig.Url, event)
+		} else {
+			q := *manager.EventQueue
+			q.Push(event)
+		}
 	}
 }
 
 func AddEvents(events *[]KlevrEvent) {
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-	hookConfig := manager.Config.Server.Webhook
 
-	logger.Debugf("hookConfig : [%+v]", hookConfig)
+	if manager.Mq != nil {
+		go sendBulkEventMQ(events)
+	} else {
+		hookConfig := manager.Config.Server.Webhook
 
-	if hookConfig.Url == "" {
-		return
+		logger.Debugf("hookConfig : [%+v]", hookConfig)
+
+		if hookConfig.Url == "" {
+			return
+		}
+
+		go sendBulkEventWebHook(hookConfig.Url, events)
 	}
-
-	go sendBulkEventWebHook(hookConfig.Url, events)
 }
 
 func sendSingleEventWebHook(url string, event *KlevrEvent) {
@@ -430,6 +491,36 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	}
 
 	logger.Debugf("sendEventWebHook - statusCode : [%d], body : [%s]", res.StatusCode, body)
+}
+
+func sendBulkEventMQ(events *[]KlevrEvent) {
+	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
+	mq := manager.Mq
+
+	b, err := json.Marshal(*events)
+	if err != nil {
+		logger.Error("klevr event MQ publish marshal error - %+v", errors.Cause(err))
+		retryFailedEvent(events, false)
+	}
+
+	channel, err := manager.Mq.Connection.Channel()
+	if err != nil {
+		logger.Error("Failed to open a channel to MQ - %+v", errors.Cause(err))
+		retryFailedEvent(events, true)
+	}
+
+	defer channel.Close()
+
+	err = channel.Publish("", mq.Queue.Name, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: 2,
+		Body:         b,
+	})
+
+	if err != nil {
+		logger.Error("Failed to publish to MQ - %+v", errors.Cause(err))
+		retryFailedEvent(events, true)
+	}
 }
 
 // TODO: event 발송 실패 재처리 구현

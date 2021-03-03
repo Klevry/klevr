@@ -14,10 +14,16 @@ klevr:
         encryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
         transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
         statusUpdateCycle: 60 #seconds
+        eventHandler: "mq"
         webhook:
             url: "http://nexclipper-server:8080/events/klevr"
             hookTerm: 0 #seconds (0 : each event)
             hookCount: 0 #(0: each event)
+        mq:
+            url: "amqp://klevr:klevr@192.168.8.71:5672/klevr"
+            name: "klevr_events"
+            durable: true
+            autoDelete: false
     agent:
         callCycle: 10 #seconds
         logLevel: INFO

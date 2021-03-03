@@ -57,3 +57,4 @@ __debug_bin
 # MariaDB Database file
 data/*
 
+vendor/**
