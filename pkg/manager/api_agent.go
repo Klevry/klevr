@@ -71,7 +71,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 			h.Set(CHeaderAgentKey, ch.AgentKey)
 			h.Set(CHeaderHashCode, ch.HashCode)
 			h.Set(CHeaderSupportVersion, ch.SupportVersion)
-			h.Set(CHeaderTimestamp, string(time.Now().UTC().Unix()))
+			h.Set(CHeaderTimestamp, strconv.FormatInt(time.Now().UTC().Unix(), 10))
 		})
 	})
 }
