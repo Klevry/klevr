@@ -35,6 +35,10 @@ func (h *Http) request(req *retryablehttp.Request) (*http.Response, error) {
 	if h.Timeout > 0 {
 		client.HTTPClient.Timeout = time.Duration(h.Timeout) * time.Second
 	}
+	client.Logger = nil
+	client.RequestLogHook = func(l retryablehttp.Logger, req *http.Request, cnt int) {
+		logger.Debugf("%s %s(%d)", req.Method, req.URL.String(), cnt)
+	}
 
 	return client.Do(req)
 }
