@@ -133,7 +133,7 @@ func (manager *KlevrManager) Run() error {
 
 		mqConn, err := amqp.Dial(mqConfig.Url)
 		if err != nil {
-			logger.Error("Failed to connect to MQ - %+v", errors.Cause(err))
+			logger.Errorf("Failed to connect to MQ - %+v", errors.Cause(err))
 			panic(err)
 		}
 
@@ -141,13 +141,13 @@ func (manager *KlevrManager) Run() error {
 
 		mqChannel, err := mqConn.Channel()
 		if err != nil {
-			logger.Error("Failed to open a channel to MQ - %+v", errors.Cause(err))
+			logger.Errorf("Failed to open a channel to MQ - %+v", errors.Cause(err))
 			panic(err)
 		}
 
 		queue, err := mqChannel.QueueDeclare(mqConfig.Name, mqConfig.Durable, mqConfig.AutoDelete, false, false, nil)
 		if err != nil {
-			logger.Error("Failed to declare queue from MQ - %+v", errors.Cause(err))
+			logger.Errorf("Failed to declare queue from MQ - %+v", errors.Cause(err))
 			panic(err)
 		}
 
@@ -456,6 +456,11 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 		}
 	}()
 
+	if events == nil {
+		logger.Debug("Klevr events is nil")
+		return
+	}
+
 	b, err := json.Marshal(*events)
 	if err != nil {
 		retryFailedEvent(events, false)
@@ -471,6 +476,10 @@ func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
 	if err != nil {
 		logger.Warningf("Klevr event webhook send failed - %+v", err)
 		retryFailedEvent(events, true)
+	}
+
+	if res == nil {
+		return
 	}
 
 	defer func() {
@@ -499,13 +508,13 @@ func sendBulkEventMQ(events *[]KlevrEvent) {
 
 	b, err := json.Marshal(*events)
 	if err != nil {
-		logger.Error("klevr event MQ publish marshal error - %+v", errors.Cause(err))
+		logger.Errorf("klevr event MQ publish marshal error - %+v", errors.Cause(err))
 		retryFailedEvent(events, false)
 	}
 
 	channel, err := manager.Mq.Connection.Channel()
 	if err != nil {
-		logger.Error("Failed to open a channel to MQ - %+v", errors.Cause(err))
+		logger.Errorf("Failed to open a channel to MQ - %+v", errors.Cause(err))
 		retryFailedEvent(events, true)
 	}
 
@@ -518,7 +527,7 @@ func sendBulkEventMQ(events *[]KlevrEvent) {
 	})
 
 	if err != nil {
-		logger.Error("Failed to publish to MQ - %+v", errors.Cause(err))
+		logger.Errorf("Failed to publish to MQ - %+v", errors.Cause(err))
 		retryFailedEvent(events, true)
 	}
 }
