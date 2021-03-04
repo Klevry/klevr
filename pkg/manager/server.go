@@ -160,7 +160,7 @@ func (manager *KlevrManager) Run() error {
 	}
 
 	s := &http.Server{
-		Addr:         ":8090",
+		Addr:         fmt.Sprintf(":%d", serverConfig.Port),
 		Handler:      manager.RootRouter,
 		ReadTimeout:  time.Duration(serverConfig.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(serverConfig.WriteTimeout) * time.Second,
