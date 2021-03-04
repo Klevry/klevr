@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/NexClipper/logger"
@@ -14,6 +15,7 @@ func init() {
 	// 샘플 커맨드
 	// InitCommand(testCommand())
 
+	InitCommand(changeLogLevel())         // 에이전트 로그레벨 변경
 	InitCommand(collectAgentLog())        // 에이전트 로그 수집
 	InitCommand(stopTask())               // 실행중인 Task 중지 처리(작업 취소)
 	InitCommand(forceShutdownAgent())     // 에이전트 즉시 중지 처리
@@ -32,6 +34,84 @@ func testCommand() Command {
 		// 커맨드 중지 시 복구 로직 구현
 		Recover: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
 			return "", nil
+		},
+	}
+}
+
+func changeLogLevel() Command {
+	var levels = []string{
+		"DEBUG", "INFO", "WARN", "ERROR",
+	}
+
+	type ParamModel struct {
+		Level interface{} `json:"level"`
+	}
+
+	type ResultModel struct {
+		Before  interface{} `json:"before"`
+		Current interface{} `json:"current"`
+	}
+
+	return Command{
+		Name: "ChangeLogLevel",
+		Description: "Change the log level of the agent.\n" +
+			"After performing the command, the log level before change and the current log level are returned.",
+		ParameterModel: ParamModel{
+			Level: CommandDescriptor{
+				Type:        "string",
+				Description: "",
+				Values:      levels,
+			},
+		},
+		ResultModel: ResultModel{
+			Before: CommandDescriptor{
+				Type:        "string",
+				Description: "Log level before change",
+			},
+			Current: CommandDescriptor{
+				Type:        "string",
+				Description: "Log level after change",
+			},
+		},
+		Run: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
+			p := ParamModel{}
+
+			err := json.Unmarshal([]byte(jsonOriginalParam), &p)
+			if err != nil {
+				return "", err
+			}
+
+			before := logger.GetLevel()
+
+			var level logger.Level
+
+			switch strings.ToLower(p.Level.(string)) {
+			case "debug":
+				level = 0
+			case "info":
+				level = 1
+			case "warn", "warning":
+				level = 2
+			case "error":
+				level = 3
+			case "fatal":
+				level = 4
+			}
+
+			logger.SetLevel(level)
+			current := logger.GetLevel()
+
+			result := ResultModel{
+				Before:  before,
+				Current: current,
+			}
+
+			jsonBytes, err := json.Marshal(result)
+			if err != nil {
+				return "", err
+			}
+
+			return string(jsonBytes), nil
 		},
 	}
 }
@@ -110,7 +190,16 @@ func collectAgentLog() Command {
 
 			logger.Debugf("CollectAgentLog : [%d]", len(string(data)))
 
-			return string(data), nil
+			result := ResultModel{
+				Logs: string(data),
+			}
+
+			jsonBytes, err := json.Marshal(result)
+			if err != nil {
+				return "", err
+			}
+
+			return string(jsonBytes), nil
 		},
 	}
 }
