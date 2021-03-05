@@ -526,6 +526,40 @@
                 }
             }
         },
+        "/inner/credentials": {
+            "post": {
+                "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 등록한다.",
+                "parameters": [
+                    {
+                        "description": "Credential",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/groups": {
             "get": {
                 "description": "KLEVR ZONE 목록을 조회한다.",
@@ -1233,6 +1267,29 @@
             "properties": {
                 "time.Time": {
                     "type": "string"
+                }
+            }
+        },
+        "common.KlevrCredential": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "zoneId": {
+                    "type": "integer"
                 }
             }
         },

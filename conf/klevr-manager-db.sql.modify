@@ -71,3 +71,14 @@ CREATE TABLE `PAGE_MEMBERS` (
   `API_KEY` varchar(100) COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='PAGE 사용자 인증';
+
+CREATE TABLE `CREDENTIALS` (
+  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `ZONE_ID` bigint(20) unsigned NOT NULL,
+  `NAME` varchar(100) NOT NULL,
+  `VALUE` varchar(100) DEFAULT NULL,
+  `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `DELETED_AT` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='Task에서 사용하게 될 Credential 정보';

@@ -134,3 +134,13 @@ type PageMembers struct {
 	Activated    bool   `xorm:"activated"`
 	ApiKey       string `xorm:"api_key"`
 }
+
+type Credentials struct {
+	Id        uint64 `xorm:"PK"`
+	ZoneId    uint64
+	Name      string
+	Value     string
+	CreatedAt time.Time `xorm:"created"`
+	UpdatedAt time.Time `xorm:"updated"`
+	DeletedAt time.Time
+}

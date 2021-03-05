@@ -41,6 +41,8 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/health", serversAPI.healthCheck)
 	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
 	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
+	registURI(inner, POST, "/credentials", serversAPI.addCredential)
+
 }
 
 // addSimpleReservedTask godoc
@@ -1050,6 +1052,79 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	}
 
 	logger.Debugf("TaskPersistToDto \npersist : [%+v]\ndto : [%+v]", persist, dto)
+
+	return dto
+}
+
+// addCredential godoc
+// @Summary Credential을 등록한다.
+// @Description KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [post]
+// @Param b body common.KlevrCredential true "Credential"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+	var c common.KlevrCredential
+
+	err := json.NewDecoder(r.Body).Decode(&c)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	logger.Debugf("request add credential : [%+v]", c)
+
+	// DTO -> entity
+	persistCredential := *CredentialDtoToPerist(&c)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistCredential = *tx.insertCredential(manager, &persistCredential)
+
+	task, _ := tx.getTask(manager, persistCredential.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
+	persist := &Credentials{
+		Id:     dto.ID,
+		ZoneId: dto.ZoneID,
+		Name:   dto.Name,
+		Value:  dto.Value,
+	}
+
+	logger.Debugf("CredentialDtoToPerist \ndto : [%+v]\npersist : [%+v]", dto, persist)
+
+	return persist
+}
+
+func CredentialPersistToDto(persist *Credentials) *common.KlevrCredential {
+	dto := &common.KlevrCredential{
+		ID:        persist.Id,
+		ZoneID:    persist.ZoneId,
+		Name:      persist.Name,
+		Value:     persist.Value,
+		CreatedAt: common.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt: common.JSONTime{Time: persist.UpdatedAt},
+	}
+
+	logger.Debugf("CredentialPersistToDto \npersist : [%+v]\ndto : [%+v]", persist, dto)
 
 	return dto
 }

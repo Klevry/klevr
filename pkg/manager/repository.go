@@ -639,3 +639,24 @@ func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthe
 
 	return cnt, &apiAuths
 }
+
+func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentials {
+	c.Value = manager.encrypt(c.Value)
+
+	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`name`,`value`) VALUES (?,?,?)",
+		c.ZoneId, c.Name, c.Value)
+
+	if err != nil {
+		panic(err)
+	}
+
+	result.RowsAffected()
+
+	id, _ := result.LastInsertId()
+
+	c.Id = uint64(id)
+
+	logger.Debugf("Inserted credential : %v", c)
+
+	return c
+}
