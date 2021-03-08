@@ -660,3 +660,34 @@ func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentia
 
 	return c
 }
+
+func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, bool) {
+	var credential Credentials
+
+	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ID = ?", id).Get(&credential))
+	logger.Debugf("Selected Credential : %v", credential)
+
+	return &credential, exist
+}
+
+func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
+	var credentials []Credentials
+
+	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
+
+	// condition 추가
+	if credentialNames != nil {
+		stmt = stmt.And(builder.In("NAME", credentialNames))
+	}
+
+	tx.Engine().ShowSQL(true)
+
+	cnt, err := stmt.FindAndCount(&credentials)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Selected Credentials : %d", cnt)
+
+	return &credentials, cnt > 0
+}

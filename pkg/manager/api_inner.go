@@ -42,7 +42,8 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
 	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
-
+	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
+	registURI(inner, GET, "/credentials", serversAPI.getCredentials)
 }
 
 // addSimpleReservedTask godoc
@@ -1099,6 +1100,114 @@ func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
+}
+
+// getCredential godoc
+// @Summary Credential를 조회한다.
+// @Description credentialID에 해당하는 Credential를 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials/{credentialID} [get]
+// @Param credentialID path uint64 true "credential id"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) getCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	credentialID, err := strconv.ParseUint(vars["credentialID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid credential id : %+v", vars["credentialID"]))
+		return
+	}
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	credential, exist := tx.getCredential(manager, credentialID)
+
+	if exist {
+		dto := CredentialPersistToDto(credential)
+
+		b, err := json.Marshal(dto)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+
+		w.WriteHeader(200)
+		fmt.Fprintf(w, "%s", b)
+	} else {
+		common.NewHTTPError(404, fmt.Sprintf("Not exist task for ID - %d", credentialID))
+	}
+}
+
+// getCredentials godoc
+// @Summary Credential 목록을 반환한다.
+// @Description 검색조건에 해당하는 Credential 목록을 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [get]
+// @Param groupID query []uint64 true "ZONE ID 배열"
+// @Param name query []string true "Credential NAME 배열"
+// @Success 200 {object} []common.KlevrCredential
+func (api *serversAPI) getCredentials(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	groupIDs := r.URL.Query()["groupID"]
+	credentialNames := r.URL.Query()["name"]
+
+	logger.Debugf("request URI - [%s]", r.RequestURI)
+	logger.Debugf("%+v", groupIDs)
+	logger.Debugf("%+v", credentialNames)
+
+	logger.Debugf("%d", len(groupIDs))
+	logger.Debugf("%d", len(credentialNames))
+
+	if groupIDs == nil || len(groupIDs) == 0 {
+		common.WriteHTTPError(400, w, nil, "Query parameter groupID is required.")
+		return
+	}
+
+	var iGroupIDs []uint64 = make([]uint64, len(groupIDs))
+	var err error
+
+	for i, id := range groupIDs {
+		iGroupIDs[i], err = strconv.ParseUint(id, 0, 64)
+		if err != nil {
+			common.WriteHTTPError(400, w, err, fmt.Sprintf("invalid groupID - [%s]", id))
+			return
+		}
+	}
+
+	credentials, exist := tx.getCredentials(iGroupIDs, credentialNames)
+
+	var b []byte
+
+	if exist {
+		var dtos []common.KlevrCredential = make([]common.KlevrCredential, len(*credentials))
+
+		for i, c := range *credentials {
+			dtos[i] = *CredentialPersistToDto(&c)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+	}
+
+	// fmt.Fprintf(w, "%s", b)
+	w.Write(b)
+	w.WriteHeader(200)
+
+	logger.Debugf("response : [%s]", string(b))
 }
 
 func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {

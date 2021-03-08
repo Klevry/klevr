@@ -591,6 +591,37 @@ paths:
       tags:
       - servers
   /inner/credentials:
+    get:
+      consumes:
+      - application/json
+      description: 검색조건에 해당하는 Credential 목록을 반환한다.
+      parameters:
+      - description: ZONE ID 배열
+        in: query
+        items:
+          type: integer
+        name: groupID
+        required: true
+        type: array
+      - description: Credential NAME 배열
+        in: query
+        items:
+          type: string
+        name: name
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.KlevrCredential'
+            type: array
+      summary: Credential 목록을 반환한다.
+      tags:
+      - servers
     post:
       consumes:
       - application/json
@@ -610,6 +641,27 @@ paths:
           schema:
             $ref: '#/definitions/common.KlevrCredential'
       summary: Credential을 등록한다.
+      tags:
+      - servers
+  /inner/credentials/{credentialID}:
+    get:
+      consumes:
+      - application/json
+      description: credentialID에 해당하는 Credential를 조회한다.
+      parameters:
+      - description: credential id
+        in: path
+        name: credentialID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrCredential'
+      summary: Credential를 조회한다.
       tags:
       - servers
   /inner/groups:
