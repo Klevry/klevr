@@ -655,6 +655,36 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "credentialID에 해당하는 credential을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "credential id",
+                        "name": "credentialID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/inner/groups": {

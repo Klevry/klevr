@@ -44,6 +44,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
 	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
 	registURI(inner, GET, "/credentials", serversAPI.getCredentials)
+	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
 }
 
 // addSimpleReservedTask godoc
@@ -1208,6 +1209,33 @@ func (api *serversAPI) getCredentials(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 
 	logger.Debugf("response : [%s]", string(b))
+}
+
+// deleteCredential godoc
+// @Summary Credential을 삭제한다.
+// @Description credentialID에 해당하는 credential을 삭제한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials/{credentialID} [delete]
+// @Param credentialID path uint64 true "credential id"
+// @Success 200 {object} string "{\"deleted\":true}"
+func (api *serversAPI) deleteCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	credentialID, err := strconv.ParseUint(vars["credentialID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid credential id : %+v", vars["credentialID"]))
+		return
+	}
+
+	tx.deleteCredential(credentialID)
+
+	w.WriteHeader(200)
+	fmt.Fprint(w, "{\"deletedd\": true}")
 }
 
 func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {

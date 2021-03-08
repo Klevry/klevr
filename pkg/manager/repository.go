@@ -691,3 +691,10 @@ func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Cr
 
 	return &credentials, cnt > 0
 }
+
+func (tx *Tx) deleteCredential(id uint64) {
+	_, err := tx.Where("ID = ?", id).Delete(&Credentials{})
+	if err != nil {
+		panic(err)
+	}
+}

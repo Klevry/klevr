@@ -644,6 +644,26 @@ paths:
       tags:
       - servers
   /inner/credentials/{credentialID}:
+    delete:
+      consumes:
+      - application/json
+      description: credentialID에 해당하는 credential을 삭제한다.
+      parameters:
+      - description: credential id
+        in: path
+        name: credentialID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true}'
+          schema:
+            type: string
+      summary: Credential을 삭제한다.
+      tags:
+      - servers
     get:
       consumes:
       - application/json
