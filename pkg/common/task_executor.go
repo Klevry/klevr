@@ -84,7 +84,7 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 }
 
 // RunTask Run the task.
-func (executor *taskExecutor) RunTask(task *KlevrTask) error {
+func (executor *taskExecutor) RunTask(agentKey string, task *KlevrTask) error {
 	if executor.closed {
 		return errors.New("Task executor was closed")
 	}

@@ -140,7 +140,8 @@ func Polling(agent *KlevrAgent) {
 		logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
 
 		if body.Task[i].ExeAgentChangeable {
-			executor.RunTask(&body.Task[i])
+			body.Task[i].ExeAgentKey = agent.AgentKey
+			executor.RunTask(agent.AgentKey, &body.Task[i])
 		} else {
 			logger.Debugf("%v", &body.Task[i])
 
@@ -149,6 +150,7 @@ func Polling(agent *KlevrAgent) {
 				if v.AgentKey == body.Task[i].AgentKey {
 					ip := v.IP
 
+					body.Task[i].ExeAgentKey = v.AgentKey
 					t := JsonMarshal(&body.Task[i])
 
 					logger.Debugf("%v", body.Task[i])
@@ -159,7 +161,8 @@ func Polling(agent *KlevrAgent) {
 			}
 
 			if sendCompleted == false {
-				executor.RunTask(&body.Task[i])
+				body.Task[i].ExeAgentKey = agent.AgentKey
+				executor.RunTask(agent.AgentKey, &body.Task[i])
 			}
 		}
 	}

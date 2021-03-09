@@ -138,26 +138,6 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func UpdateTaskStatus(ctx *common.Context, tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
-	len := len(*tasks)
-
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
-	if len > 0 {
-		for _, t := range *tasks {
-
-			tx.updateTask(manager, &Tasks{
-				Id:          t.ID,
-				ExeAgentKey: t.AgentKey,
-				Status:      t.Status,
-				TaskDetail: &TaskDetail{
-					Result: t.Result,
-				},
-			})
-		}
-	}
-}
-
 // ReceiveHandshake godoc
 // @Summary 에이전트의 handshake 요청을 받아 처리한다.
 // @Description 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.

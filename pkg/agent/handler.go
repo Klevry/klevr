@@ -18,7 +18,9 @@ const (
 	port = "9350"
 )
 
-type server struct{}
+type server struct {
+	agentKey string
+}
 
 func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, error) {
 	logger.Debugf("Receive message body from client: %v", string(in.Task))
@@ -31,7 +33,7 @@ func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, err
 		logger.Error(err)
 	}
 
-	executor.RunTask(&t)
+	executor.RunTask(s.agentKey, &t)
 
 	result, _ := executor.GetUpdatedTasks()
 
@@ -69,7 +71,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterTaskSendServer(grpcServer, &server{})
+	pb.RegisterTaskSendServer(grpcServer, &server{agentKey: agent.AgentKey})
 
 	if err := grpcServer.Serve(agent.connect); err != nil {
 		logger.Fatalf("failed to serve: %s", err)
