@@ -16,7 +16,15 @@ func main() {
 	// TimeZone UTC로 설정
 	os.Setenv("TZ", "")
 
-	common.InitLogger(common.NewLoggerEnv())
+	loggerEnv := &common.LoggerEnv{
+		Level:      "debug",
+		LogPath:    "./log/klevr.log",
+		MaxSize:    3,
+		MaxBackups: 5,
+		MaxAge:     10,
+		Compress:   false,
+	}
+	common.InitLogger(loggerEnv)
 
 	// Flag options
 	// Sample: -apiKey=\"{apiKey}\" -platform=\"{platform}\" -manager=\"{managerUrl}\" -zoneId=\"{zoneId}\" -iface=\"{networkInterfaceName}\"  -timeout=\"{timeout}\"
