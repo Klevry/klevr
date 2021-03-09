@@ -36,9 +36,10 @@ func (h *Http) request(req *retryablehttp.Request) (*http.Response, error) {
 		client.HTTPClient.Timeout = time.Duration(h.Timeout) * time.Second
 	}
 	client.Logger = nil
-	client.RequestLogHook = func(l retryablehttp.Logger, req *http.Request, cnt int) {
+	// 디버깅하는 용도로 사용할 수 있도록 주석 처리해서 남겨 놓음
+	/*client.RequestLogHook = func(l retryablehttp.Logger, req *http.Request, cnt int) {
 		logger.Debugf("%s %s(%d)", req.Method, req.URL.String(), cnt)
-	}
+	}*/
 
 	return client.Do(req)
 }
