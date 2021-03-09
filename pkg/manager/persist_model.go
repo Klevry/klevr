@@ -126,3 +126,21 @@ func (tl *TaskLock) expired() bool {
 	// if tl.LockDate.Unix() > time.Now().UTC().Add()
 	return true
 }
+
+type PageMembers struct {
+	Id           uint64 `xorm:"pk autoincr"`
+	UserId       string `xorm:"user_id"`
+	UserPassword string `xorm:"user_password"`
+	Activated    bool   `xorm:"activated"`
+	ApiKey       string `xorm:"api_key"`
+}
+
+type Credentials struct {
+	Id        uint64 `xorm:"PK"`
+	ZoneId    uint64
+	Name      string
+	Value     string
+	CreatedAt time.Time `xorm:"created"`
+	UpdatedAt time.Time `xorm:"updated"`
+	DeletedAt time.Time
+}

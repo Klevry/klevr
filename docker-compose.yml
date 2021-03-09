@@ -17,6 +17,8 @@ services:
          KLEVR_DB_LOGLEVEL: "warn"
          KLEVR_DB_SHOWSQL: "false"
          KLEVR_SERVER_STATUSUPDATECYCLE: 30
+         KLEVR_SERVER_MQ_URL: "amqp://${MQ_USERNAME}:${MQ_PASSWORD}@${MQ_HOST}:${MQ_PORT}/${MQ_VIRTUAL_HOST}"
+         KLEVR_SERVER_EVENTHANDLER: "${KLEVR_EVENTHANDLER:-webhook}"
       command:
          - bash
          - -c
@@ -40,6 +42,8 @@ services:
          KLEVR_DB_LOGLEVEL: "warn"
          KLEVR_DB_SHOWSQL: "false"
          KLEVR_SERVER_STATUSUPDATECYCLE: 30
+         KLEVR_SERVER_MQ_URL: "amqp://${MQ_USERNAME}:${MQ_PASSWORD}@${MQ_HOST}:${MQ_PORT}/${MQ_VIRTUAL_HOST}"
+         KLEVR_SERVER_EVENTHANDLER: "${KLEVR_EVENTHANDLER:-webhook}"
       command:
          - bash
          - -c

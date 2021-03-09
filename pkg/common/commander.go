@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/NexClipper/logger"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +60,7 @@ func RunCommand(jsonPreResult string, task *KlevrTask, command *KlevrTaskStep) (
 		var ex error
 
 		if v != nil {
-			e = errors.New(fmt.Sprintf("%+v", v))
+			e = v.(error)
 			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(e))
 
 			if c.Recover != nil {
@@ -79,6 +80,8 @@ func RunCommand(jsonPreResult string, task *KlevrTask, command *KlevrTaskStep) (
 
 	// Run function 실행
 	r, e = c.Run(task.Parameter, task.Result)
+
+	logger.Debugf("Reserved command result : [%d]", len(r))
 
 	return r, e
 }

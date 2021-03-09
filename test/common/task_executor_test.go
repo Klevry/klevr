@@ -132,7 +132,7 @@ func TestSingleStepRunTask(t *testing.T) {
 
 	executor := common.GetTaskExecutor()
 
-	err := executor.RunTask(task)
+	err := executor.RunTask("agentkey", task)
 	assert.NoError(t, err, "RunTask failed.")
 
 	var updatedTask common.KlevrTask
@@ -165,7 +165,7 @@ func TestSingleRunFailTask(t *testing.T) {
 
 	executor := common.GetTaskExecutor()
 
-	err := executor.RunTask(task)
+	err := executor.RunTask("agentkey", task)
 	assert.NoError(t, err, "RunTask failed.")
 
 	var updatedTask common.KlevrTask

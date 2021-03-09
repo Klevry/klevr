@@ -88,6 +88,42 @@ CREATE TABLE `API_AUTHENTICATIONS` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `CREDENTIALS`
+--
+
+DROP TABLE IF EXISTS `CREDENTIALS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `CREDENTIALS` (
+  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `ZONE_ID` bigint(20) unsigned NOT NULL,
+  `NAME` varchar(100) NOT NULL,
+  `VALUE` varchar(100) DEFAULT NULL,
+  `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
+  `DELETED_AT` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='Task에서 사용하게 될 Credential 정보';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `PAGE_MEMBERS`
+--
+
+DROP TABLE IF EXISTS `PAGE_MEMBERS`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `PAGE_MEMBERS` (
+  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `USER_ID` varchar(45) COLLATE utf8_bin NOT NULL,
+  `USER_PASSWORD` varchar(45) COLLATE utf8_bin NOT NULL,
+  `ACTIVATED` tinyint(1) NOT NULL DEFAULT 0,
+  `API_KEY` varchar(100) COLLATE utf8_bin NOT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='PAGE 사용자 인증';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `PRIMARY_AGENTS`
 --
 

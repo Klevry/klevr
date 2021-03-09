@@ -63,8 +63,8 @@ func CheckAgentKey() string {
 	return agentIdString
 }
 
-func Check_primary(prim string) bool {
-	if prim == Local_ip_add() {
+func (agent *KlevrAgent) checkPrimary(prim string) bool {
+	if prim == LocalIPAddress(agent.NetworkInterfaceName) {
 		logger.Debug("I am Primary")
 
 		return true

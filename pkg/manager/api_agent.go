@@ -52,7 +52,8 @@ func (api *API) InitAgent(agent *mux.Router) {
 
 			// APIKey 인증
 			logger.Debug(r.RequestURI)
-			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey) {
+			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey, ch.AgentKey) {
+				logger.Debug(fmt.Sprintf("failed authenticate: %v", ch))
 				return
 			}
 
@@ -70,14 +71,17 @@ func (api *API) InitAgent(agent *mux.Router) {
 			h.Set(CHeaderAgentKey, ch.AgentKey)
 			h.Set(CHeaderHashCode, ch.HashCode)
 			h.Set(CHeaderSupportVersion, ch.SupportVersion)
-			h.Set(CHeaderTimestamp, string(time.Now().UTC().Unix()))
+			h.Set(CHeaderTimestamp, strconv.FormatInt(time.Now().UTC().Unix(), 10))
 		})
 	})
 }
 
-func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) bool {
-	_, bExist := api.BlockKeyMap.Get(apiKey)
-	if bExist {
+func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey, agentKey string) bool {
+	logger.Debug(fmt.Sprintf("[authenticate info] zoneID:%d, apiKey:%s, agentKey:%s", zoneID, apiKey, agentKey))
+
+	value, bExist := api.BlockKeyMap.Get(agentKey)
+	if bExist && apiKey == value.(string) {
+		logger.Debugf("[BlockKeyMap(Get)] zoneID(%d), apiKey(%s), agentKey(%s)", zoneID, apiKey, agentKey)
 		return false
 	}
 
@@ -91,6 +95,7 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 			manager := ctx.Get(CtxServer).(*KlevrManager)
 
 			apiKeyMap.Set(strconv.FormatUint(zoneID, 10), manager.decrypt(apiKey.ApiKey))
+			logger.Debugf("[apiKeyMap(Set)] zoneID(%d), apiKey(%s)", zoneID, apiKey.ApiKey)
 		}
 	}
 
@@ -98,15 +103,17 @@ func (api *API) authenticate(ctx *common.Context, zoneID uint64, apiKey string) 
 
 	if aExist {
 		val := ifval.(string)
+		logger.Debugf("[apiKeyMap(Get)] apiKey.db(%s), apiKey.in(%s)", val, apiKey)
 
 		if apiKey != "" && val == apiKey {
 			return true
 		}
 	}
 
-	api.BlockKeyMap.Set(apiKey, zoneID)
+	api.BlockKeyMap.Set(agentKey, apiKey)
+	logger.Debugf("[BlockKeyMap(Set)] zoneID(%d), apiKey(%s), agentKey(%s)", zoneID, apiKey, agentKey)
 
-	logger.Warningf("API key not matched - [%s]", apiKey)
+	logger.Warningf("API key not matched - apiKey(%s), agentKey(%s)", apiKey, agentKey)
 	panic(common.NewHTTPError(401, "authentication failed"))
 }
 
@@ -131,26 +138,6 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 	return h
 }
 
-func UpdateTaskStatus(ctx *common.Context, tx *Tx, zoneID uint64, tasks *[]common.KlevrTask) {
-	len := len(*tasks)
-
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
-	if len > 0 {
-		for _, t := range *tasks {
-
-			tx.updateTask(manager, &Tasks{
-				Id:          t.ID,
-				ExeAgentKey: t.AgentKey,
-				Status:      t.Status,
-				TaskDetail: &TaskDetail{
-					Result: t.Result,
-				},
-			})
-		}
-	}
-}
-
 // ReceiveHandshake godoc
 // @Summary 에이전트의 handshake 요청을 받아 처리한다.
 // @Description 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
@@ -172,6 +159,10 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	var requestBody common.Body
 	var paramAgent common.Me
 
+	logger.Debug(fmt.Sprintf("Handshake Body: %+v", r.Body))
+	logger.Debug(fmt.Sprintf("Agent: %v", requestBody.Me))
+	logger.Debug(fmt.Sprintf("CustomHeader: %v", ch))
+
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		common.WriteHTTPError(500, w, err, "JSON parsing error")
@@ -179,7 +170,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paramAgent = requestBody.Me
-	logger.Debug(fmt.Sprintf("CustomHeader : %v", ch))
 
 	_, exist := tx.getAgentGroup(ch.ZoneID)
 
@@ -602,11 +592,24 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	agent := tx.getAgentByAgentKey(agentKey, zoneID)
 
+	oldStatus := agent.IsActive
+
+	curTime := time.Now().UTC()
+
 	// agent 접속 시간 갱신
 	// agent.IsActive = 1
 	// agent.LastAccessTime = time.Now().UTC()
 	// tx.updateAgent(agent)
-	tx.updateAccessAgent(agent.Id, time.Now().UTC())
+	cnt := tx.updateAccessAgent(agentKey, curTime)
+
+	if oldStatus == 0 && cnt > 0 {
+		AddEvent(&KlevrEvent{
+			EventType: AgentConnect,
+			AgentKey:  agentKey,
+			GroupID:   agent.GroupId,
+			EventTime: &common.JSONTime{Time: curTime},
+		})
+	}
 
 	tx.Commit()
 
@@ -622,7 +625,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 
 	if groupPrimary.AgentId == curAgent.Id {
 		primaryAgent = curAgent
-	} else if groupPrimary.AgentId == 0 {
+	} else if groupPrimary.GroupId == 0 && groupPrimary.AgentId == 0 {
 		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
 		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
@@ -648,7 +651,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 
 // primary agent 선출
 func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel bool) *Agents {
-	logger.Debugf("electPrimary for %d", zoneID)
+	logger.Debugf("electPrimary for zone(%d), agent(%d)", zoneID, agentID)
 
 	var tx *Tx
 	var agent *Agents

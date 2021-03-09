@@ -12,21 +12,39 @@ send handshake to manager
 in: body.me
 out: body.me, body.agent.primary
 */
-func HandShake(agent *KlevrAgent) common.Primary {
+func HandShake(agent *KlevrAgent) *common.Primary {
 	uri := agent.Manager + "/agents/handshake"
 
 	rb := &common.Body{}
-
-	SendMe(rb)
-
+	agent.SendMe(rb)
 	logger.Debugf("%v", rb)
-
 	b := JsonMarshal(rb)
-
 	// put in & get out
-	result, _ := communicator.Put_Json_http(uri, b, agent.AgentKey, agent.ApiKey, agent.Zone)
+	httpHandler := communicator.Http{
+		URL:        uri,
+		AgentKey:   agent.AgentKey,
+		APIKey:     agent.ApiKey,
+		ZoneID:     agent.Zone,
+		RetryCount: 3,
+		Timeout:    agent.HttpTimeout,
+	}
+	result, err := httpHandler.PutJson(b)
+	if err != nil {
+		logger.Debugf("Handshake url:%s, agent:%s, api:%s, zone:%s",
+			uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+		logger.Errorf("Failed Handshake (%v)", err)
+		return nil
+	}
 
-	body := JsonUnmarshal(result)
+	logger.Debugf("%s", string(result))
+
+	body, unmarshalError := JsonUnmarshal(result)
+	if unmarshalError != nil {
+		logger.Debugf("Handshake url:%s, agent:%s, api:%s, zone:%s",
+			uri, agent.AgentKey, agent.ApiKey, agent.Zone)
+		logger.Errorf("The content of payload passed after handshake is unknown (%v)", err)
+		return nil
+	}
 
 	logger.Debugf("%v", body)
 	agent.schedulerInterval = body.Me.CallCycle
@@ -37,5 +55,5 @@ func HandShake(agent *KlevrAgent) common.Primary {
 		}
 	}
 
-	return body.Agent.Primary
+	return &body.Agent.Primary
 }

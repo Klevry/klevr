@@ -3,9 +3,10 @@ package agent
 import (
 	"context"
 	"encoding/json"
-	"github.com/Klevry/klevr/pkg/common"
 	"net"
 	"time"
+
+	"github.com/Klevry/klevr/pkg/common"
 
 	"github.com/NexClipper/logger"
 	"google.golang.org/grpc"
@@ -17,7 +18,9 @@ const (
 	port = "9350"
 )
 
-type server struct{}
+type server struct {
+	agentKey string
+}
 
 func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, error) {
 	logger.Debugf("Receive message body from client: %v", string(in.Task))
@@ -25,12 +28,12 @@ func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, err
 	var t common.KlevrTask
 
 	err := json.Unmarshal(in.Task, &t)
-	if err != nil{
+	if err != nil {
 		logger.Debugf("%v", string(in.Task))
 		logger.Error(err)
 	}
 
-	executor.RunTask(&t)
+	executor.RunTask(s.agentKey, &t)
 
 	result, _ := executor.GetUpdatedTasks()
 
@@ -50,12 +53,17 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	var errLis error
 
-	_, err := net.DialTimeout("tcp", net.JoinHostPort(Local_ip_add(), port), time.Second)
+	addressAndPort := net.JoinHostPort(LocalIPAddress(agent.NetworkInterfaceName), port)
+	_, err := net.DialTimeout("tcp", addressAndPort, time.Second)
 	if err != nil {
 		logger.Errorf("not open port!@#!@#!@@#")
 
 		// grpc server start
-		agent.connect, errLis = net.Listen("tcp", ":"+port)
+		if agent.NetworkInterfaceName == "" {
+			agent.connect, errLis = net.Listen("tcp", ":"+port)
+		} else {
+			agent.connect, errLis = net.Listen("tcp", addressAndPort)
+		}
 		if errLis != nil {
 			logger.Fatalf("failed to liesten: %v", err)
 		}
@@ -63,7 +71,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterTaskSendServer(grpcServer, &server{})
+	pb.RegisterTaskSendServer(grpcServer, &server{agentKey: agent.AgentKey})
 
 	if err := grpcServer.Serve(agent.connect); err != nil {
 		logger.Fatalf("failed to serve: %s", err)
@@ -71,7 +79,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 }
 
 func (agent *KlevrAgent) PrimaryTaskSend(ip string, task []byte) {
-	serverAddr := ip + port
+	serverAddr := net.JoinHostPort(ip, port)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		logger.Errorf("did not connect :%v", err)

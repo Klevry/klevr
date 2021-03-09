@@ -38,7 +38,6 @@ func (tx *Tx) deletePrimaryAgent(zoneID uint64) {
 	}
 
 	logger.Debug(res)
-
 }
 
 func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
@@ -100,9 +99,9 @@ func (tx *Tx) updateAgentStatus(ids []uint64) {
 	}
 }
 
-func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
-	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = ? WHERE ID = ?",
-		accessTime, 1, id)
+func (tx *Tx) updateAccessAgent(agentKey string, accessTime time.Time) int64 {
+	result, err := tx.Exec("UPDATE `AGENTS` SET `LAST_ACCESS_TIME` = ?, `IS_ACTIVE` = 1 WHERE AGENT_KEY = ?",
+		accessTime, agentKey)
 
 	if err != nil {
 		panic(err)
@@ -110,7 +109,20 @@ func (tx *Tx) updateAccessAgent(id uint64, accessTime time.Time) {
 
 	cnt, _ := result.RowsAffected()
 
-	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, id)
+	logger.Debugf("Access information updated Agent(%d) : [%+v]", cnt, agentKey)
+
+	return cnt
+}
+
+func (tx *Tx) deleteAgent(zoneID uint64) {
+	sql := "delete a from AGENTS a where a.GROUP_ID = ?"
+	res, err := tx.Exec(sql, zoneID)
+	if err != nil {
+		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+		panic(err)
+	}
+
+	logger.Debug(res)
 }
 
 func (tx *Tx) updateZoneStatus(arrAgent *[]Agents) {
@@ -150,6 +162,13 @@ func (tx *Tx) addAgentGroup(ag *AgentGroups) {
 
 	logger.Debugf("Inserted AgentGroup(%d) : %v", cnt, ag)
 
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (tx *Tx) deleteAgentGroup(groupID uint64) {
+	_, err := tx.Where("ID = ?", groupID).Delete(&AgentGroups{})
 	if err != nil {
 		panic(err)
 	}
@@ -207,6 +226,8 @@ func (tx *Tx) updateAPIKey(auth *ApiAuthentications) {
 func (tx *Tx) getAPIKey(groupID uint64) (*ApiAuthentications, bool) {
 	var auth ApiAuthentications
 	exist := common.CheckGetQuery(tx.Where("group_id = ?", groupID).Get(&auth))
+	qry, args := tx.LastSQL()
+	logger.Debugf("query: %s, args: %v", qry, args)
 	logger.Debugf("Selected ApiAuthentications : %v", auth)
 
 	return &auth, exist
@@ -486,15 +507,17 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
 
 	// condition 추가
-	if statuses != nil {
+	if statuses != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("STATUS", statuses))
 	}
-	if agentKeys != nil {
+	if agentKeys != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("AGENT_KEY", agentKeys))
 	}
-	if taskNames != nil {
+	if taskNames != nil && !(len(statuses) == 1 && statuses[0] == "") {
 		stmt = stmt.And(builder.In("NAME", taskNames))
 	}
+
+	tx.Engine().ShowSQL(true)
 
 	cnt, err := stmt.FindAndCount(&tasks)
 	if err != nil {
@@ -553,6 +576,124 @@ func (tx *Tx) purgeTask(id uint64) {
 	}
 
 	_, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (tx *Tx) getConsoleMember(userID string) (int64, *[]PageMembers) {
+	var members []PageMembers
+
+	cnt, err := tx.Where("USER_ID = ?", userID).FindAndCount(&members)
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt, &members
+}
+
+func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
+	result, err := tx.Exec("INSERT INTO `PAGE_MEMBERS` (`user_id`,`user_password`, `activated`, `api_key`) VALUES (?,?,?,?)", p.UserId, p.UserPassword, p.Activated, p.ApiKey)
+	if err != nil {
+		panic(err)
+	}
+
+	result.RowsAffected()
+
+	id, _ := result.LastInsertId()
+
+	p.Id = uint64(id)
+
+	logger.Debugf("Inserted task : %v", p)
+
+	return p
+}
+
+func (tx *Tx) updateConsoleMember(p *PageMembers) {
+	cnt, err := tx.Where("USER_ID = ?", p.UserId).Cols("ACTIVATED").Update(p)
+	logger.Debugf("Updated PageMember(%d) : %v", cnt, p)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (tx *Tx) deleteApiAuthentication(zoneID uint64) {
+	sql := "delete a from API_AUTHENTICATIONS a where a.GROUP_ID = ?"
+	res, err := tx.Exec(sql, zoneID)
+	if err != nil {
+		logger.Warningf("%+v", errors.Wrap(err, "sql error"))
+		panic(err)
+	}
+
+	logger.Debug(res)
+}
+
+func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthentications) {
+	var apiAuths []ApiAuthentications
+
+	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&apiAuths)
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt, &apiAuths
+}
+
+func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentials {
+	c.Value = manager.encrypt(c.Value)
+
+	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`name`,`value`) VALUES (?,?,?)",
+		c.ZoneId, c.Name, c.Value)
+
+	if err != nil {
+		panic(err)
+	}
+
+	result.RowsAffected()
+
+	id, _ := result.LastInsertId()
+
+	c.Id = uint64(id)
+
+	logger.Debugf("Inserted credential : %v", c)
+
+	return c
+}
+
+func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, bool) {
+	var credential Credentials
+
+	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ID = ?", id).Get(&credential))
+	logger.Debugf("Selected Credential : %v", credential)
+
+	return &credential, exist
+}
+
+func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
+	var credentials []Credentials
+
+	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
+
+	// condition 추가
+	if credentialNames != nil {
+		stmt = stmt.And(builder.In("NAME", credentialNames))
+	}
+
+	tx.Engine().ShowSQL(true)
+
+	cnt, err := stmt.FindAndCount(&credentials)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Selected Credentials : %d", cnt)
+
+	return &credentials, cnt > 0
+}
+
+func (tx *Tx) deleteCredential(id uint64) {
+	_, err := tx.Where("ID = ?", id).Delete(&Credentials{})
 	if err != nil {
 		panic(err)
 	}

@@ -3,12 +3,18 @@ definitions:
     properties:
       agentKey:
         type: string
+      core:
+        type: integer
+      disk:
+        type: integer
       ip:
         type: string
       isActive:
         type: boolean
       lastAliveCheckTime:
-        type: JSONTime
+        $ref: '#/definitions/common.JSONTime'
+      memory:
+        type: integer
       port:
         type: integer
       version:
@@ -17,13 +23,42 @@ definitions:
   common.Body:
     properties:
       agent:
-        type: BodyAgent
+        $ref: '#/definitions/common.BodyAgent'
       me:
-        type: Me
+        $ref: '#/definitions/common.Me'
       task:
         items:
           $ref: '#/definitions/common.KlevrTask'
         type: array
+    type: object
+  common.BodyAgent:
+    properties:
+      nodes:
+        items:
+          $ref: '#/definitions/common.Agent'
+        type: array
+      primary:
+        $ref: '#/definitions/common.Primary'
+    type: object
+  common.JSONTime:
+    properties:
+      time.Time:
+        type: string
+    type: object
+  common.KlevrCredential:
+    properties:
+      createdAt:
+        $ref: '#/definitions/common.JSONTime'
+      id:
+        type: integer
+      name:
+        type: string
+      updatedAt:
+        $ref: '#/definitions/common.JSONTime'
+      value:
+        type: string
+      zoneId:
+        type: integer
     type: object
   common.KlevrTask:
     properties:
@@ -32,11 +67,13 @@ definitions:
       callbackUrl:
         type: string
       createdAt:
-        type: JSONTime
+        $ref: '#/definitions/common.JSONTime'
       cron:
         type: string
       currentStep:
         type: integer
+      eventHookSendingType:
+        type: string
       exeAgentChangeable:
         type: boolean
       exeAgentKey:
@@ -47,6 +84,8 @@ definitions:
         type: boolean
       id:
         type: integer
+      isChangedResult:
+        type: boolean
       isFailedRecover:
         type: boolean
       log:
@@ -58,26 +97,79 @@ definitions:
       result:
         type: string
       schedule:
-        type: JSONTime
+        $ref: '#/definitions/common.JSONTime'
       showLog:
         type: boolean
       status:
-        type: TaskStatus
+        type: string
       steps:
         items:
-          type: KlevrTaskStep
+          $ref: '#/definitions/common.KlevrTaskStep'
         type: array
       taskType:
-        type: TaskType
+        type: string
       timeout:
         type: integer
       totalStepCount:
         type: integer
       untilRun:
-        type: JSONTime
+        $ref: '#/definitions/common.JSONTime'
       updatedAt:
-        type: JSONTime
+        $ref: '#/definitions/common.JSONTime'
       zoneId:
+        type: integer
+    type: object
+  common.KlevrTaskStep:
+    properties:
+      command:
+        type: string
+      commandName:
+        type: string
+      commandType:
+        type: string
+      id:
+        type: integer
+      isRecover:
+        type: boolean
+      seq:
+        type: integer
+    type: object
+  common.Me:
+    properties:
+      callCycle:
+        type: integer
+      core:
+        type: integer
+      deleted:
+        type: boolean
+      disk:
+        type: integer
+      encKey:
+        type: string
+      hmacKey:
+        type: string
+      ip:
+        type: string
+      logLevel:
+        type: string
+      memory:
+        type: integer
+      port:
+        type: integer
+      version:
+        type: string
+    type: object
+  common.Primary:
+    properties:
+      agentKey:
+        type: string
+      ip:
+        type: string
+      isActive:
+        type: boolean
+      lastAccessTime:
+        type: integer
+      port:
         type: integer
     type: object
   manager.AgentGroups:
@@ -96,6 +188,13 @@ definitions:
         type: string
       userId:
         type: integer
+    type: object
+  manager.Credential:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
     type: object
   manager.KlevrVariable:
     properties:
@@ -123,9 +222,26 @@ definitions:
       resultModel:
         type: object
     type: object
+  manager.SimpleReservedCommand:
+    properties:
+      command:
+        type: string
+      parameter:
+        type: string
+    type: object
+  manager.TaskStatus:
+    properties:
+      agent:
+        type: string
+      date:
+        type: string
+      status:
+        type: string
+      taskid:
+        type: string
+    type: object
 info:
   contact: {}
-  license: {}
 paths:
   /agents/{agentKey}:
     put:
@@ -248,6 +364,215 @@ paths:
       summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
+  /console/activated/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Klevr Console 사용자의 활성화 상태를 확인한다.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"status\":activated/initialized}'
+          schema:
+            type: string
+      summary: 사용자 활성화 상태
+      tags:
+      - Console
+  /console/changepassword:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Klevr Console 사용자의 패스워드를 변경한다.
+      parameters:
+      - description: User ID
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: Current Password
+        in: formData
+        name: pw
+        type: string
+      - description: Confirmed Password
+        in: formData
+        name: cpw
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Password 변경
+      tags:
+      - Console
+  /console/credentials:
+    get:
+      consumes:
+      - application/json
+      description: 등록되어 있는 Credential 리스트.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.Credential'
+            type: array
+      summary: Credential 리스트.
+      tags:
+      - Console
+    post:
+      consumes:
+      - application/json
+      description: 신규 Credential을 추가한다.
+      parameters:
+      - description: Credential(Key, Value)
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/manager.Credential'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/manager.Credential'
+      summary: Credential을 추가한다.
+      tags:
+      - Console
+  /console/credentials/{key}:
+    delete:
+      consumes:
+      - application/json
+      description: Key Name에 해당하는 Credential을 삭제한다.
+      parameters:
+      - description: Credential Name
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: Credential을 삭제한다.
+      tags:
+      - Console
+  /console/groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: groupID에 해당하는 Group(Zone)을 제거한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: Klevr Group(Zone)을 제거한다.
+      tags:
+      - Console
+  /console/groups/{groupID}/agents/{agentKey}:
+    delete:
+      consumes:
+      - application/json
+      description: agentKey에 해당하는 Agent를 종료한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: agent key
+        in: path
+        name: agentKey
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: Klevr Agent를 종료한다.
+      tags:
+      - Console
+  /console/signin:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Klevr Console 사용자 SignIn.
+      parameters:
+      - description: User ID
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: Current Password
+        in: formData
+        name: pw
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: SignIn
+      tags:
+      - Console
+  /console/signout:
+    get:
+      consumes:
+      - application/json
+      description: Klevr Console 사용자 SignOut.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: Sign Out
+      tags:
+      - Console
+  /console/taskstatus:
+    get:
+      consumes:
+      - application/json
+      description: Task Status 리스트.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/manager.TaskStatus'
+            type: array
+      summary: Task Status 리스트.
+      tags:
+      - Console
   /inner/commands:
     get:
       consumes:
@@ -263,6 +588,100 @@ paths:
               $ref: '#/definitions/manager.ReservedCommand'
             type: array
       summary: 예약어 커맨드 정보를 반환한다.
+      tags:
+      - servers
+  /inner/credentials:
+    get:
+      consumes:
+      - application/json
+      description: 검색조건에 해당하는 Credential 목록을 반환한다.
+      parameters:
+      - description: ZONE ID 배열
+        in: query
+        items:
+          type: integer
+        name: groupID
+        required: true
+        type: array
+      - description: Credential NAME 배열
+        in: query
+        items:
+          type: string
+        name: name
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.KlevrCredential'
+            type: array
+      summary: Credential 목록을 반환한다.
+      tags:
+      - servers
+    post:
+      consumes:
+      - application/json
+      description: KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.
+      parameters:
+      - description: Credential
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.KlevrCredential'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrCredential'
+      summary: Credential을 등록한다.
+      tags:
+      - servers
+  /inner/credentials/{credentialID}:
+    delete:
+      consumes:
+      - application/json
+      description: credentialID에 해당하는 credential을 삭제한다.
+      parameters:
+      - description: credential id
+        in: path
+        name: credentialID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true}'
+          schema:
+            type: string
+      summary: Credential을 삭제한다.
+      tags:
+      - servers
+    get:
+      consumes:
+      - application/json
+      description: credentialID에 해당하는 Credential를 조회한다.
+      parameters:
+      - description: credential id
+        in: path
+        name: credentialID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrCredential'
+      summary: Credential를 조회한다.
       tags:
       - servers
   /inner/groups:
@@ -304,6 +723,26 @@ paths:
       tags:
       - servers
   /inner/groups/{groupID}:
+    delete:
+      consumes:
+      - application/json
+      description: KLEVR ZONE을 삭제한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"deleted\":true/false}'
+          schema:
+            type: string
+      summary: ZONE을 삭제한다.
+      tags:
+      - servers
     get:
       consumes:
       - application/json
@@ -387,7 +826,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200": {}
+        "200":
+          description: ""
       summary: 사용자 그룹에 API key를 등록한다.
       tags:
       - servers
@@ -410,7 +850,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200": {}
+        "200":
+          description: ""
       summary: 사용자 그룹의 API key를 수정한다.
       tags:
       - servers
@@ -433,6 +874,57 @@ paths:
           schema:
             $ref: '#/definitions/common.Agent'
       summary: primary agent 정보를 반환한다.
+      tags:
+      - servers
+  /inner/health:
+    get:
+      consumes:
+      - application/json
+      description: klevr manager 상태 체크
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"health\":ok}'
+          schema:
+            type: string
+      summary: klevr manager 확인용
+      tags:
+      - servers
+  /inner/loglevel:
+    get:
+      consumes:
+      - application/json
+      description: klevr manager의 현재 로그 레벨
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: klevr manager 로그 레벨
+      tags:
+      - servers
+    put:
+      consumes:
+      - application/json
+      description: klevr manager의 로그 레벨 변경
+      parameters:
+      - description: Log Level(debug, info, warn, error, fatal)
+        in: body
+        name: b
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{\"updated\":true|false}'
+          schema:
+            type: string
+      summary: klevr manager 로그 레벨
       tags:
       - servers
   /inner/tasks:
@@ -500,6 +992,60 @@ paths:
       summary: TASK를 등록한다.
       tags:
       - servers
+  /inner/tasks/{groupID}/simple/inline:
+    post:
+      consumes:
+      - application/json
+      description: 간단하게 실행할 수 있는 inline script 형태의 simple TASK를 등록한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: inline script
+        in: body
+        name: b
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrTask'
+      summary: inline simple TASK를 등록한다.
+      tags:
+      - servers
+  /inner/tasks/{groupID}/simple/reserved:
+    post:
+      consumes:
+      - application/json
+      description: 간단하게 실행할 수 있는 reserved simple TASK를 등록한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: TASK
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/manager.SimpleReservedCommand'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrTask'
+      summary: reserved simple TASK를 등록한다.
+      tags:
+      - servers
   /inner/tasks/{taskID}:
     delete:
       consumes:
@@ -558,14 +1104,4 @@ paths:
       summary: Klevr에서 제공하는 시스템 변수 목록을 조회한다.
       tags:
       - servers
-  /temp:
-    get:
-      consumes:
-      - application/json
-      description: 에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.
-      produces:
-      - application/json
-      summary: 에이전트의 handshake 요청을 받아 처리한다.
-      tags:
-      - temp
 swagger: "2.0"

@@ -1,8 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {},
-        "license": {}
+        "contact": {}
     },
     "paths": {
         "/agents/handshake": {
@@ -184,6 +183,323 @@
                 }
             }
         },
+        "/console/activated/{id}": {
+            "get": {
+                "description": "Klevr Console 사용자의 활성화 상태를 확인한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "사용자 활성화 상태",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"status\\\":activated/initialized}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/changepassword": {
+            "post": {
+                "description": "Klevr Console 사용자의 패스워드를 변경한다.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Password 변경",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current Password",
+                        "name": "pw",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Confirmed Password",
+                        "name": "cpw",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/console/credentials": {
+            "get": {
+                "description": "등록되어 있는 Credential 리스트.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Credential 리스트.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.Credential"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "신규 Credential을 추가한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Credential을 추가한다.",
+                "parameters": [
+                    {
+                        "description": "Credential(Key, Value)",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.Credential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/manager.Credential"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/credentials/{key}": {
+            "delete": {
+                "description": "Key Name에 해당하는 Credential을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Credential을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Credential Name",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/groups/{groupID}": {
+            "delete": {
+                "description": "groupID에 해당하는 Group(Zone)을 제거한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Klevr Group(Zone)을 제거한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/groups/{groupID}/agents/{agentKey}": {
+            "delete": {
+                "description": "agentKey에 해당하는 Agent를 종료한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Klevr Agent를 종료한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "agent key",
+                        "name": "agentKey",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/console/signin": {
+            "post": {
+                "description": "Klevr Console 사용자 SignIn.",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "SignIn",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current Password",
+                        "name": "pw",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/console/signout": {
+            "get": {
+                "description": "Klevr Console 사용자 SignOut.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Sign Out",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/console/taskstatus": {
+            "get": {
+                "description": "Task Status 리스트.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "Task Status 리스트.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manager.TaskStatus"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inner/commands": {
             "get": {
                 "description": "Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.",
@@ -205,6 +521,148 @@
                             "items": {
                                 "$ref": "#/definitions/manager.ReservedCommand"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/credentials": {
+            "get": {
+                "description": "검색조건에 해당하는 Credential 목록을 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential 목록을 반환한다.",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "description": "ZONE ID 배열",
+                        "name": "groupID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Credential NAME 배열",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.KlevrCredential"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 등록한다.",
+                "parameters": [
+                    {
+                        "description": "Credential",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/credentials/{credentialID}": {
+            "get": {
+                "description": "credentialID에 해당하는 Credential를 조회한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential를 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "credential id",
+                        "name": "credentialID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "credentialID에 해당하는 credential을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "credential id",
+                        "name": "credentialID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true}",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -295,6 +753,36 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/manager.AgentGroups"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "KLEVR ZONE을 삭제한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "ZONE을 삭제한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"deleted\\\":true/false}",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -397,7 +885,9 @@
                     }
                 ],
                 "responses": {
-                    "200": {}
+                    "200": {
+                        "description": ""
+                    }
                 }
             },
             "post": {
@@ -431,7 +921,9 @@
                     }
                 ],
                 "responses": {
-                    "200": {}
+                    "200": {
+                        "description": ""
+                    }
                 }
             }
         },
@@ -462,6 +954,84 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/common.Agent"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/health": {
+            "get": {
+                "description": "klevr manager 상태 체크",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "klevr manager 확인용",
+                "responses": {
+                    "200": {
+                        "description": "{\\\"health\\\":ok}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/loglevel": {
+            "get": {
+                "description": "klevr manager의 현재 로그 레벨",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "klevr manager 로그 레벨",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "klevr manager의 로그 레벨 변경",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "klevr manager 로그 레벨",
+                "parameters": [
+                    {
+                        "description": "Log Level(debug, info, warn, error, fatal)",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\\\"updated\\\":true|false}",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -565,6 +1135,88 @@
                 }
             }
         },
+        "/inner/tasks/{groupID}/simple/inline": {
+            "post": {
+                "description": "간단하게 실행할 수 있는 inline script 형태의 simple TASK를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "inline simple TASK를 등록한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "inline script",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
+        "/inner/tasks/{groupID}/simple/reserved": {
+            "post": {
+                "description": "간단하게 실행할 수 있는 reserved simple TASK를 등록한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "reserved simple TASK를 등록한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "TASK",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.SimpleReservedCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTask"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/tasks/{taskID}": {
             "get": {
                 "description": "taskID에 해당하는 TASK를 조회한다.",
@@ -652,21 +1304,6 @@
                     }
                 }
             }
-        },
-        "/temp": {
-            "get": {
-                "description": "에이전트 프로세스가 기동시 최초 한번 handshake를 요청하여 에이전트 정보 등록 및 에이전트 실행에 필요한 실행 정보를 반환한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "temp"
-                ],
-                "summary": "에이전트의 handshake 요청을 받아 처리한다."
-            }
         }
     },
     "definitions": {
@@ -676,6 +1313,12 @@
                 "agentKey": {
                     "type": "string"
                 },
+                "core": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
                 "ip": {
                     "type": "string"
                 },
@@ -683,7 +1326,10 @@
                     "type": "boolean"
                 },
                 "lastAliveCheckTime": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "memory": {
+                    "type": "integer"
                 },
                 "port": {
                     "type": "integer"
@@ -697,16 +1343,61 @@
             "type": "object",
             "properties": {
                 "agent": {
-                    "type": "BodyAgent"
+                    "$ref": "#/definitions/common.BodyAgent"
                 },
                 "me": {
-                    "type": "Me"
+                    "$ref": "#/definitions/common.Me"
                 },
                 "task": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/common.KlevrTask"
                     }
+                }
+            }
+        },
+        "common.BodyAgent": {
+            "type": "object",
+            "properties": {
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/common.Agent"
+                    }
+                },
+                "primary": {
+                    "$ref": "#/definitions/common.Primary"
+                }
+            }
+        },
+        "common.JSONTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
+                    "type": "string"
+                }
+            }
+        },
+        "common.KlevrCredential": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "zoneId": {
+                    "type": "integer"
                 }
             }
         },
@@ -720,13 +1411,16 @@
                     "type": "string"
                 },
                 "createdAt": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "cron": {
                     "type": "string"
                 },
                 "currentStep": {
                     "type": "integer"
+                },
+                "eventHookSendingType": {
+                    "type": "string"
                 },
                 "exeAgentChangeable": {
                     "type": "boolean"
@@ -742,6 +1436,9 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "isChangedResult": {
+                    "type": "boolean"
                 },
                 "isFailedRecover": {
                     "type": "boolean"
@@ -759,22 +1456,22 @@
                     "type": "string"
                 },
                 "schedule": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "showLog": {
                     "type": "boolean"
                 },
                 "status": {
-                    "type": "TaskStatus"
+                    "type": "string"
                 },
                 "steps": {
                     "type": "array",
                     "items": {
-                        "type": "KlevrTaskStep"
+                        "$ref": "#/definitions/common.KlevrTaskStep"
                     }
                 },
                 "taskType": {
-                    "type": "TaskType"
+                    "type": "string"
                 },
                 "timeout": {
                     "type": "integer"
@@ -783,12 +1480,93 @@
                     "type": "integer"
                 },
                 "untilRun": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "updatedAt": {
-                    "type": "JSONTime"
+                    "$ref": "#/definitions/common.JSONTime"
                 },
                 "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.KlevrTaskStep": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "commandName": {
+                    "type": "string"
+                },
+                "commandType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isRecover": {
+                    "type": "boolean"
+                },
+                "seq": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.Me": {
+            "type": "object",
+            "properties": {
+                "callCycle": {
+                    "type": "integer"
+                },
+                "core": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "boolean"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "encKey": {
+                    "type": "string"
+                },
+                "hmacKey": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "logLevel": {
+                    "type": "string"
+                },
+                "memory": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "common.Primary": {
+            "type": "object",
+            "properties": {
+                "agentKey": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "lastAccessTime": {
+                    "type": "integer"
+                },
+                "port": {
                     "type": "integer"
                 }
             }
@@ -816,6 +1594,17 @@
                 },
                 "userId": {
                     "type": "integer"
+                }
+            }
+        },
+        "manager.Credential": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -856,6 +1645,34 @@
                 },
                 "resultModel": {
                     "type": "object"
+                }
+            }
+        },
+        "manager.SimpleReservedCommand": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "parameter": {
+                    "type": "string"
+                }
+            }
+        },
+        "manager.TaskStatus": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "taskid": {
+                    "type": "string"
                 }
             }
         }

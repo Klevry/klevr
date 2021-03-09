@@ -18,6 +18,9 @@ const (
 	CtxAPI       = CtxPrefix + "API"
 	CtxDbConn    = CtxPrefix + "DB"
 	CtxDbSession = CtxPrefix + "TX"
+	CtxMqConn    = CtxPrefix + "MQConn"
+	CtxMqChannel = CtxPrefix + "MQChannel"
+	CtxMqQueue   = CtxPrefix + "MQQueue"
 )
 
 // CtxGetServer get KlevrManager from context

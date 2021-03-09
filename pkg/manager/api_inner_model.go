@@ -111,3 +111,14 @@ type SimpleReservedCommand struct {
 	Parameter string `json:"parameter"`
 	Command   string `json:"command"`
 }
+
+type Agent struct {
+	AgentKey           string           `json:"agentKey"`
+	IsActive           bool             `json:"isActive"`
+	LastAliveCheckTime *common.JSONTime `json:"lastAliveCheckTime"`
+	LastAccessTime     *common.JSONTime `json:"lastAccessTime"`
+	IP                 string           `json:"ip"`
+	Port               int              `json:"port"`
+	Version            string           `json:"version"`
+	*common.Resource
+}

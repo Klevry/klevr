@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
@@ -23,6 +24,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/groups", serversAPI.addGroup)
 	registURI(inner, GET, "/groups", serversAPI.getGroups)
 	registURI(inner, GET, "/groups/{groupID}", serversAPI.getGroup)
+	registURI(inner, DELETE, "/groups/{groupID}", serversAPI.deleteGroup)
 	registURI(inner, POST, "/groups/{groupID}/apikey", serversAPI.addAPIKey)
 	registURI(inner, PUT, "/groups/{groupID}/apikey", serversAPI.updateAPIKey)
 	registURI(inner, GET, "/groups/{groupID}/apikey", serversAPI.getAPIKey)
@@ -36,6 +38,13 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
+	registURI(inner, GET, "/health", serversAPI.healthCheck)
+	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
+	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
+	registURI(inner, POST, "/credentials", serversAPI.addCredential)
+	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
+	registURI(inner, GET, "/credentials", serversAPI.getCredentials)
+	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
 }
 
 // addSimpleReservedTask godoc
@@ -45,6 +54,7 @@ func (api *API) InitInner(inner *mux.Router) {
 // @Accept json
 // @Produce json
 // @Router /inner/tasks/{groupID}/simple/reserved [post]
+// @Param groupID path uint64 true "ZONE ID"
 // @Param b body manager.SimpleReservedCommand true "TASK"
 // @Success 200 {object} common.KlevrTask
 func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +128,7 @@ func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Requ
 // @Accept json
 // @Produce json
 // @Router /inner/tasks/{groupID}/simple/inline [post]
+// @Param groupID path uint64 true "ZONE ID"
 // @Param b body string true "inline script"
 // @Success 200 {object} common.KlevrTask
 func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Request) {
@@ -267,6 +278,81 @@ func (api *serversAPI) getReservedCommands(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "%s", b)
 }
 
+// healthCheck godoc
+// @Summary klevr manager 확인용
+// @Description klevr manager 상태 체크
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/health [get]
+// @Success 200 {object} string "{\"health\":ok}"
+func (api *serversAPI) healthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"health\":ok}")
+}
+
+// updateLogLevel godoc
+// @Summary klevr manager 로그 레벨
+// @Description klevr manager의 로그 레벨 변경
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/loglevel [put]
+// @Param b body string true "Log Level(debug, info, warn, error, fatal)"
+// @Success 200 {object} string "{\"updated\":true|false}"
+func (api *serversAPI) updateLogLevel(w http.ResponseWriter, r *http.Request) {
+	nr := &common.Request{Request: r}
+	targetLevel := nr.BodyToString()
+	var level logger.Level
+
+	switch strings.ToLower(targetLevel) {
+	case "debug":
+		level = 0
+	case "info":
+		level = 1
+	case "warn", "warning":
+		level = 2
+	case "error":
+		level = 3
+	case "fatal":
+		level = 4
+	}
+
+	logger.SetLevel(level)
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"updated\":ok}")
+}
+
+// getLogLevel godoc
+// @Summary klevr manager 로그 레벨
+// @Description klevr manager의 현재 로그 레벨
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/loglevel [get]
+// @Success 200 {object} string"
+func (api *serversAPI) getLogLevel(w http.ResponseWriter, r *http.Request) {
+	level := logger.GetLevel()
+
+	var levelValue string
+	switch int(level) {
+	case 0:
+		levelValue = "debug"
+	case 1:
+		levelValue = "info"
+	case 2:
+		levelValue = "warn"
+	case 3:
+		levelValue = "error"
+	case 4:
+		levelValue = "fatal"
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, levelValue)
+}
+
 // getAgents godoc
 // @Summary zone의 agent 목록을 반환한다.
 // @Description groupID에 해당하는 klevr zone의 모든 agent 정보를 반환한다.
@@ -291,16 +377,17 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cnt, agents := tx.getAgentsByGroupId(groupID)
-	nodes := make([]common.Agent, cnt)
+	nodes := make([]Agent, cnt)
 
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
 	if cnt > 0 {
 		for i, a := range *agents {
-			nodes[i] = common.Agent{
+			nodes[i] = Agent{
 				AgentKey:           a.AgentKey,
 				IsActive:           byteToBool(a.IsActive),
 				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
+				LastAccessTime:     &common.JSONTime{a.LastAccessTime},
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
@@ -775,6 +862,61 @@ func (api *serversAPI) getGroup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", b)
 }
 
+// deleteGroup godoc
+// @Summary ZONE을 삭제한다.
+// @Description KLEVR ZONE을 삭제한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/groups/{groupID} [delete]
+// @Param groupID path uint64 true "ZONE ID"
+// @Success 200 {object} string "{\"deleted\":true/false}"
+func (api *serversAPI) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	qryOperation := r.URL.Query()["op"]
+
+	if qryOperation[0] == "db" {
+		vars := mux.Vars(r)
+		groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+		if err != nil {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["groupID"]))
+			return
+		}
+
+		// logger.Debug("%v", time.Now().UTC())
+
+		tx.deletePrimaryAgent(groupID)
+		_, ok := tx.getPrimaryAgent(groupID)
+		if ok == true {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(primaryagent) of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteApiAuthentication(groupID)
+		cnt, _ := tx.getApiAuthenticationsByGroupId(groupID)
+		if cnt > 0 {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(apiauthentication) of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteAgent(groupID)
+		cnt, _ = tx.getAgentsByGroupId(groupID)
+		if cnt > 0 {
+			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone of the zoneid: %d", groupID))
+			return
+		}
+
+		tx.deleteAgentGroup(groupID)
+
+		w.WriteHeader(200)
+		fmt.Fprintf(w, "{\"deleted\":%v}", true)
+	} else {
+		// TODO: agent와 db를 모두 제거하는 로직
+	}
+}
+
 func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	persist := &Tasks{
 		Id:          dto.ID,
@@ -912,6 +1054,214 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	}
 
 	logger.Debugf("TaskPersistToDto \npersist : [%+v]\ndto : [%+v]", persist, dto)
+
+	return dto
+}
+
+// addCredential godoc
+// @Summary Credential을 등록한다.
+// @Description KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [post]
+// @Param b body common.KlevrCredential true "Credential"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+	var c common.KlevrCredential
+
+	err := json.NewDecoder(r.Body).Decode(&c)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	logger.Debugf("request add credential : [%+v]", c)
+
+	// DTO -> entity
+	persistCredential := *CredentialDtoToPerist(&c)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	persistCredential = *tx.insertCredential(manager, &persistCredential)
+
+	task, _ := tx.getTask(manager, persistCredential.Id)
+
+	dto := TaskPersistToDto(task)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// getCredential godoc
+// @Summary Credential를 조회한다.
+// @Description credentialID에 해당하는 Credential를 조회한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials/{credentialID} [get]
+// @Param credentialID path uint64 true "credential id"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) getCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	credentialID, err := strconv.ParseUint(vars["credentialID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid credential id : %+v", vars["credentialID"]))
+		return
+	}
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	credential, exist := tx.getCredential(manager, credentialID)
+
+	if exist {
+		dto := CredentialPersistToDto(credential)
+
+		b, err := json.Marshal(dto)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+
+		w.WriteHeader(200)
+		fmt.Fprintf(w, "%s", b)
+	} else {
+		common.NewHTTPError(404, fmt.Sprintf("Not exist task for ID - %d", credentialID))
+	}
+}
+
+// getCredentials godoc
+// @Summary Credential 목록을 반환한다.
+// @Description 검색조건에 해당하는 Credential 목록을 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [get]
+// @Param groupID query []uint64 true "ZONE ID 배열"
+// @Param name query []string true "Credential NAME 배열"
+// @Success 200 {object} []common.KlevrCredential
+func (api *serversAPI) getCredentials(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	groupIDs := r.URL.Query()["groupID"]
+	credentialNames := r.URL.Query()["name"]
+
+	logger.Debugf("request URI - [%s]", r.RequestURI)
+	logger.Debugf("%+v", groupIDs)
+	logger.Debugf("%+v", credentialNames)
+
+	logger.Debugf("%d", len(groupIDs))
+	logger.Debugf("%d", len(credentialNames))
+
+	if groupIDs == nil || len(groupIDs) == 0 {
+		common.WriteHTTPError(400, w, nil, "Query parameter groupID is required.")
+		return
+	}
+
+	var iGroupIDs []uint64 = make([]uint64, len(groupIDs))
+	var err error
+
+	for i, id := range groupIDs {
+		iGroupIDs[i], err = strconv.ParseUint(id, 0, 64)
+		if err != nil {
+			common.WriteHTTPError(400, w, err, fmt.Sprintf("invalid groupID - [%s]", id))
+			return
+		}
+	}
+
+	credentials, exist := tx.getCredentials(iGroupIDs, credentialNames)
+
+	var b []byte
+
+	if exist {
+		var dtos []common.KlevrCredential = make([]common.KlevrCredential, len(*credentials))
+
+		for i, c := range *credentials {
+			dtos[i] = *CredentialPersistToDto(&c)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+	}
+
+	// fmt.Fprintf(w, "%s", b)
+	w.Write(b)
+	w.WriteHeader(200)
+
+	logger.Debugf("response : [%s]", string(b))
+}
+
+// deleteCredential godoc
+// @Summary Credential을 삭제한다.
+// @Description credentialID에 해당하는 credential을 삭제한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials/{credentialID} [delete]
+// @Param credentialID path uint64 true "credential id"
+// @Success 200 {object} string "{\"deleted\":true}"
+func (api *serversAPI) deleteCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	credentialID, err := strconv.ParseUint(vars["credentialID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid credential id : %+v", vars["credentialID"]))
+		return
+	}
+
+	tx.deleteCredential(credentialID)
+
+	w.WriteHeader(200)
+	fmt.Fprint(w, "{\"deletedd\": true}")
+}
+
+func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
+	persist := &Credentials{
+		Id:     dto.ID,
+		ZoneId: dto.ZoneID,
+		Name:   dto.Name,
+		Value:  dto.Value,
+	}
+
+	logger.Debugf("CredentialDtoToPerist \ndto : [%+v]\npersist : [%+v]", dto, persist)
+
+	return persist
+}
+
+func CredentialPersistToDto(persist *Credentials) *common.KlevrCredential {
+	dto := &common.KlevrCredential{
+		ID:        persist.Id,
+		ZoneID:    persist.ZoneId,
+		Name:      persist.Name,
+		Value:     persist.Value,
+		CreatedAt: common.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt: common.JSONTime{Time: persist.UpdatedAt},
+	}
+
+	logger.Debugf("CredentialPersistToDto \npersist : [%+v]\ndto : [%+v]", persist, dto)
 
 	return dto
 }

@@ -41,6 +41,7 @@ type Routes struct {
 	Agent   *mux.Router
 	Install *mux.Router
 	Inner   *mux.Router
+	Console *mux.Router
 }
 
 // API api struct
@@ -100,11 +101,17 @@ func Init(ctx *common.Context) *API {
 	api.BaseRoutes.Inner = api.BaseRoutes.APIRoot.PathPrefix("/inner").Subrouter()
 	api.BaseRoutes.Inner.Use(CommonWrappingHandler(ctx))
 	api.BaseRoutes.Inner.Use(RequestInfoLoggerHandler)
+	api.BaseRoutes.Console = api.BaseRoutes.APIRoot.PathPrefix("/console").Subrouter()
+	api.BaseRoutes.Console.Use(CommonWrappingHandler(ctx))
+	api.BaseRoutes.Console.Use(RequestInfoLoggerHandler)
 
 	// api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 	api.InitInner(api.BaseRoutes.Inner)
+	if api.Manager.Config.Console.Secret != "" {
+		api.InitConsole(api.BaseRoutes.Console)
+	}
 
 	// health check handler(~/health)
 	api.BaseRoutes.Root.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

@@ -1,10 +1,14 @@
 package agent
 
 import (
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/jasonlvhit/gocron"
+	"fmt"
 	"net"
 	"net/http"
+	"strings"
+
+	"github.com/Klevry/klevr/pkg/common"
+	"github.com/NexClipper/logger"
+	"github.com/jasonlvhit/gocron"
 )
 
 const defaultSchedulerInterval int = 5
@@ -16,17 +20,20 @@ type DiskStatus struct {
 }
 
 type KlevrAgent struct {
-	ApiKey            string
-	Platform          string
-	Zone              string
-	Manager           string
-	AgentKey          string
-	Version           string
-	schedulerInterval int
-	connect           net.Listener
-	scheduler         *gocron.Scheduler
-	Primary           common.Primary
-	Agents            []common.Agent
+	ApiKey               string
+	Platform             string
+	Zone                 string
+	Manager              string
+	NetworkInterfaceName string
+	HttpTimeout          int
+	WorkerHealthCheck    bool
+	AgentKey             string
+	Version              string
+	schedulerInterval    int
+	connect              net.Listener
+	scheduler            *gocron.Scheduler
+	Primary              common.Primary
+	Agents               []common.Agent
 }
 
 func NewKlevrAgent() *KlevrAgent {
@@ -40,10 +47,27 @@ func NewKlevrAgent() *KlevrAgent {
 }
 
 func (agent *KlevrAgent) Run() {
-	agent.Primary = HandShake(agent)
+	primary := HandShake(agent)
+	if primary == nil || primary.IP == "" {
+		logger.Error("Failed Handshake: Invalid Primary")
+		return
+	}
+	agent.Primary = *primary
 	agent.startScheduler()
 
-	http.ListenAndServe(":18800", nil)
+	http.HandleFunc("/loglevel", agent.LogLevelHandler)
+	if agent.NetworkInterfaceName == "" {
+		err := http.ListenAndServe(":18800", nil)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		address := LocalIPAddress(agent.NetworkInterfaceName)
+		err := http.ListenAndServe(fmt.Sprintf("%s:18800", address), nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (agent *KlevrAgent) startScheduler() {
@@ -51,7 +75,7 @@ func (agent *KlevrAgent) startScheduler() {
 
 	s := gocron.NewScheduler()
 
-	if Check_primary(agent.Primary.IP) {
+	if agent.checkPrimary(agent.Primary.IP) {
 		var interval int
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval
@@ -67,4 +91,54 @@ func (agent *KlevrAgent) startScheduler() {
 	go func() {
 		<-s.Start()
 	}()
+}
+
+func (agent *KlevrAgent) LogLevelHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		{
+			level := logger.GetLevel()
+
+			var levelValue string
+			switch int(level) {
+			case 0:
+				levelValue = "debug"
+			case 1:
+				levelValue = "info"
+			case 2:
+				levelValue = "warn"
+			case 3:
+				levelValue = "error"
+			case 4:
+				levelValue = "fatal"
+			}
+
+			w.WriteHeader(200)
+			fmt.Fprintf(w, levelValue)
+		}
+	case "PUT":
+		{
+			targetLevel := make([]byte, r.ContentLength)
+			r.Body.Read(targetLevel)
+			var level logger.Level
+
+			switch strings.ToLower(string(targetLevel)) {
+			case "debug":
+				level = 0
+			case "info":
+				level = 1
+			case "warn", "warning":
+				level = 2
+			case "error":
+				level = 3
+			case "fatal":
+				level = 4
+			}
+
+			logger.SetLevel(level)
+
+			w.WriteHeader(200)
+			fmt.Fprintf(w, "{\"updated\":ok}")
+		}
+	}
 }
