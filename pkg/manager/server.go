@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/rabbitmq"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ type KlevrManager struct {
 }
 
 type ManagerMQ struct {
-	Connection *amqp.Connection
+	Connection *rabbitmq.Connection
 	Queue      *amqp.Queue
 }
 
@@ -67,7 +68,7 @@ type Webhook struct {
 }
 
 type Mq struct {
-	Url        string
+	Url        []string
 	Name       string
 	Durable    bool
 	AutoDelete bool
@@ -131,7 +132,7 @@ func (manager *KlevrManager) Run() error {
 	if serverConfig.EventHandler == "mq" {
 		mqConfig := serverConfig.Mq
 
-		mqConn, err := amqp.Dial(mqConfig.Url)
+		mqConn, err := rabbitmq.DialCluster(mqConfig.Url)
 		if err != nil {
 			logger.Errorf("Failed to connect to MQ - %+v", errors.Cause(err))
 			panic(err)
