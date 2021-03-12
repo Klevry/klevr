@@ -288,7 +288,7 @@ func (api *serversAPI) getReservedCommands(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} string "{\"health\":ok}"
 func (api *serversAPI) healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "{\"health\":ok}")
+	fmt.Fprintf(w, "{\"health\":\"ok\"}")
 }
 
 // updateLogLevel godoc
