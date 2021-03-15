@@ -670,7 +670,7 @@ func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, boo
 	return &credential, exist
 }
 
-func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
+func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
 	var credentials []Credentials
 
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
@@ -690,6 +690,17 @@ func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Cr
 	logger.Debugf("Selected Credentials : %d", cnt)
 
 	return &credentials, cnt > 0
+}
+
+func (tx *Tx) getCredentials(groupID uint64) (*[]Credentials, int64) {
+	var credentials []Credentials
+
+	cnt, err := tx.Where("ZONE_ID = ?", groupID).FindAndCount(&credentials)
+	if err != nil {
+		panic(err)
+	}
+
+	return &credentials, cnt
 }
 
 func (tx *Tx) deleteCredential(id uint64) {
