@@ -331,12 +331,16 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		tx.Commit()
 
+		// Credential 조회
+		nCredentials, cnt := tx.getCredentials(ch.ZoneID)
+
 		// 신규 task 할당
 		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
 		if cnt > 0 {
 			var dtos []common.KlevrTask = make([]common.KlevrTask, len(*nTasks))
 
 			for i, t := range *nTasks {
+				t = TaskMatchingCredential(manager, t, nCredentials)
 				dtos[i] = *TaskPersistToDto(&t)
 			}
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -1058,6 +1059,33 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	return dto
 }
 
+func TaskMatchingCredential(manager *KlevrManager, task Tasks, credential *[]Credentials) Tasks {
+	if len(*credential) == 0 {
+		return task
+	}
+
+	if len(task.TaskDetail.Parameter) == 0 {
+		return task
+	}
+
+	r := regexp.MustCompile("{{2}[a-zA-Z0-9]*}{2}")
+	isMatch := r.MatchString(task.TaskDetail.Parameter)
+	if isMatch == false {
+		return task
+	}
+
+	for _, c := range *credential {
+		pattern := fmt.Sprintf("{{2}%s}{2}", c.Name)
+		v := manager.decrypt(c.Value)
+
+		re := regexp.MustCompile(pattern)
+		task.TaskDetail.Parameter = fmt.Sprintf("%s", re.ReplaceAllString(task.TaskDetail.Parameter, v))
+		logger.Debugf("Apply Credential : %s", task.TaskDetail.Parameter)
+	}
+
+	return task
+}
+
 // addCredential godoc
 // @Summary Credential을 등록한다.
 // @Description KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.
@@ -1185,7 +1213,7 @@ func (api *serversAPI) getCredentials(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	credentials, exist := tx.getCredentials(iGroupIDs, credentialNames)
+	credentials, exist := tx.getCredentialsByNames(iGroupIDs, credentialNames)
 
 	var b []byte
 
