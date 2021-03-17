@@ -96,3 +96,30 @@ func (agent *KlevrAgent) PrimaryTaskSend(ip string, task []byte) {
 
 	logger.Debugf("this is response: %v", r)
 }
+
+func (agent *KlevrAgent) PrimaryStatusCheck() {
+	for i, n := range agent.Agents {
+		if (agent.Primary.IP == n.IP) && (agent.Primary.AgentKey == n.AgentKey) {
+			agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
+			agent.Agents[i].IsActive = true
+		} else {
+			serverAddr := net.JoinHostPort(n.IP, port)
+			conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+			if err != nil {
+				logger.Errorf("did not connect :%v", err)
+			}
+
+			ctx, _ := context.WithTimeout(context.Background(), time.Second)
+			c := pb.NewTaskSendClient(conn)
+
+			_, resErr := c.StatusCheck(ctx, &pb.Status{})
+			if resErr == nil {
+				agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
+				agent.Agents[i].IsActive = true
+			} else {
+				logger.Debugf("PrimaryStatusCheck error: %v", resErr)
+				agent.Agents[i].IsActive = false
+			}
+		}
+	}
+}
