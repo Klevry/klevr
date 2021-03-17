@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
@@ -45,9 +44,7 @@ func Polling(agent *KlevrAgent) {
 	rb := &common.Body{}
 	agent.SendMe(rb)
 
-	for i := 0; i < len(agent.Agents); i++ {
-		agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
-	}
+	agent.PrimaryStatusCheck()
 
 	var updateMap = make(map[uint64]common.KlevrTask)
 

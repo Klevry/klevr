@@ -315,7 +315,9 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		for i, a := range nodes {
 			arrAgent[i].AgentKey = a.AgentKey
-			arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
+			if a.LastAliveCheckTime != nil {
+				arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
+			}
 			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
 			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
 			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
@@ -570,12 +572,13 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	if cnt > 0 {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
-				AgentKey: a.AgentKey,
-				IP:       a.Ip,
-				Port:     a.Port,
-				Version:  a.Version,
-				IsActive: byteToBool(a.IsActive),
-				Resource: &common.Resource{},
+				AgentKey:           a.AgentKey,
+				IP:                 a.Ip,
+				Port:               a.Port,
+				Version:            a.Version,
+				IsActive:           byteToBool(a.IsActive),
+				LastAliveCheckTime: &common.JSONTime{Time: a.LastAliveCheckTime},
+				Resource:           &common.Resource{},
 			}
 
 			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
