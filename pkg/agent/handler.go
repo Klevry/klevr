@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"runtime"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/mackerelio/go-osstat/memory"
 
 	"github.com/NexClipper/logger"
 	"google.golang.org/grpc"
@@ -22,7 +24,7 @@ type server struct {
 	agentKey string
 }
 
-func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, error) {
+func (s server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, error) {
 	logger.Debugf("Receive message body from client: %v", string(in.Task))
 
 	var t common.KlevrTask
@@ -42,10 +44,24 @@ func (s *server) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, err
 	return &pb.Message{Task: b}, nil
 }
 
-func (s *server) StatusCheck(ctx context.Context, in *pb.Status) (*pb.Status, error) {
+func (s server) StatusCheck(ctx context.Context, in *pb.Status) (*pb.Status, error) {
 	logger.Debugf("Receive message body from client: %v", in.Status)
 
-	return &pb.Status{Status: "OK"}, nil
+	disk := DiskUsage("/")
+	memory, _ := memory.Get()
+
+	agentStatus := &common.AgentStatus{
+		AgentKey: s.agentKey,
+		Resource: &common.Resource{
+			Core:   runtime.NumCPU(),
+			Memory: int(memory.Total / MB),
+			Disk:   int(disk.All / MB),
+		},
+	}
+
+	b := JsonMarshal(agentStatus)
+
+	return &pb.Status{Status: b}, nil
 }
 
 func (agent *KlevrAgent) SecondaryServer() {
@@ -71,7 +87,7 @@ func (agent *KlevrAgent) SecondaryServer() {
 
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterTaskSendServer(grpcServer, &server{agentKey: agent.AgentKey})
+	pb.RegisterTaskSendServer(grpcServer, server{agentKey: agent.AgentKey})
 
 	if err := grpcServer.Serve(agent.connect); err != nil {
 		logger.Fatalf("failed to serve: %s", err)
@@ -112,8 +128,16 @@ func (agent *KlevrAgent) PrimaryStatusCheck() {
 			ctx, _ := context.WithTimeout(context.Background(), time.Second)
 			c := pb.NewTaskSendClient(conn)
 
-			_, resErr := c.StatusCheck(ctx, &pb.Status{})
+			s, resErr := c.StatusCheck(ctx, &pb.Status{})
 			if resErr == nil {
+				var agentStatus common.AgentStatus
+				json.Unmarshal(s.Status, &agentStatus)
+
+				logger.Debugf("AgentStatus: %v", agentStatus)
+
+				agent.Agents[i].Core = agentStatus.Core
+				agent.Agents[i].Memory = agentStatus.Memory
+				agent.Agents[i].Disk = agentStatus.Disk
 				agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
 				agent.Agents[i].IsActive = true
 			} else {
