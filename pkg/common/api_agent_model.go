@@ -66,3 +66,9 @@ type Resource struct {
 	Memory int `json:"memory"`
 	Disk   int `json:"disk"`
 }
+
+// AgentStatus Agent(secondary) check status info
+type AgentStatus struct {
+	AgentKey string `json:"agentKey"`
+	*Resource
+}
