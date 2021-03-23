@@ -300,6 +300,7 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 	taskStepLen := int64(len(*t.TaskSteps))
 
 	if t.TaskSteps != nil && taskStepLen > 0 {
+		steps := make([]*TaskSteps, 0)
 		for i, ts := range *t.TaskSteps {
 			(*t.TaskSteps)[i].TaskId = t.Id
 			(*t.TaskSteps)[i].ReservedCommand = manager.encrypt(ts.ReservedCommand)
@@ -307,12 +308,25 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
 			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
+
+			step := &TaskSteps{
+				Id:              (*t.TaskSteps)[i].Id,
+				Seq:             (*t.TaskSteps)[i].Seq,
+				TaskId:          (*t.TaskSteps)[i].TaskId,
+				CommandName:     (*t.TaskSteps)[i].CommandName,
+				CommandType:     (*t.TaskSteps)[i].CommandType,
+				ReservedCommand: (*t.TaskSteps)[i].ReservedCommand,
+				InlineScript:    (*t.TaskSteps)[i].InlineScript,
+				IsRecover:       (*t.TaskSteps)[i].IsRecover,
+			}
+			steps = append(steps, step)
 		}
 
-		_, err = tx.Insert(t.TaskSteps)
+		_, err = tx.Insert(steps)
 		if err != nil {
 			panic(err)
 		}
+
 	}
 
 	return t
