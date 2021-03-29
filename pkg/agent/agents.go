@@ -26,7 +26,6 @@ type KlevrAgent struct {
 	Manager              string
 	NetworkInterfaceName string
 	HttpTimeout          int
-	WorkerHealthCheck    bool
 	AgentKey             string
 	Version              string
 	schedulerInterval    int
@@ -71,8 +70,6 @@ func (agent *KlevrAgent) Run() {
 }
 
 func (agent *KlevrAgent) startScheduler() {
-	//var scheduleFunc interface{}
-
 	s := gocron.NewScheduler()
 
 	if agent.checkPrimary(agent.Primary.IP) {

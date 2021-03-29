@@ -259,12 +259,12 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 					tw.Status = FailedRecover
 					tw.IsFailedRecover = true
 
-					tw.Log += fmt.Sprintf("%+v\n\n", v)
+					tw.Log += fmt.Sprintf(logFormat, v)
 				} else if err != nil {
 					tw.Status = FailedRecover
 					tw.IsFailedRecover = true
 
-					tw.Log += fmt.Sprintf("%+v\n\n", err)
+					tw.Log += fmt.Sprintf(logFormat, err)
 				}
 			}(err)
 
@@ -308,14 +308,14 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		logger.Debugf("execution complete with timeout : [%+v]", tw.KlevrTask)
 		if err != nil {
 			logger.Errorf("%+v", errors.WithStack(err))
-			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
+			tw.Log += fmt.Sprintf(logFormat, errors.WithStack(err))
 		}
 	} else { // 태스크 실행 without Timeout
 		_, err := future.Get()
 		logger.Debugf("execution complete without timeout: [%+v]", tw.KlevrTask)
 		if err != nil {
 			logger.Errorf("task raised errors - [%+v] - \n %+v", tw.KlevrTask, errors.WithStack(err))
-			tw.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(err))
+			tw.Log += fmt.Sprintf(logFormat, errors.WithStack(err))
 		}
 	}
 
@@ -373,7 +373,7 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	wrapperFile := path + "/wrapper.sh"
 	wrapperErr := ioutil.WriteFile(wrapperFile, []byte(wrapper), 0700)
 	if wrapperErr != nil {
-		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(wrapperErr))
+		task.Log += fmt.Sprintf(logFormat, errors.WithStack(wrapperErr))
 		return "", wrapperErr
 	}
 
@@ -402,7 +402,7 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	task.Log += errOut.String() + "\n\n"
 
 	if runErr != nil {
-		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(runErr))
+		task.Log += fmt.Sprintf(logFormat, errors.WithStack(runErr))
 		return "", runErr
 	}
 
@@ -410,7 +410,7 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	b, err := ioutil.ReadFile(resultFile)
 	if err != nil {
 		logger.Errorf("%s file read failed - %+v", resultFile, err)
-		task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(runErr))
+		task.Log += fmt.Sprintf(logFormat, errors.WithStack(runErr))
 
 		return "", err
 	}

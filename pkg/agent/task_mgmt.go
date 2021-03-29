@@ -2,8 +2,6 @@ package agent
 
 import (
 	"encoding/json"
-	"os/exec"
-	"strings"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
@@ -15,28 +13,6 @@ var executor = common.GetTaskExecutor()
 
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
-
-func checkWorkerActivate(check bool) bool {
-	if check == true {
-		provcheck := exec.Command("sh", "-c", "ssh provbee-service busybee beestatus hello > /tmp/con")
-		errcheck := provcheck.Run()
-		if errcheck != nil {
-			logger.Errorf("provbee-service is not running!!!: %v", errcheck)
-			return false
-		}
-
-		hi := ReadFile("/tmp/con")
-		str := strings.TrimRight(string(hi), "\n")
-
-		if strings.Compare(str, "hi") == 0 {
-			return true
-		}
-
-		return false
-	}
-
-	return true
-}
 
 func Polling(agent *KlevrAgent) {
 	uri := agent.Manager + "/agents/" + agent.AgentKey
@@ -84,8 +60,6 @@ func Polling(agent *KlevrAgent) {
 	// body marshal
 	b := JsonMarshal(rb)
 
-	//logger.Debugf("%v", rb)
-
 	// polling API 호출
 	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 0인 이유)
 	httpHandler := communicator.Http{
@@ -121,10 +95,6 @@ func Polling(agent *KlevrAgent) {
 	defer func() {
 		agent.Agents = body.Agent.Nodes
 	}()
-
-	// if checkWorkerActivate(agent.WorkerHealthCheck) == false {
-	// 	return
-	// }
 
 	// change task status
 	logger.Debugf("%+v", body.Task)
