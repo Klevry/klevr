@@ -22,7 +22,7 @@ const (
 )
 
 // get local ip address
-func Local_ip_add() string {
+func GetIPAddress() string {
 	// get Local IP address automatically
 	default_ip, err := netutil.ChooseHostInterface()
 	if err != nil {
@@ -35,7 +35,7 @@ func Local_ip_add() string {
 func LocalIPAddress(networkInterfaceName string) string {
 	var ipAddress string
 	if networkInterfaceName == "" {
-		ipAddress = Local_ip_add()
+		ipAddress = GetIPAddress()
 	} else {
 		nifs, err := net.Interfaces()
 		if err != nil {

@@ -105,7 +105,6 @@ func Init(ctx *common.Context) *API {
 	api.BaseRoutes.Console.Use(CommonWrappingHandler(ctx))
 	api.BaseRoutes.Console.Use(RequestInfoLoggerHandler)
 
-	// api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 	api.InitInner(api.BaseRoutes.Inner)
