@@ -1,19 +1,13 @@
 version: '3'
 services: 
    klevr-agent:
-      image: p8s.me/klevry/klevr-manager:latest
+      image: klevry/klevr-agent:latest
       ports: 
-         - "8090:8090"
-      depends_on: 
-         - klevr-db
+         - "18800:18800"
+      environment: 
+         - K_API_KEY=1231
+         - K_PLATFORM=baremetal
+         - K_ZONE_ID=13123
+         - K_MANAGER_URL="klevr-manager:8090"
       links:
-         - klevr-db
-      command:
-         - bash
-         - -c
-         - |
-            chmod +x /init-db.sh
-            /init-db.sh root root klevr-db 3306 klevr ./conf/klevr-manager-db.sql
-            chmod +x /wait-for-it.sh
-            /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
-            /klevr-manager -c ./conf/klevr-manager-compose.yml
+         - klevr-manager
