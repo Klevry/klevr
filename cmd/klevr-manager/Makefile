@@ -12,7 +12,6 @@ require: ## Check go requirement
 	go get -u
 #	curl -sL bit.ly/go_req | bash
 build: ##require
-	#go build -o ./Docker/klevr-manager ./main.go
 	GOOS=linux GOARCH=amd64 go build -o ../../Dockerfile/manager/klevr-manager ./main.go
 
 run: ## Run main.go with klevr-manager-local.yaml
@@ -23,12 +22,12 @@ login: ## Login to DockerHub.io
 
 docker: login ## Build docker image and push to repo
 	cp -Rfv ../../conf/* ./Docker/conf/
-	docker build -t klevry/klevr-manager:${docker_version} ./Docker/ --no-cache
+	docker build -t klevry/klevr-manager:${docker_version} ../Dockerfile/manager/ --no-cache
 	docker push klevry/klevr-manager:${docker_version}
 
 docker-compose: ## Up docker-compose (There is no docker-compose yet.)
 	docker-compose down
-	docker-compose -f ../docker-compose.yml up -d
+	docker-compose -f ../../docker-compose.yml up -d
 
 all: build docker ## Do 'build', 'docker' proccess in make
 
