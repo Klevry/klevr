@@ -27,7 +27,7 @@ docker: login ## Build docker image and push to repo
 
 docker-compose: ## Up docker-compose (There is no docker-compose yet.)
 	docker-compose down
-	docker-compose -f ../../docker-compose.yml up -d
+	docker-compose -f ../../docker-compose-demo.yml up -d
 
 all: build docker ## Do 'build', 'docker' proccess in make
 
