@@ -15,7 +15,7 @@ require: ## Check go requirement
 	go get -u
 
 build: ##require ## Build main.go
-	env GOOS=linux GOARCH=amd64 go build -o ../../Dockerfile/agent/klevr ./main.go
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s -w' -o ../../Dockerfile/agent/klevr ./main.go
 
 docker: build
 	docker stop -t 0 agent || true
