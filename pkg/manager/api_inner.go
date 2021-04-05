@@ -562,7 +562,7 @@ func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 // @Param groupID query []uint64 true "ZONE ID 배열"
 // @Param status query []string false "STATUS 배열"
 // @Param agentKey query []string false "AGENT KEY 배열"
-// @Param name query []string true "TASK NAME 배열"
+// @Param name query []string false "TASK NAME 배열"
 // @Success 200 {object} []common.KlevrTask
 func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)

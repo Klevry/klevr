@@ -957,7 +957,6 @@ paths:
         items:
           type: string
         name: name
-        required: true
         type: array
       produces:
       - application/json

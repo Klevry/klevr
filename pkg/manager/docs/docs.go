@@ -1105,8 +1105,7 @@ var doc = `{
                         },
                         "description": "TASK NAME 배열",
                         "name": "name",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
