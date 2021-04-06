@@ -108,7 +108,7 @@ func Init(ctx *common.Context) *API {
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 	api.InitInner(api.BaseRoutes.Inner)
-	if api.Manager.Config.Console.Secret != "" {
+	if api.Manager.Config.Console.Usage == true {
 		api.InitConsole(api.BaseRoutes.Console)
 	}
 

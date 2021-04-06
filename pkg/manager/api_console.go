@@ -80,7 +80,7 @@ func (api *ConsoleAPI) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expirationTime := time.Now().Add(1 * time.Hour)
-	jwtHelper := common.NewJWTHelper([]byte(manager.Config.Console.Secret)).AddClaims("id", id).SetExpirationTime(expirationTime.Unix())
+	jwtHelper := common.NewJWTHelper([]byte(manager.Config.Server.EncryptionKey)).AddClaims("id", id).SetExpirationTime(expirationTime.Unix())
 	tks, err := jwtHelper.GenToken()
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)

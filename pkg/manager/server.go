@@ -81,7 +81,7 @@ type AgentInfo struct {
 }
 
 type ConsoleInfo struct {
-	Secret string
+	Usage bool
 }
 
 func init() {

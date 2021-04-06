@@ -30,4 +30,4 @@ klevr:
         showSql: false
         logLevel: warn
     console:
-        secret: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
+        usage: false
