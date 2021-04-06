@@ -12,7 +12,6 @@ import (
 	swagger "github.com/swaggo/http-swagger"
 
 	"github.com/NexClipper/logger"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
 )
 
@@ -51,12 +50,6 @@ type API struct {
 	Manager     *KlevrManager
 	APIKeyMap   concurrent.ConcurrentMap
 	BlockKeyMap concurrent.ConcurrentMap
-}
-
-type apiDef struct {
-	method   string
-	uri      string
-	function func(*gin.Context)
 }
 
 // Init initialize API router
