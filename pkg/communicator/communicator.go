@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -118,7 +119,7 @@ func (h *Http) PutJson(data []byte) ([]byte, error) {
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		logger.Errorf("HTTP Error, status code: %d", res.StatusCode)
-		return nil, fmt.Errorf("HTTP Error Code: %d", res.StatusCode)
+		return nil, common.NewHTTPError(res.StatusCode, fmt.Sprintf("HTTP Error, status code: %d", res.StatusCode))
 	}
 
 	body, _ = ioutil.ReadAll(res.Body)

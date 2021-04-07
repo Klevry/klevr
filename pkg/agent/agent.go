@@ -30,6 +30,7 @@ type KlevrAgent struct {
 	Primary              common.Primary
 	Agents               []common.Agent
 	grpcPort             string
+	taskPollingPause     bool
 }
 
 func New(apiKey, platform, zone, manager, networkInterfaceName string, httpTimeout int) *KlevrAgent {
@@ -44,6 +45,7 @@ func New(apiKey, platform, zone, manager, networkInterfaceName string, httpTimeo
 		NetworkInterfaceName: networkInterfaceName,
 		HttpTimeout:          httpTimeout,
 		grpcPort:             "9350",
+		taskPollingPause:     false,
 	}
 
 	logger.Debug("platform: ", instance.Platform)

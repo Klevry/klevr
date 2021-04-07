@@ -54,6 +54,8 @@ func (api *API) InitAgent(agent *mux.Router) {
 			logger.Debug(r.RequestURI)
 			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey, ch.AgentKey) {
 				logger.Debug(fmt.Sprintf("failed authenticate: %v", ch))
+				w.WriteHeader(401)
+				fmt.Fprintf(w, "%s", "failed authenticate")
 				return
 			}
 

@@ -33,6 +33,10 @@ func (e *HTTPError) Error() string {
 		e.statusCode, e.message, e.timestamp, e.cause)
 }
 
+func (e *HTTPError) StatusCode() int {
+	return e.statusCode
+}
+
 func (e *StandardError) initStandardError(message string, err error) {
 	if err != nil {
 		e.message = message + "\nroot message : " + err.Error()

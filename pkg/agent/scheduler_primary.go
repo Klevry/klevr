@@ -12,6 +12,10 @@ var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
 
 func polling(agent *KlevrAgent) {
+	if agent.taskPollingPause == true {
+		logger.Debug("Polling aborted because authentication failed.")
+		return
+	}
 	executor := common.GetTaskExecutor()
 	uri := agent.Manager + "/agents/" + agent.AgentKey
 
@@ -71,6 +75,11 @@ func polling(agent *KlevrAgent) {
 	}
 	result, err := httpHandler.PutJson(b)
 	if err != nil {
+		if serr, ok := err.(*common.HTTPError); ok {
+			if serr.StatusCode() == 401 {
+				agent.taskPollingPause = true
+			}
+		}
 		for k, v := range updateMap {
 			notSentTasks[k] = v
 		}
