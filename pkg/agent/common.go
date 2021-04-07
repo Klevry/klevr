@@ -1,15 +1,19 @@
 package agent
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
-	"runtime"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	"github.com/mackerelio/go-osstat/memory"
 	"github.com/shirou/gopsutil/disk"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 )
@@ -21,8 +25,14 @@ const (
 	GB = 1024 * MB
 )
 
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
+}
+
 // get local ip address
-func GetIPAddress() string {
+func getIPAddress() string {
 	// get Local IP address automatically
 	default_ip, err := netutil.ChooseHostInterface()
 	if err != nil {
@@ -32,10 +42,10 @@ func GetIPAddress() string {
 	return default_ip.String()
 }
 
-func LocalIPAddress(networkInterfaceName string) string {
+func localIPAddress(networkInterfaceName string) string {
 	var ipAddress string
 	if networkInterfaceName == "" {
-		ipAddress = GetIPAddress()
+		ipAddress = getIPAddress()
 	} else {
 		nifs, err := net.Interfaces()
 		if err != nil {
@@ -67,7 +77,7 @@ func LocalIPAddress(networkInterfaceName string) string {
 }
 
 // disk usage of path/disk
-func DiskUsage(path string) (d DiskStatus) {
+func diskUsage(path string) (d DiskStatus) {
 	u, err := disk.Usage(path)
 	if err != nil {
 		return
@@ -80,22 +90,7 @@ func DiskUsage(path string) (d DiskStatus) {
 	return
 }
 
-// send agent info to manager
-func (agent *KlevrAgent) SendMe(body *common.Body) {
-	body.Me.IP = LocalIPAddress(agent.NetworkInterfaceName)
-	body.Me.Port = 18800
-	body.Me.Version = "0.1.0"
-
-	disk := DiskUsage("/")
-
-	memory, _ := memory.Get()
-
-	body.Me.Resource.Core = runtime.NumCPU()
-	body.Me.Resource.Memory = int(memory.Total / MB)
-	body.Me.Resource.Disk = int(disk.All / MB)
-}
-
-func JsonMarshal(a interface{}) []byte {
+func jsonMarshal(a interface{}) []byte {
 	b, err := json.Marshal(a)
 	if err != nil {
 		logger.Debugf("%v", string(b))
@@ -105,7 +100,7 @@ func JsonMarshal(a interface{}) []byte {
 	return b
 }
 
-func JsonUnmarshal(a []byte) (*common.Body, error) {
+func jsonUnmarshal(a []byte) (*common.Body, error) {
 	var body common.Body
 
 	err := json.Unmarshal(a, &body)
@@ -116,11 +111,62 @@ func JsonUnmarshal(a []byte) (*common.Body, error) {
 	return &body, nil
 }
 
-func ReadFile(path string) []byte {
+func readFile(path string) []byte {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		logger.Error(err)
 	}
 
 	return data
+}
+
+// generate agent key
+func agentKeyGen() (string, error) {
+
+	nowTime := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+
+	uuid := make([]byte, 16)
+	n, err := io.ReadFull(rand.Reader, uuid)
+	if n != len(uuid) || err != nil {
+		return "", err
+	}
+	// variant bits; see section 4.1.1
+	uuid[8] = uuid[8]&^0xc0 | 0x80
+	// version 4 (pseudo-random); see section 4.1.3
+	uuid[6] = uuid[6]&^0xf0 | 0x40
+
+	key := hex.EncodeToString(uuid) + nowTime
+
+	return key, nil
+}
+
+func checkAgentKey() string {
+	var agentIdFile = "/tmp/klevr_agent.id"
+	var agentIdString string
+
+	//if agent file exist
+	if _, err := os.Stat(agentIdFile); !os.IsNotExist(err) {
+		data := readFile(agentIdFile)
+
+		if string(data) != "" {
+			agentIdString = string(data)
+		} else {
+			logger.Error("There is no agent ID")
+		}
+
+	} else {
+		key, err := agentKeyGen()
+		if err != nil {
+			logger.Error(err)
+		}
+
+		err = ioutil.WriteFile(agentIdFile, []byte(key), os.FileMode(0644))
+		if err != nil {
+			logger.Error(err)
+		}
+
+		agentIdString = key
+	}
+
+	return agentIdString
 }

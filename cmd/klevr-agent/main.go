@@ -55,18 +55,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	instance := agent.NewKlevrAgent()
-
-	instance.ApiKey = *apikey
-	instance.Platform = *platform
-	instance.Zone = *zone
-	instance.Manager = *klevrAddr
-	instance.NetworkInterfaceName = *iface
-	instance.HttpTimeout = *requestTimeout
-
-	logger.Debug("platform: ", instance.Platform)
-	logger.Debug("Local_ip_add:", agent.LocalIPAddress(instance.NetworkInterfaceName))
-	logger.Debug("Agent UniqID:", instance.AgentKey)
+	instance := agent.New(*apikey, *platform, *zone, *klevrAddr, *iface, *requestTimeout)
 
 	instance.Run()
 

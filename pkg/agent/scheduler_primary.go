@@ -8,19 +8,17 @@ import (
 	"github.com/NexClipper/logger"
 )
 
-var agentsList = "/tmp/agents"
-var executor = common.GetTaskExecutor()
-
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
 
-func Polling(agent *KlevrAgent) {
+func polling(agent *KlevrAgent) {
+	executor := common.GetTaskExecutor()
 	uri := agent.Manager + "/agents/" + agent.AgentKey
 
 	rb := &common.Body{}
-	agent.SendMe(rb)
+	agent.setBodyMeInfo(rb)
 
-	agent.PrimaryStatusCheck()
+	agent.primaryStatusCheck()
 
 	var updateMap = make(map[uint64]common.KlevrTask)
 
@@ -58,15 +56,16 @@ func Polling(agent *KlevrAgent) {
 	*/
 
 	// body marshal
-	b := JsonMarshal(rb)
+	b := jsonMarshal(rb)
 
 	// polling API 호출
 	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 0인 이유)
 	httpHandler := communicator.Http{
-		URL:        uri,
-		AgentKey:   agent.AgentKey,
-		APIKey:     agent.ApiKey,
-		ZoneID:     agent.Zone,
+		URL:      uri,
+		AgentKey: agent.AgentKey,
+		APIKey:   agent.ApiKey,
+		//ZoneID:     agent.Zone,
+		ZoneID:     "2",
 		RetryCount: 0,
 		Timeout:    agent.HttpTimeout,
 	}
@@ -118,10 +117,10 @@ func Polling(agent *KlevrAgent) {
 					ip := v.IP
 
 					body.Task[i].ExeAgentKey = v.AgentKey
-					t := JsonMarshal(&body.Task[i])
+					t := jsonMarshal(&body.Task[i])
 
 					logger.Debugf("%v", body.Task[i])
-					agent.PrimaryTaskSend(ip, t)
+					agent.primaryTaskSend(ip, t)
 					sendCompleted = true
 					break
 				}

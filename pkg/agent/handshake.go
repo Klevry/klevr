@@ -12,13 +12,13 @@ send handshake to manager
 in: body.me
 out: body.me, body.agent.primary
 */
-func HandShake(agent *KlevrAgent) *common.Primary {
+func (agent *KlevrAgent) handShake() *common.Primary {
 	uri := agent.Manager + "/agents/handshake"
 
 	rb := &common.Body{}
-	agent.SendMe(rb)
+	agent.setBodyMeInfo(rb)
 	logger.Debugf("%v", rb)
-	b := JsonMarshal(rb)
+	b := jsonMarshal(rb)
 	// put in & get out
 	httpHandler := communicator.Http{
 		URL:        uri,
@@ -38,7 +38,7 @@ func HandShake(agent *KlevrAgent) *common.Primary {
 
 	logger.Debugf("%s", string(result))
 
-	body, unmarshalError := JsonUnmarshal(result)
+	body, unmarshalError := jsonUnmarshal(result)
 	if unmarshalError != nil {
 		logger.Debugf("Handshake url:%s, agent:%s, api:%s, zone:%s",
 			uri, agent.AgentKey, agent.ApiKey, agent.Zone)
