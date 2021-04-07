@@ -65,11 +65,10 @@ func polling(agent *KlevrAgent) {
 	// polling API 호출
 	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 0인 이유)
 	httpHandler := communicator.Http{
-		URL:      uri,
-		AgentKey: agent.AgentKey,
-		APIKey:   agent.ApiKey,
-		//ZoneID:     agent.Zone,
-		ZoneID:     "2",
+		URL:        uri,
+		AgentKey:   agent.AgentKey,
+		APIKey:     agent.ApiKey,
+		ZoneID:     agent.Zone,
 		RetryCount: 0,
 		Timeout:    agent.HttpTimeout,
 	}
