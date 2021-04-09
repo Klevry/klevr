@@ -119,25 +119,34 @@ func polling(agent *KlevrAgent) {
 		} else {
 			logger.Debugf("%v", &body.Task[i])
 
-			sendCompleted := false
-			for _, v := range agent.Agents {
-				if v.AgentKey == body.Task[i].AgentKey {
-					ip := v.IP
+			if len(body.Task[i].AgentKey) > 0 {
+				sendCompleted := false
+				for _, v := range agent.Agents {
+					if v.AgentKey == body.Task[i].AgentKey {
+						body.Task[i].ExeAgentKey = v.AgentKey
 
-					body.Task[i].ExeAgentKey = v.AgentKey
-					t := jsonMarshal(&body.Task[i])
+						if v.AgentKey == body.Agent.Primary.AgentKey {
+							executor.RunTask(agent.AgentKey, &body.Task[i])
+						} else {
+							ip := v.IP
+							t := jsonMarshal(&body.Task[i])
+							logger.Debugf("%v", body.Task[i])
+							agent.primaryTaskSend(ip, t)
+						}
 
-					logger.Debugf("%v", body.Task[i])
-					agent.primaryTaskSend(ip, t)
-					sendCompleted = true
-					break
+						sendCompleted = true
+						break
+					}
 				}
-			}
-
-			if sendCompleted == false {
+				if sendCompleted == false {
+					body.Task[i].ExeAgentKey = agent.AgentKey
+					executor.RunTask(agent.AgentKey, &body.Task[i])
+				}
+			} else {
 				body.Task[i].ExeAgentKey = agent.AgentKey
 				executor.RunTask(agent.AgentKey, &body.Task[i])
 			}
+
 		}
 	}
 
