@@ -67,7 +67,7 @@ func CORS(next http.Handler) http.Handler {
 			return
 		}
 
-		//fmt.Println("ok")
+		fmt.Println("ok")
 
 		// Next
 		next.ServeHTTP(w, r)
