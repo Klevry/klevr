@@ -591,37 +591,6 @@ paths:
       tags:
       - servers
   /inner/credentials:
-    get:
-      consumes:
-      - application/json
-      description: 검색조건에 해당하는 Credential 목록을 반환한다.
-      parameters:
-      - description: ZONE ID 배열
-        in: query
-        items:
-          type: integer
-        name: groupID
-        required: true
-        type: array
-      - description: Credential NAME 배열
-        in: query
-        items:
-          type: string
-        name: name
-        required: true
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/common.KlevrCredential'
-            type: array
-      summary: Credential 목록을 반환한다.
-      tags:
-      - servers
     post:
       consumes:
       - application/json
@@ -853,6 +822,29 @@ paths:
         "200":
           description: ""
       summary: 사용자 그룹의 API key를 수정한다.
+      tags:
+      - servers
+  /inner/groups/{groupID}/credentials:
+    get:
+      consumes:
+      - application/json
+      description: 검색조건에 해당하는 Credential 목록을 반환한다.
+      parameters:
+      - description: ZONE ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.KlevrCredential'
+            type: array
+      summary: Credential 목록을 반환한다.
       tags:
       - servers
   /inner/groups/{groupID}/primary:

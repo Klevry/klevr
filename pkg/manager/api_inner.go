@@ -32,6 +32,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/variables", serversAPI.getKlevrVariables)
 	registURI(inner, GET, "/groups/{groupID}/agents", serversAPI.getAgents)
 	registURI(inner, GET, "/groups/{groupID}/primary", serversAPI.getPrimaryAgent)
+	registURI(inner, GET, "/groups/{groupID}/credentials", serversAPI.getCredentials)
 	registURI(inner, POST, "/tasks", serversAPI.addTask)
 	registURI(inner, POST, "/tasks/{groupID}/simple/inline", serversAPI.addSimpleInlineTask)
 	registURI(inner, POST, "/tasks/{groupID}/simple/reserved", serversAPI.addSimpleReservedTask)
@@ -44,7 +45,6 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
 	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
-	registURI(inner, GET, "/credentials", serversAPI.getCredentials)
 	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
 }
 
@@ -1179,45 +1179,27 @@ func (api *serversAPI) getCredential(w http.ResponseWriter, r *http.Request) {
 // @Tags servers
 // @Accept json
 // @Produce json
-// @Router /inner/credentials [get]
-// @Param groupID query []uint64 true "ZONE ID 배열"
-// @Param name query []string true "Credential NAME 배열"
+// @Router /inner/groups/{groupID}/credentials [get]
+// @Param groupID path uint64 true "ZONE ID"
 // @Success 200 {object} []common.KlevrCredential
 func (api *serversAPI) getCredentials(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
 
-	groupIDs := r.URL.Query()["groupID"]
-	credentialNames := r.URL.Query()["name"]
+	vars := mux.Vars(r)
+	logger.Debugf("request variables: [%+v]", vars)
 
-	logger.Debugf("request URI - [%s]", r.RequestURI)
-	logger.Debugf("%+v", groupIDs)
-	logger.Debugf("%+v", credentialNames)
-
-	logger.Debugf("%d", len(groupIDs))
-	logger.Debugf("%d", len(credentialNames))
-
-	if groupIDs == nil || len(groupIDs) == 0 {
-		common.WriteHTTPError(400, w, nil, "Query parameter groupID is required.")
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid group id: %+v", vars["groupID"]))
 		return
 	}
 
-	var iGroupIDs []uint64 = make([]uint64, len(groupIDs))
-	var err error
-
-	for i, id := range groupIDs {
-		iGroupIDs[i], err = strconv.ParseUint(id, 0, 64)
-		if err != nil {
-			common.WriteHTTPError(400, w, err, fmt.Sprintf("invalid groupID - [%s]", id))
-			return
-		}
-	}
-
-	credentials, exist := tx.getCredentialsByNames(iGroupIDs, credentialNames)
+	credentials, cnt := tx.getCredentials(groupID)
 
 	var b []byte
 
-	if exist {
+	if cnt > 0 {
 		var dtos []common.KlevrCredential = make([]common.KlevrCredential, len(*credentials))
 
 		for i, c := range *credentials {

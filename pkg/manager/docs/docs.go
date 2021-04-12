@@ -546,52 +546,6 @@ var doc = `{
             }
         },
         "/inner/credentials": {
-            "get": {
-                "description": "검색조건에 해당하는 Credential 목록을 반환한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "servers"
-                ],
-                "summary": "Credential 목록을 반환한다.",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "description": "ZONE ID 배열",
-                        "name": "groupID",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Credential NAME 배열",
-                        "name": "name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/common.KlevrCredential"
-                            }
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
                 "consumes": [
@@ -942,6 +896,41 @@ var doc = `{
                 "responses": {
                     "200": {
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/inner/groups/{groupID}/credentials": {
+            "get": {
+                "description": "검색조건에 해당하는 Credential 목록을 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential 목록을 반환한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.KlevrCredential"
+                            }
+                        }
                     }
                 }
             }
