@@ -52,6 +52,28 @@ type API struct {
 	BlockKeyMap concurrent.ConcurrentMap
 }
 
+// CORS Middleware
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Set headers
+		w.Header().Set("Access-Control-Allow-Headers:", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		//fmt.Println("ok")
+
+		// Next
+		next.ServeHTTP(w, r)
+		return
+	})
+}
+
 // Init initialize API router
 // @title Klevr-Manager API
 // @version 1.0
@@ -75,6 +97,8 @@ func Init(ctx *common.Context) *API {
 	api.DB.ShowSQL(true)
 	// TODO: ContextLogger interface 구현하여 logger override
 	// api.DB.SetLogger(log.NewSimpleLogger(f))
+
+	api.Manager.RootRouter.Use(CORS)
 
 	api.BaseRoutes.Root = api.Manager.RootRouter
 
