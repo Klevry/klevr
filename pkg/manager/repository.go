@@ -339,6 +339,15 @@ func (tx *Tx) updateHandoverTasks(ids []uint64) {
 	}
 }
 
+// task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
+func (tx *Tx) updateShutdownTasks(ids []uint64) {
+
+	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.Complete})
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
 	cnt, err := tx.Where("ID = ?", t.Id).
 		Cols("EXE_AGENT_KEY", "STATUS").

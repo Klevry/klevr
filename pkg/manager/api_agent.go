@@ -315,6 +315,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		manager := ctx.Get(CtxServer).(*KlevrManager)
 
+		agentKeys := make([]string, nodeLength)
+		taskIDs := make([]uint64, nodeLength)
 		for i, a := range nodes {
 			arrAgent[i].AgentKey = a.AgentKey
 			if a.LastAliveCheckTime != nil {
@@ -328,10 +330,19 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 				arrAgent[i].IsActive = 1
 			} else {
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
+				if a.IsActive == false {
+					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
+						agentKeys = append(agentKeys, a.AgentKey)
+						taskIDs = append(taskIDs, tid)
+					}
+				}
 			}
 		}
 
 		tx.updateZoneStatus(&arrAgent)
+		tx.updateShutdownTasks(taskIDs)
+
+		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
 
