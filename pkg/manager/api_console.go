@@ -36,10 +36,6 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, POST, "/changepassword", consoleAPI.ChangePassword)
 	registURI(console, GET, "/activated/{id}", consoleAPI.Activated)
 	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.ShutdownAgent)
-	registURI(console, DELETE, "/groups/{groupID}", consoleAPI.DeleteGroup)
-	registURI(console, POST, "/credentials", consoleAPI.AddCredential)
-	registURI(console, DELETE, "/credentials/{key}", consoleAPI.DeleteCredential)
-	registURI(console, GET, "/credentials", consoleAPI.ListCredential)
 	registURI(console, GET, "/taskstatus", consoleAPI.ListTaskStatus)
 }
 
@@ -289,93 +285,6 @@ func (api *ConsoleAPI) ShutdownAgent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Debugf("response : [%s]", string(b))
-
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", b)
-}
-
-// DeleteGroup godoc
-// @Summary Klevr Group(Zone)을 제거한다.
-// @Description groupID에 해당하는 Group(Zone)을 제거한다.
-// @Tags Console
-// @Accept json
-// @Produce json
-// @Router /console/groups/{groupID} [delete]
-// @Param groupID path uint64 true "ZONE ID"
-// @Success 200 {object} string "{\"deleted\":true/false}"
-func (api *ConsoleAPI) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "{\"deleted\":%v}", true)
-}
-
-type Credential struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-// AddCredential godoc
-// @Summary Credential을 추가한다.
-// @Description 신규 Credential을 추가한다.
-// @Tags Console
-// @Accept json
-// @Produce json
-// @Router /console/credentials [post]
-// @Param b body manager.Credential true "Credential(Key, Value)"
-// @Success 200 {object} manager.Credential
-func (api *ConsoleAPI) AddCredential(w http.ResponseWriter, r *http.Request) {
-	var cr Credential
-
-	err := json.NewDecoder(r.Body).Decode(&cr)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "JSON parsing error")
-		return
-	}
-
-	b, err := json.Marshal(&cr)
-
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "%s", b)
-}
-
-// DeleteCredential godoc
-// @Summary Credential을 삭제한다.
-// @Description Key Name에 해당하는 Credential을 삭제한다.
-// @Tags Console
-// @Accept json
-// @Produce json
-// @Router /console/credentials/{key} [delete]
-// @Param key path string true "Credential Name"
-// @Success 200 {object} string "{\"deleted\":true/false}"
-func (api *ConsoleAPI) DeleteCredential(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	fmt.Fprintf(w, "{\"deleted\":%v}", true)
-}
-
-// ListCredential godoc
-// @Summary Credential 리스트.
-// @Description 등록되어 있는 Credential 리스트.
-// @Tags Console
-// @Accept json
-// @Produce json
-// @Router /console/credentials [get]
-// @Success 200 {object} []manager.Credential
-func (api *ConsoleAPI) ListCredential(w http.ResponseWriter, r *http.Request) {
-	credentials := []*Credential{
-		{
-			Key:   "Duration",
-			Value: "10",
-		},
-		{
-			Key:   "UserName",
-			Value: "admin",
-		},
-	}
-
-	b, err := json.Marshal(credentials)
-	if err != nil {
-		common.WriteHTTPError(500, w, err, "JSON parsing error")
-		return
-	}
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)

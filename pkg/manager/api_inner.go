@@ -877,45 +877,53 @@ func (api *serversAPI) deleteGroup(w http.ResponseWriter, r *http.Request) {
 	tx := GetDBConn(ctx)
 
 	qryOperation := r.URL.Query()["op"]
-
-	if qryOperation[0] == "db" {
-		vars := mux.Vars(r)
-		groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
-		if err != nil {
-			common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["groupID"]))
-			return
-		}
-
-		// logger.Debug("%v", time.Now().UTC())
-
-		tx.deletePrimaryAgent(groupID)
-		_, ok := tx.getPrimaryAgent(groupID)
-		if ok == true {
-			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(primaryagent) of the zoneid: %d", groupID))
-			return
-		}
-
-		tx.deleteApiAuthentication(groupID)
-		cnt, _ := tx.getApiAuthenticationsByGroupId(groupID)
-		if cnt > 0 {
-			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone(apiauthentication) of the zoneid: %d", groupID))
-			return
-		}
-
-		tx.deleteAgent(groupID)
-		cnt, _ = tx.getAgentsByGroupId(groupID)
-		if cnt > 0 {
-			common.WriteHTTPError(500, w, err, fmt.Sprintf("It cannot remove the zone of the zoneid: %d", groupID))
-			return
-		}
-
-		tx.deleteAgentGroup(groupID)
-
-		w.WriteHeader(200)
-		fmt.Fprintf(w, "{\"deleted\":%v}", true)
-	} else {
-		// TODO: agent와 db를 모두 제거하는 로직
+	if qryOperation != nil && qryOperation[0] == "db" {
+		logger.Debug("db balue was enterted as an option.")
 	}
+
+	vars := mux.Vars(r)
+	groupID, err := strconv.ParseUint(vars["groupID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["groupID"]))
+		return
+	}
+
+	ctxAPI := ctx.Get(CtxAPI).(*API)
+	ctxAPI.APIKeyMap.Remove(strconv.FormatUint(groupID, 10))
+
+	// logger.Debug("%v", time.Now().UTC())
+	err = api.deletegroup(tx, groupID)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, err.Error())
+		return
+	}
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "{\"deleted\":%v}", true)
+}
+
+func (api *serversAPI) deletegroup(tx *Tx, id uint64) error {
+	tx.deletePrimaryAgent(id)
+	_, ok := tx.getPrimaryAgent(id)
+	if ok == true {
+		return fmt.Errorf("It cannot remove the zone(primaryagent) of the zoneid: %d", id)
+	}
+
+	tx.deleteApiAuthentication(id)
+	cnt, _ := tx.getApiAuthenticationsByGroupId(id)
+	if cnt > 0 {
+		return fmt.Errorf("It cannot remove the zone(apiauthentication) of the zoneid: %d", id)
+	}
+
+	tx.deleteAgent(id)
+	cnt, _ = tx.getAgentsByGroupId(id)
+	if cnt > 0 {
+		return fmt.Errorf("It cannot remove the zone of the zoneid: %d", id)
+	}
+
+	tx.deleteAgentGroup(id)
+
+	return nil
 }
 
 func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
