@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
@@ -131,6 +132,7 @@ func (manager *KlevrManager) Run() error {
 	ctx = common.BaseContext
 	ctx.Put(CtxServer, manager)
 	ctx.Put(CtxDbConn, db)
+	ctx.Put(CtxPrimary, &sync.Mutex{})
 
 	if serverConfig.EventHandler == "mq" {
 		mqConfig := serverConfig.Mq

@@ -21,6 +21,7 @@ const (
 	CtxMqConn    = CtxPrefix + "MQConn"
 	CtxMqChannel = CtxPrefix + "MQChannel"
 	CtxMqQueue   = CtxPrefix + "MQQueue"
+	CtxPrimary   = CtxPrefix + "PRIMARY"
 )
 
 // CtxGetServer get KlevrManager from context

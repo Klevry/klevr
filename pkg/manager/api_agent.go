@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
@@ -637,6 +638,10 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 }
 
 func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
+	primaryMutex := ctx.Get(CtxPrimary).(*sync.Mutex)
+
+	primaryMutex.Lock()
+	defer primaryMutex.Unlock()
 
 	// primary agent 정보
 	groupPrimary, _ := tx.getPrimaryAgent(zoneID)
