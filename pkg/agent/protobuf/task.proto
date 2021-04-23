@@ -1,4 +1,5 @@
 syntax = "proto3";
+option go_package = "github.com/klevry/klevr/agent/protobuf";
 
 package agent;
 
@@ -12,5 +13,5 @@ message Message{
 }
 
 message Status{
-  string status = 1;
+  bytes status = 1;
 }

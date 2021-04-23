@@ -37,6 +37,10 @@ func loadConfig(configPath string) (*config, error) {
 	return config, nil
 }
 
+const (
+	c, ll, lp, p, hook string = "config", "log.level", "log.path", "port", "webhook.url"
+)
+
 func main() {
 	// TimeZone UTC로 설정
 	os.Setenv("TZ", "")
@@ -50,7 +54,7 @@ func main() {
 		Usage:     "main [global options]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "config",
+				Name:     c,
 				Aliases:  []string{"c"},
 				Value:    "./conf/klevr-manager-local.yml",
 				Usage:    "Config file path",
@@ -58,7 +62,7 @@ func main() {
 				EnvVars:  []string{"KLEVR_CONFIG_PATH"},
 			},
 			&cli.StringFlag{
-				Name:     "log.level",
+				Name:     ll,
 				Aliases:  []string{"ll"},
 				Value:    "debug",
 				Usage:    "Logging level(default:debug, info, warn, error, fatal)",
@@ -66,7 +70,7 @@ func main() {
 				EnvVars:  []string{"LOG_LEVEL"},
 			},
 			&cli.StringFlag{
-				Name:     "log.path",
+				Name:     lp,
 				Aliases:  []string{"lp"},
 				Value:    "./log/klevr-manager.log",
 				Usage:    "log full path(include file name)",
@@ -74,22 +78,22 @@ func main() {
 				EnvVars:  []string{"LOG_PATH"},
 			},
 			&cli.StringFlag{
-				Name:     "port",
+				Name:     p,
 				Aliases:  []string{"p"},
 				Value:    "8090",
 				Usage:    "default port used by the klevr-manager(default:8090)",
 				Required: false,
 			},
 			&cli.StringFlag{
-				Name:     "webhook.url",
+				Name:     hook,
 				Aliases:  []string{"hook"},
 				Usage:    "WebHook URL",
 				Required: false,
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(ctx *cli.Context) error {
 			// 설정파일 반영
-			config, err := loadConfig(c.String("config"))
+			config, err := loadConfig(ctx.String(c))
 			if err != nil {
 				logger.Fatal(err)
 				exit = 1
@@ -102,17 +106,17 @@ func main() {
 			envAssembledConfig := *config
 
 			// 실행 파라미터 반영 (실행 파라미터>환경변수>설정파일)
-			if c.String("log.level") != "" {
-				config.Log.Level = c.String("log.level")
+			if ctx.String(ll) != "" {
+				config.Log.Level = ctx.String(ll)
 			}
-			if c.String("log.path") != "" {
-				config.Log.LogPath = c.String("log.path")
+			if ctx.String(lp) != "" {
+				config.Log.LogPath = ctx.String(lp)
 			}
-			if c.String("port") != "" {
-				config.Klevr.Server.Port = c.Int("port")
+			if ctx.String(p) != "" {
+				config.Klevr.Server.Port = ctx.Int(p)
 			}
-			if c.String("webhook.url") != "" {
-				config.Klevr.Server.Webhook.Url = c.String("webhook.url")
+			if ctx.String(hook) != "" {
+				config.Klevr.Server.Webhook.Url = ctx.String(hook)
 			}
 
 			loggerEnv := &common.LoggerEnv{
@@ -128,10 +132,7 @@ func main() {
 			logger.Info("Start Klevr-manager")
 			logger.Debug("ENV assembled config : ", &envAssembledConfig)
 
-			// common.ContextPut("appConfig", config)
-			// common.ContextPut("cliContext", c)
-
-			/// Actual instance running point
+			// Actual instance running point
 			instance, err := manager.NewKlevrManager()
 			if err != nil {
 				logger.Error(err)
@@ -154,6 +155,4 @@ func main() {
 	defer logger.Info("Stopped Klevr-manager")
 	defer logger.Close()
 	defer os.Exit(exit)
-
-	//os.Exit(run())
 }

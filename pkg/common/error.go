@@ -33,6 +33,10 @@ func (e *HTTPError) Error() string {
 		e.statusCode, e.message, e.timestamp, e.cause)
 }
 
+func (e *HTTPError) StatusCode() int {
+	return e.statusCode
+}
+
 func (e *StandardError) initStandardError(message string, err error) {
 	if err != nil {
 		e.message = message + "\nroot message : " + err.Error()
@@ -119,19 +123,20 @@ func ErrorWithErrorLog(err error, message string) {
 
 // log with specified log level
 func errorWithLog(err error, l logger.Level, message string) {
+	const logFormat string = "%s : %+v"
 	switch l {
 	case 0:
-		logger.Debugf("%s : %+v", message, err)
+		logger.Debugf(logFormat, message, err)
 	case 1:
-		logger.Infof("%s : %+v", message, err)
+		logger.Infof(logFormat, message, err)
 	case 2:
-		logger.Warningf("%s : %+v", message, err)
+		logger.Warningf(logFormat, message, err)
 	case 3:
-		logger.Errorf("%s : %+v", message, err)
+		logger.Errorf(logFormat, message, err)
 	case 4:
-		logger.Fatalf("%s : %+v", message, err)
+		logger.Fatalf(logFormat, message, err)
 	default:
-		logger.Debugf("%s : %+v", message, err)
+		logger.Debugf(logFormat, message, err)
 	}
 }
 

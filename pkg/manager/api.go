@@ -12,7 +12,6 @@ import (
 	swagger "github.com/swaggo/http-swagger"
 
 	"github.com/NexClipper/logger"
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
 )
 
@@ -53,10 +52,25 @@ type API struct {
 	BlockKeyMap concurrent.ConcurrentMap
 }
 
-type apiDef struct {
-	method   string
-	uri      string
-	function func(*gin.Context)
+// CORS Middleware
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Set headers
+		w.Header().Set("Access-Control-Allow-Headers:", "*")
+		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Next
+		next.ServeHTTP(w, r)
+		return
+	})
 }
 
 // Init initialize API router
@@ -83,6 +97,8 @@ func Init(ctx *common.Context) *API {
 	// TODO: ContextLogger interface 구현하여 logger override
 	// api.DB.SetLogger(log.NewSimpleLogger(f))
 
+	api.Manager.RootRouter.Use(CORS)
+
 	api.BaseRoutes.Root = api.Manager.RootRouter
 
 	// swagger 설정
@@ -105,11 +121,10 @@ func Init(ctx *common.Context) *API {
 	api.BaseRoutes.Console.Use(CommonWrappingHandler(ctx))
 	api.BaseRoutes.Console.Use(RequestInfoLoggerHandler)
 
-	// api.InitLegacy(api.BaseRoutes.Legacy)
 	api.InitAgent(api.BaseRoutes.Agent)
 	api.InitInstall(api.BaseRoutes.Install)
 	api.InitInner(api.BaseRoutes.Inner)
-	if api.Manager.Config.Console.Secret != "" {
+	if api.Manager.Config.Console.Usage == true {
 		api.InitConsole(api.BaseRoutes.Console)
 	}
 

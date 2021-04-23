@@ -20,7 +20,8 @@ klevr:
             hookTerm: 0 #seconds (0 : each event)
             hookCount: 0 #(0: each event)
         mq:
-            url: "amqp://klevr:klevr@192.168.8.71:5672/nexclipper"
+            url: 
+              - "amqp://klevr:klevr@192.168.8.71:5672/nexclipper"
             name: "klevr_events"
             durable: true
             autoDelete: false
@@ -36,4 +37,4 @@ klevr:
         showSql: false
         logLevel: warn
     console:
-        secret: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
+        usage: false

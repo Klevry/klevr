@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_sendBulkEventWebHook(t *testing.T) {
+func TestSendBulkEventWebHook(t *testing.T) {
 	type args struct {
 		url    string
 		events *[]KlevrEvent

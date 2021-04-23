@@ -71,7 +71,7 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
-	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ACCESS_TIME < ?", before).Cols("ID", "AGENT_KEY, GROUP_ID").Find(&agents)
+	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ALIVE_CHECK_TIME < ?", before).Cols("ID", "AGENT_KEY, GROUP_ID").Find(&agents)
 	if err != nil {
 		panic(err)
 	}
@@ -300,6 +300,7 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 	taskStepLen := int64(len(*t.TaskSteps))
 
 	if t.TaskSteps != nil && taskStepLen > 0 {
+		steps := make([]*TaskSteps, 0)
 		for i, ts := range *t.TaskSteps {
 			(*t.TaskSteps)[i].TaskId = t.Id
 			(*t.TaskSteps)[i].ReservedCommand = manager.encrypt(ts.ReservedCommand)
@@ -307,12 +308,25 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
 			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
+
+			step := &TaskSteps{
+				Id:              (*t.TaskSteps)[i].Id,
+				Seq:             (*t.TaskSteps)[i].Seq,
+				TaskId:          (*t.TaskSteps)[i].TaskId,
+				CommandName:     (*t.TaskSteps)[i].CommandName,
+				CommandType:     (*t.TaskSteps)[i].CommandType,
+				ReservedCommand: (*t.TaskSteps)[i].ReservedCommand,
+				InlineScript:    (*t.TaskSteps)[i].InlineScript,
+				IsRecover:       (*t.TaskSteps)[i].IsRecover,
+			}
+			steps = append(steps, step)
 		}
 
-		_, err = tx.Insert(t.TaskSteps)
+		_, err = tx.Insert(steps)
 		if err != nil {
 			panic(err)
 		}
+
 	}
 
 	return t
@@ -320,6 +334,15 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 
 func (tx *Tx) updateHandoverTasks(ids []uint64) {
 	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
+	if err != nil {
+		panic(err)
+	}
+}
+
+// task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
+func (tx *Tx) updateShutdownTasks(ids []uint64) {
+
+	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.Complete})
 	if err != nil {
 		panic(err)
 	}
@@ -670,7 +693,7 @@ func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, boo
 	return &credential, exist
 }
 
-func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
+func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
 	var credentials []Credentials
 
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
@@ -690,6 +713,17 @@ func (tx *Tx) getCredentials(groupIDs []uint64, credentialNames []string) (*[]Cr
 	logger.Debugf("Selected Credentials : %d", cnt)
 
 	return &credentials, cnt > 0
+}
+
+func (tx *Tx) getCredentials(groupID uint64) (*[]Credentials, int64) {
+	var credentials []Credentials
+
+	cnt, err := tx.Where("ZONE_ID = ?", groupID).FindAndCount(&credentials)
+	if err != nil {
+		panic(err)
+	}
+
+	return &credentials, cnt
 }
 
 func (tx *Tx) deleteCredential(id uint64) {

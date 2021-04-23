@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -36,9 +37,10 @@ func (h *Http) request(req *retryablehttp.Request) (*http.Response, error) {
 		client.HTTPClient.Timeout = time.Duration(h.Timeout) * time.Second
 	}
 	client.Logger = nil
-	client.RequestLogHook = func(l retryablehttp.Logger, req *http.Request, cnt int) {
+	// 디버깅하는 용도로 사용할 수 있도록 주석 처리해서 남겨 놓음
+	/*client.RequestLogHook = func(l retryablehttp.Logger, req *http.Request, cnt int) {
 		logger.Debugf("%s %s(%d)", req.Method, req.URL.String(), cnt)
-	}
+	}*/
 
 	return client.Do(req)
 }
@@ -117,7 +119,7 @@ func (h *Http) PutJson(data []byte) ([]byte, error) {
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
 		logger.Errorf("HTTP Error, status code: %d", res.StatusCode)
-		return nil, fmt.Errorf("HTTP Error Code: %d", res.StatusCode)
+		return nil, common.NewHTTPError(res.StatusCode, fmt.Sprintf("HTTP Error, status code: %d", res.StatusCode))
 	}
 
 	body, _ = ioutil.ReadAll(res.Body)

@@ -61,20 +61,20 @@ func RunCommand(jsonPreResult string, task *KlevrTask, command *KlevrTaskStep) (
 
 		if v != nil {
 			e = v.(error)
-			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(e))
+			task.Log += fmt.Sprintf(logFormat, errors.WithStack(e))
 
 			if c.Recover != nil {
 				r, ex = c.Recover(task.Parameter, task.Result)
 			}
 		} else if e != nil {
-			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(e))
+			task.Log += fmt.Sprintf(logFormat, errors.WithStack(e))
 			if c.Recover != nil {
 				r, ex = c.Recover(task.Parameter, task.Result)
 			}
 		}
 
 		if ex != nil {
-			task.Log += fmt.Sprintf("%+v\n\n", errors.WithStack(ex))
+			task.Log += fmt.Sprintf(logFormat, errors.WithStack(ex))
 		}
 	}()
 

@@ -136,7 +136,7 @@ CREATE TABLE `PRIMARY_AGENTS` (
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`GROUP_ID`,`AGENT_ID`)
+  PRIMARY KEY (`GROUP_ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Primary 에이전트 관리 테이블\n그룹별 하나의 primary 에이전트를 관리한다.';
 /*!40101 SET character_set_client = @saved_cs_client */;
 

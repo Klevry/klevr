@@ -15,11 +15,11 @@ func init() {
 	// 샘플 커맨드
 	// InitCommand(testCommand())
 
-	InitCommand(changeLogLevel())         // 에이전트 로그레벨 변경
-	InitCommand(collectAgentLog())        // 에이전트 로그 수집
-	InitCommand(stopTask())               // 실행중인 Task 중지 처리(작업 취소)
-	InitCommand(forceShutdownAgent())     // 에이전트 즉시 중지 처리
-	InitCommand(gracefuleShutdownAgent()) // 현재 실행중인 작업을 마치고 에이전트 중지 처리
+	InitCommand(changeLogLevel())        // 에이전트 로그레벨 변경
+	InitCommand(collectAgentLog())       // 에이전트 로그 수집
+	InitCommand(stopTask())              // 실행중인 Task 중지 처리(작업 취소)
+	InitCommand(forceShutdownAgent())    // 에이전트 즉시 중지 처리
+	InitCommand(gracefulShutdownAgent()) // 현재 실행중인 작업을 마치고 에이전트 중지 처리
 }
 
 // 샘플 커맨드 작성
@@ -292,7 +292,7 @@ func forceShutdownAgent() Command {
 	}
 }
 
-func gracefuleShutdownAgent() Command {
+func gracefulShutdownAgent() Command {
 	return Command{
 		Name: "GracefulShutdownAgent",
 		Description: "When all ongoing AtOnce tasks are finished, the agent is terminated.\n" +

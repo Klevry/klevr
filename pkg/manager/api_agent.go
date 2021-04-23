@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
@@ -54,6 +55,8 @@ func (api *API) InitAgent(agent *mux.Router) {
 			logger.Debug(r.RequestURI)
 			if !api.authenticate(ctx, ch.ZoneID, ch.APIKey, ch.AgentKey) {
 				logger.Debug(fmt.Sprintf("failed authenticate: %v", ch))
+				w.WriteHeader(401)
+				fmt.Fprintf(w, "%s", "failed authenticate")
 				return
 			}
 
@@ -313,9 +316,13 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 		manager := ctx.Get(CtxServer).(*KlevrManager)
 
+		agentKeys := make([]string, nodeLength)
+		taskIDs := make([]uint64, nodeLength)
 		for i, a := range nodes {
 			arrAgent[i].AgentKey = a.AgentKey
-			arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
+			if a.LastAliveCheckTime != nil {
+				arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
+			}
 			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
 			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
 			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
@@ -324,12 +331,24 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 				arrAgent[i].IsActive = 1
 			} else {
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
+				if a.IsActive == false {
+					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
+						agentKeys = append(agentKeys, a.AgentKey)
+						taskIDs = append(taskIDs, tid)
+					}
+				}
 			}
 		}
 
 		tx.updateZoneStatus(&arrAgent)
+		tx.updateShutdownTasks(taskIDs)
+
+		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
+
+		// Credential 조회
+		nCredentials, cnt := tx.getCredentials(ch.ZoneID)
 
 		// 신규 task 할당
 		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
@@ -337,6 +356,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			var dtos []common.KlevrTask = make([]common.KlevrTask, len(*nTasks))
 
 			for i, t := range *nTasks {
+				t = TaskMatchingCredential(manager, t, nCredentials)
 				dtos[i] = *TaskPersistToDto(&t)
 			}
 
@@ -566,12 +586,13 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	if cnt > 0 {
 		for i, a := range *agents {
 			nodes[i] = common.Agent{
-				AgentKey: a.AgentKey,
-				IP:       a.Ip,
-				Port:     a.Port,
-				Version:  a.Version,
-				IsActive: byteToBool(a.IsActive),
-				Resource: &common.Resource{},
+				AgentKey:           a.AgentKey,
+				IP:                 a.Ip,
+				Port:               a.Port,
+				Version:            a.Version,
+				IsActive:           byteToBool(a.IsActive),
+				LastAliveCheckTime: &common.JSONTime{Time: a.LastAliveCheckTime},
+				Resource:           &common.Resource{},
 			}
 
 			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
@@ -617,6 +638,10 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 }
 
 func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
+	primaryMutex := ctx.Get(CtxPrimary).(*sync.Mutex)
+
+	primaryMutex.Lock()
+	defer primaryMutex.Unlock()
 
 	// primary agent 정보
 	groupPrimary, _ := tx.getPrimaryAgent(zoneID)

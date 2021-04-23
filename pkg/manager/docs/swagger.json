@@ -257,128 +257,6 @@
                 }
             }
         },
-        "/console/credentials": {
-            "get": {
-                "description": "등록되어 있는 Credential 리스트.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Console"
-                ],
-                "summary": "Credential 리스트.",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/manager.Credential"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "신규 Credential을 추가한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Console"
-                ],
-                "summary": "Credential을 추가한다.",
-                "parameters": [
-                    {
-                        "description": "Credential(Key, Value)",
-                        "name": "b",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/manager.Credential"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/manager.Credential"
-                        }
-                    }
-                }
-            }
-        },
-        "/console/credentials/{key}": {
-            "delete": {
-                "description": "Key Name에 해당하는 Credential을 삭제한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Console"
-                ],
-                "summary": "Credential을 삭제한다.",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Credential Name",
-                        "name": "key",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\\\"deleted\\\":true/false}",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/console/groups/{groupID}": {
-            "delete": {
-                "description": "groupID에 해당하는 Group(Zone)을 제거한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Console"
-                ],
-                "summary": "Klevr Group(Zone)을 제거한다.",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ZONE ID",
-                        "name": "groupID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\\\"deleted\\\":true/false}",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/console/groups/{groupID}/agents/{agentKey}": {
             "delete": {
                 "description": "agentKey에 해당하는 Agent를 종료한다.",
@@ -527,52 +405,6 @@
             }
         },
         "/inner/credentials": {
-            "get": {
-                "description": "검색조건에 해당하는 Credential 목록을 반환한다.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "servers"
-                ],
-                "summary": "Credential 목록을 반환한다.",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "description": "ZONE ID 배열",
-                        "name": "groupID",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Credential NAME 배열",
-                        "name": "name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/common.KlevrCredential"
-                            }
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
                 "consumes": [
@@ -927,6 +759,41 @@
                 }
             }
         },
+        "/inner/groups/{groupID}/credentials": {
+            "get": {
+                "description": "검색조건에 해당하는 Credential 목록을 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential 목록을 반환한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ZONE ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.KlevrCredential"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inner/groups/{groupID}/primary": {
             "get": {
                 "description": "groupID에 해당하는 klevr zone의 primary agent 정보를 반환한다.",
@@ -1086,8 +953,7 @@
                         },
                         "description": "TASK NAME 배열",
                         "name": "name",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1594,17 +1460,6 @@
                 },
                 "userId": {
                     "type": "integer"
-                }
-            }
-        },
-        "manager.Credential": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
                 }
             }
         },

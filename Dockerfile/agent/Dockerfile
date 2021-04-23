@@ -1,11 +1,9 @@
-FROM ubuntu:focal
+FROM alpine:3.13.2
 LABEL version=0.1.4
 
-RUN apt-get update -y && \
-    apt-get install -y ssh jq && \
-    apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache --update openssh-client jq
 
+### klevr go Build Opt : env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s -w' -o
 COPY ./klevr  /
 COPY ./entrypoint.sh  /
 
