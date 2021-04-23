@@ -390,6 +390,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 
 	for _, t := range *uTasks {
 		oTask := oTasks[t.ID]
+		oTask.ExeAgentKey = t.ExeAgentKey
 
 		logger.Debugf("updateTaskStatus : [%+v]", oTask)
 
