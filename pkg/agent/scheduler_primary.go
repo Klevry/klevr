@@ -103,6 +103,8 @@ func polling(agent *KlevrAgent) {
 		agent.Agents = body.Agent.Nodes
 	}()
 
+	agent.schedulerInterval = body.Me.CallCycle
+
 	// change task status
 	logger.Debugf("%+v", body.Task)
 

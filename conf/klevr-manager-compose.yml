@@ -26,7 +26,7 @@ klevr:
             durable: true
             autoDelete: false
     agent:
-        callCycle: 10 #seconds
+        callCycle: 5 #seconds
         logLevel: INFO
     db:
         type: 'mysql'

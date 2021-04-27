@@ -202,7 +202,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	me.HmacKey = manager.decrypt(agent.HmacKey)
 	me.EncKey = manager.decrypt(agent.EncKey)
-	// me.CallCycle = 0 // seconds
+	me.CallCycle = manager.Config.Agent.CallCycle // seconds
 	// me.LogLevel = "DEBUG"
 
 	// Primary agent인 경우 node 정보 추가
@@ -306,7 +306,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	if agent.AgentKey == rb.Agent.Primary.AgentKey {
 		// TODO: primary agent 실행 파라미터 update
-		// rb.Me.CallCycle =
+		rb.Me.CallCycle = manager.Config.Agent.CallCycle
 		// rb.Me.LogLevel =
 
 		// agent zone 상태 정보 업데이트
