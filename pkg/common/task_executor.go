@@ -177,6 +177,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 				// task result 갱신 - task result는 최종 step의 result로 갱신된다.
 				tw.Result = result
+				tw.UpdatedAt = JSONTime{time.Now()}
 
 				if result != preResult {
 					tw.IsChangedResult = true
