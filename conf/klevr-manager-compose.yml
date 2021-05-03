@@ -1,5 +1,5 @@
 log:
-    level: debug
+    level: info 
     logPath: ./log/klevr-manager.log
     maxSize: 1
     maxBackups: 3
