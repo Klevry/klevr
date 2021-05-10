@@ -326,6 +326,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
 			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
 			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
+			arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
+			arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 
 			if agent.AgentKey == a.AgentKey {
 				arrAgent[i].IsActive = 1
@@ -599,10 +601,14 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
 			memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
 			disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+			freeMemory, _ := strconv.Atoi(manager.decrypt(a.FreeMemory))
+			freeDisk, _ := strconv.Atoi(manager.decrypt(a.FreeDisk))
 
 			nodes[i].Core = core
 			nodes[i].Memory = memory
 			nodes[i].Disk = disk
+			nodes[i].FreeMemory = freeMemory
+			nodes[i].FreeDisk = freeDisk
 		}
 
 		return nodes
@@ -749,6 +755,8 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
 		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
 		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.FreeMemory = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeMemory))
+		agent.FreeDisk = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeDisk))
 		agent.HmacKey = manager.encrypt(common.GetKey(16))
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
@@ -761,6 +769,8 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
 		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
 		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.FreeMemory = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeMemory))
+		agent.FreeDisk = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeDisk))
 		agent.HmacKey = manager.encrypt(common.GetKey(16))
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 

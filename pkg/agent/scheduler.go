@@ -69,6 +69,8 @@ func (agent *KlevrAgent) primaryStatusCheck() {
 				agent.Agents[i].Core = agentStatus.Core
 				agent.Agents[i].Memory = agentStatus.Memory
 				agent.Agents[i].Disk = agentStatus.Disk
+				agent.Agents[i].FreeMemory = agentStatus.FreeMemory
+				agent.Agents[i].FreeDisk = agentStatus.FreeDisk
 				agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
 				agent.Agents[i].IsActive = true
 			} else {

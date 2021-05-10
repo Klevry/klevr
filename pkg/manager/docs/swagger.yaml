@@ -7,6 +7,10 @@ definitions:
         type: integer
       disk:
         type: integer
+      freeDisk:
+        type: integer
+      freeMemory:
+        type: integer
       ip:
         type: string
       isActive:
@@ -146,6 +150,10 @@ definitions:
         type: integer
       encKey:
         type: string
+      freeDisk:
+        type: integer
+      freeMemory:
+        type: integer
       hmacKey:
         type: string
       ip:
@@ -989,6 +997,23 @@ paths:
           schema:
             $ref: '#/definitions/common.KlevrTask'
       summary: TASK를 조회한다.
+      tags:
+      - servers
+  /inner/users/agents:
+    get:
+      consumes:
+      - application/json
+      description: 모든 agent 정보를 반환한다.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/common.Agent'
+            type: array
+      summary: 전체 agent 목록을 반환한다.
       tags:
       - servers
   /inner/variables:

@@ -195,4 +195,6 @@ func (agent *KlevrAgent) setBodyMeInfo(body *common.Body) {
 	body.Me.Resource.Core = runtime.NumCPU()
 	body.Me.Resource.Memory = int(memory.Total / MB)
 	body.Me.Resource.Disk = int(disk.All / MB)
+	body.Me.Resource.FreeMemory = int(memory.Free / MB)
+	body.Me.Resource.FreeDisk = int(disk.Free / MB)
 }

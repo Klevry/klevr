@@ -68,6 +68,18 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 	return cnt, &agents
 }
 
+func (tx *Tx) getTotalAgents() (int64, *[]Agents) {
+	var agents []Agents
+
+	cnt, err := tx.FindAndCount(&agents)
+	if err != nil {
+		panic(err)
+	}
+
+	return cnt, &agents
+
+}
+
 func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	var agents []Agents
 
@@ -187,6 +199,7 @@ func (tx *Tx) updateAgent(a *Agents) {
 	_, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
 		"CPU":                   a.Cpu,
 		"DISK":                  a.Disk,
+		"FREE_DISK":             a.FreeDisk,
 		"ENC_KEY":               a.EncKey,
 		"HMAC_KEY":              a.HmacKey,
 		"IP":                    a.Ip,
@@ -194,6 +207,7 @@ func (tx *Tx) updateAgent(a *Agents) {
 		"LAST_ACCESS_TIME":      a.LastAccessTime,
 		"LAST_ALIVE_CHECK_TIME": a.LastAliveCheckTime,
 		"MEMORY":                a.Memory,
+		"FREE_MEMORY":           a.FreeMemory,
 		"PORT":                  a.Port,
 		"VERSION":               a.Version,
 		"UPDATED_AT":            time.Now().UTC(),

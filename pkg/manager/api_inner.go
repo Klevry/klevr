@@ -46,6 +46,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
 	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
 	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
+	registURI(inner, GET, "/users/agents", serversAPI.getTotalAgents)
 }
 
 // addSimpleReservedTask godoc
@@ -231,12 +232,16 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		manager := ctx.Get(CtxServer).(*KlevrManager)
 
 		core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
-		memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
-		disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+		memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
+		disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+		freeMemory, _ := strconv.Atoi(manager.decrypt(a.FreeMemory))
+		freeDisk, _ := strconv.Atoi(manager.decrypt(a.FreeDisk))
 
 		agent.Core = core
 		agent.Memory = memory
 		agent.Disk = disk
+		agent.FreeMemory = freeMemory
+		agent.FreeDisk = freeDisk
 	}
 
 	b, err := json.Marshal(agent)
@@ -396,12 +401,73 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 			}
 
 			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
-			memory, _ := strconv.Atoi(manager.decrypt(a.Cpu))
-			disk, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
+			disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+			freeMemory, _ := strconv.Atoi(manager.decrypt(a.FreeMemory))
+			freeDisk, _ := strconv.Atoi(manager.decrypt(a.FreeDisk))
 
 			nodes[i].Core = core
 			nodes[i].Memory = memory
 			nodes[i].Disk = disk
+			nodes[i].FreeMemory = freeMemory
+			nodes[i].FreeDisk = freeDisk
+
+		}
+	}
+
+	b, err := json.Marshal(nodes)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// getTotalAgents godoc
+// @Summary 전체 agent 목록을 반환한다.
+// @Description 모든 agent 정보를 반환한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/users/agents [get]
+// @Success 200 {object} []common.Agent
+func (api *serversAPI) getTotalAgents(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	cnt, agents := tx.getTotalAgents()
+	nodes := make([]Agent, cnt)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	if cnt > 0 {
+		for i, a := range *agents {
+			nodes[i] = Agent{
+				AgentKey:           a.AgentKey,
+				IsActive:           byteToBool(a.IsActive),
+				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
+				LastAccessTime:     &common.JSONTime{a.LastAccessTime},
+				IP:                 a.Ip,
+				Port:               a.Port,
+				Version:            a.Version,
+				Resource:           &common.Resource{},
+			}
+
+			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
+			memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
+			disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+			freeMemory, _ := strconv.Atoi(manager.decrypt(a.FreeMemory))
+			freeDisk, _ := strconv.Atoi(manager.decrypt(a.FreeDisk))
+
+			nodes[i].Core = core
+			nodes[i].Memory = memory
+			nodes[i].Disk = disk
+			nodes[i].FreeMemory = freeMemory
+			nodes[i].FreeDisk = freeDisk
+
 		}
 	}
 
