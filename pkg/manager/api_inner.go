@@ -217,7 +217,9 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 	var agent common.Agent
 
 	if exist {
-		a := tx.getAgentByID(primary.AgentId)
+		//a := tx.getAgentByID(primary.AgentId)
+		txManager := NewAgentStorage()
+		a := txManager.GetAgentByID(tx, groupID, primary.AgentId)
 
 		agent = common.Agent{
 			AgentKey:           a.AgentKey,
@@ -382,7 +384,10 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cnt, agents := tx.getAgentsByGroupId(groupID)
+	//cnt, agents := tx.getAgentsByGroupId(groupID)
+	txManager := NewAgentStorage()
+	cnt, agents := txManager.GetAgentsByZoneID(tx, groupID)
+
 	nodes := make([]Agent, cnt)
 
 	manager := ctx.Get(CtxServer).(*KlevrManager)
@@ -981,8 +986,11 @@ func (api *serversAPI) deletegroup(tx *Tx, id uint64) error {
 		return fmt.Errorf("It cannot remove the zone(apiauthentication) of the zoneid: %d", id)
 	}
 
-	tx.deleteAgent(id)
-	cnt, _ = tx.getAgentsByGroupId(id)
+	//tx.deleteAgent(id)
+	//cnt, _ = tx.getAgentsByGroupId(id)
+	txManager := NewAgentStorage()
+	txManager.DeleteAgent(tx, id)
+	cnt, _ = txManager.GetAgentsByZoneID(tx, id)
 	if cnt > 0 {
 		return fmt.Errorf("It cannot remove the zone of the zoneid: %d", id)
 	}

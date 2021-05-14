@@ -36,5 +36,11 @@ klevr:
         maxConnLifeTime: 1
         showSql: false
         logLevel: warn
+        cache: true
+    cache:
+        type: 'redis'
+        address: '192.168.10.12'
+        port: 6379
+        password: ''
     console:
         usage: false

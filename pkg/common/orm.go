@@ -29,6 +29,7 @@ type DBInfo struct {
 	InitScriptPath  string
 	ShowSql         bool
 	LogLevel        string
+	Cache           bool
 }
 
 type DB struct {

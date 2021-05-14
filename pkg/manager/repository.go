@@ -137,8 +137,8 @@ func (tx *Tx) deleteAgent(zoneID uint64) {
 	logger.Debug(res)
 }
 
-func (tx *Tx) updateZoneStatus(arrAgent *[]Agents) {
-	for _, a := range *arrAgent {
+func (tx *Tx) updateZoneStatus(arrAgent []Agents) {
+	for _, a := range arrAgent {
 		_, err := tx.Where("AGENT_KEY = ?", a.AgentKey).
 			Cols("LAST_ALIVE_CHECK_TIME", "IS_ACTIVE", "CPU", "MEMORY", "DISK").
 			Update(a)
@@ -186,13 +186,16 @@ func (tx *Tx) deleteAgentGroup(groupID uint64) {
 	}
 }
 
-func (tx *Tx) addAgent(a *Agents) {
+func (tx *Tx) addAgent(a *Agents) error {
 	cnt, err := tx.Insert(a)
 	logger.Debugf("Inserted Agent(%d) : %v", cnt, a)
 
 	if err != nil {
-		panic(err)
+		//panic(err)
+		return err
 	}
+
+	return nil
 }
 
 func (tx *Tx) updateAgent(a *Agents) {
