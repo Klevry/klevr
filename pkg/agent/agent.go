@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
-	"github.com/jasonlvhit/gocron"
+	"github.com/go-co-op/gocron"
 	"github.com/mackerelio/go-osstat/memory"
 )
 
@@ -80,24 +81,55 @@ func (agent *KlevrAgent) Run() {
 }
 
 func (agent *KlevrAgent) startScheduler() {
-	s := gocron.NewScheduler()
+	agent.scheduler = gocron.NewScheduler(time.UTC)
+
+	var interval int
+	if interval = agent.schedulerInterval; interval <= 0 {
+		interval = defaultSchedulerInterval
+	}
+
+	logger.Debugf("agentSchedulerInterval: %d", interval)
 
 	if agent.checkPrimary(agent.Primary.IP) {
-		var interval int
+		agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
+	} else {
+		go agent.secondaryServer()
+		agent.scheduler.Every(int(interval)).Seconds().Do(statusCheck, agent)
+	}
+
+	agent.scheduler.StartAsync()
+
+	go agent.updateScheduler()
+}
+
+func (agent *KlevrAgent) updateScheduler() {
+	var interval int
+	if interval = agent.schedulerInterval; interval <= 0 {
+		interval = defaultSchedulerInterval
+	}
+
+	oldSchedulerInterval := interval
+
+	for {
+		//logger.Debugf("updateScheduler(interval): %d", agent.schedulerInterval)
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval
 		}
+		if oldSchedulerInterval != interval {
+			if agent.scheduler.IsRunning() == true {
+				agent.scheduler.Clear()
+				if agent.checkPrimary(agent.Primary.IP) {
+					agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
+				} else {
+					agent.scheduler.Every(int(interval)).Seconds().Do(statusCheck, agent)
+				}
+			}
+			oldSchedulerInterval = interval
+		}
 
-		s.Every(5).Seconds().Do(polling, agent)
-
-	} else {
-		go agent.secondaryServer()
-		s.Every(5).Seconds().Do(statusCheck, agent)
+		time.Sleep(1 * time.Second)
 	}
 
-	go func() {
-		<-s.Start()
-	}()
 }
 
 func (agent *KlevrAgent) logLevelHandler(w http.ResponseWriter, r *http.Request) {
@@ -163,4 +195,6 @@ func (agent *KlevrAgent) setBodyMeInfo(body *common.Body) {
 	body.Me.Resource.Core = runtime.NumCPU()
 	body.Me.Resource.Memory = int(memory.Total / MB)
 	body.Me.Resource.Disk = int(disk.All / MB)
+	body.Me.Resource.FreeMemory = int(memory.Free / MB)
+	body.Me.Resource.FreeDisk = int(disk.Free / MB)
 }

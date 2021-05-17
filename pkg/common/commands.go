@@ -20,6 +20,7 @@ func init() {
 	InitCommand(stopTask())              // 실행중인 Task 중지 처리(작업 취소)
 	InitCommand(forceShutdownAgent())    // 에이전트 즉시 중지 처리
 	InitCommand(gracefulShutdownAgent()) // 현재 실행중인 작업을 마치고 에이전트 중지 처리
+	InitCommand(getAgentsRunningTasks()) // 현재 에이전트에서 실행중인 task 조회
 }
 
 // 샘플 커맨드 작성
@@ -34,6 +35,63 @@ func testCommand() Command {
 		// 커맨드 중지 시 복구 로직 구현
 		Recover: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
 			return "", nil
+		},
+	}
+}
+
+func getAgentsRunningTasks() Command {
+	type RunningTask struct {
+		Id             uint64     `json:"id"`
+		Name           string     `json:"name"`
+		Status         TaskStatus `json:"status"`
+		TotalStepCount uint       `json:"totalStepCount"`
+		CurrentStep    uint       `json:"currentStep"`
+		CreatedAt      JSONTime   `json:"createdAt"`
+		UpdatedAt      JSONTime   `json:"updatedAt"`
+		IterationCount int64      `json:"iterationCount"`
+	}
+
+	type ResultModel struct {
+		Tasks interface{} `json:"runningTasks"`
+	}
+
+	return Command{
+		Name:        "GetAgentsRunningTasks",
+		Description: "Returns the list of tasks running on the agent.",
+		ResultModel: ResultModel{
+			Tasks: CommandDescriptor{
+				Type:        "json",
+				Description: "",
+			},
+		},
+		Run: func(jsonOriginalParam string, jsonPreResult string) (string, error) {
+			executor := GetTaskExecutor()
+
+			returnTasks := make([]RunningTask, 0)
+
+			runningTasks := executor.runningTasks.Items()
+
+			for _, tw := range runningTasks {
+				rt := tw.(TaskWrapper)
+
+				returnTasks = append(returnTasks, RunningTask{
+					Id:             rt.ID,
+					Name:           rt.Name,
+					Status:         rt.Status,
+					TotalStepCount: rt.TotalStepCount,
+					CurrentStep:    rt.CurrentStep,
+					CreatedAt:      rt.CreatedAt,
+					UpdatedAt:      rt.UpdatedAt,
+					IterationCount: rt.iterationCnt,
+				})
+			}
+
+			jsonBytes, err := json.Marshal(returnTasks)
+			if err != nil {
+				return "", err
+			}
+
+			return string(jsonBytes), nil
 		},
 	}
 }

@@ -48,6 +48,7 @@ type Config struct {
 	Server  ServerInfo
 	Agent   AgentInfo
 	DB      common.DBInfo
+	Cache   CacheInfo
 	Console ConsoleInfo
 }
 
@@ -85,6 +86,13 @@ type AgentInfo struct {
 
 type ConsoleInfo struct {
 	Usage bool
+}
+
+type CacheInfo struct {
+	Type     string
+	Address  string
+	Port     int
+	Password string
 }
 
 func init() {
@@ -601,13 +609,15 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 					current := time.Now().UTC()
 					before := current.Add(-time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second)
 
-					cnt, agents := tx.getAgentsForInactive(before)
+					//cnt, agents := tx.getAgentsForInactive(before)
+					txManager := NewAgentStorage()
+					cnt, agents := txManager.GetAgentsForInactive(tx, before)
 
 					if cnt > 0 {
 						len := len(*agents)
 						ids := make([]uint64, len)
-						agentKeys := make([]string, len)
-						taskIDs := make([]uint64, len)
+						agentKeys := make([]string, 0)
+						taskIDs := make([]uint64, 0)
 
 						var events = make([]KlevrEvent, len)
 						var eventTime = &common.JSONTime{Time: time.Now().UTC()}
@@ -632,7 +642,9 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 							logger.Debugf("disconnected event : [%+v]", events[i])
 						}
 
-						tx.updateAgentStatus(ids)
+						//tx.updateAgentStatus(ids)
+						txManager := NewAgentStorage()
+						txManager.UpdateAgentStatus(tx, agents, ids)
 						tx.updateShutdownTasks(taskIDs)
 
 						RemoveShutdownTask(agentKeys)

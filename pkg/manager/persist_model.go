@@ -35,6 +35,8 @@ type Agents struct {
 	Cpu                string
 	Memory             string
 	Disk               string
+	FreeMemory         string
+	FreeDisk           string
 	Version            string
 }
 

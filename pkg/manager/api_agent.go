@@ -181,7 +181,9 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
+	//agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
+	txManager := NewAgentStorage()
+	agent := txManager.GetAgentByAgentKey(tx, ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
 	upsertAgent(ctx, tx, agent, ch, &paramAgent)
@@ -202,7 +204,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	me.HmacKey = manager.decrypt(agent.HmacKey)
 	me.EncKey = manager.decrypt(agent.EncKey)
-	// me.CallCycle = 0 // seconds
+	me.CallCycle = manager.Config.Agent.CallCycle // seconds
 	// me.LogLevel = "DEBUG"
 
 	// Primary agent인 경우 node 정보 추가
@@ -306,7 +308,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	if agent.AgentKey == rb.Agent.Primary.AgentKey {
 		// TODO: primary agent 실행 파라미터 update
-		// rb.Me.CallCycle =
+		rb.Me.CallCycle = manager.Config.Agent.CallCycle
 		// rb.Me.LogLevel =
 
 		// agent zone 상태 정보 업데이트
@@ -326,6 +328,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
 			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
 			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
+			arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
+			arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 
 			if agent.AgentKey == a.AgentKey {
 				arrAgent[i].IsActive = 1
@@ -340,7 +344,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		tx.updateZoneStatus(&arrAgent)
+		//tx.updateZoneStatus(&arrAgent)
+		NewAgentStorage().UpdateZoneStatus(tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
 
 		RemoveShutdownTask(agentKeys)
@@ -390,6 +395,7 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 
 	for _, t := range *uTasks {
 		oTask := oTasks[t.ID]
+		oTask.ExeAgentKey = t.ExeAgentKey
 
 		logger.Debugf("updateTaskStatus : [%+v]", oTask)
 
@@ -578,7 +584,10 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
-	cnt, agents := tx.getAgentsByGroupId(zoneID)
+	//cnt, agents := tx.getAgentsByGroupId(zoneID)
+	txManager := NewAgentStorage()
+	cnt, agents := txManager.GetAgentsByZoneID(tx, zoneID)
+
 	nodes := make([]common.Agent, cnt)
 
 	manager := ctx.Get(CtxServer).(*KlevrManager)
@@ -598,10 +607,14 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 			core, _ := strconv.Atoi(manager.decrypt(a.Cpu))
 			memory, _ := strconv.Atoi(manager.decrypt(a.Memory))
 			disk, _ := strconv.Atoi(manager.decrypt(a.Disk))
+			freeMemory, _ := strconv.Atoi(manager.decrypt(a.FreeMemory))
+			freeDisk, _ := strconv.Atoi(manager.decrypt(a.FreeDisk))
 
 			nodes[i].Core = core
 			nodes[i].Memory = memory
 			nodes[i].Disk = disk
+			nodes[i].FreeMemory = freeMemory
+			nodes[i].FreeDisk = freeDisk
 		}
 
 		return nodes
@@ -611,7 +624,10 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 }
 
 func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
-	agent := tx.getAgentByAgentKey(agentKey, zoneID)
+	txManager := NewAgentStorage()
+
+	//agent := tx.getAgentByAgentKey(agentKey, zoneID)
+	agent := txManager.GetAgentByAgentKey(tx, agentKey, zoneID)
 
 	oldStatus := agent.IsActive
 
@@ -621,7 +637,9 @@ func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	// agent.IsActive = 1
 	// agent.LastAccessTime = time.Now().UTC()
 	// tx.updateAgent(agent)
-	cnt := tx.updateAccessAgent(agentKey, curTime)
+
+	//cnt := tx.updateAccessAgent(agentKey, curTime)
+	cnt := txManager.UpdateAccessAgent(tx, zoneID, agentKey, curTime)
 
 	if oldStatus == 0 && cnt > 0 {
 		AddEvent(&KlevrEvent{
@@ -653,7 +671,9 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 	} else if groupPrimary.GroupId == 0 && groupPrimary.AgentId == 0 {
 		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
-		primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
+		//primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
+		txManager := NewAgentStorage()
+		primaryAgent = txManager.GetAgentByID(tx, zoneID, groupPrimary.AgentId)
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
@@ -708,7 +728,9 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 				common.Throw(common.NewStandardError("elect primary failed."))
 			}
 
-			agent = tx.getAgentByID(pa.AgentId)
+			//agent = tx.getAgentByID(pa.AgentId)
+			txManager := NewAgentStorage()
+			agent = txManager.GetAgentByID(tx, zoneID, pa.AgentId)
 
 			if agent.Id == 0 {
 				logger.Warning(fmt.Sprintf("primary agent not exist for id : %d, [%v]", agent.Id, agent))
@@ -738,6 +760,8 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
+	txManager := NewAgentStorage()
+
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
 		agent.GroupId = ch.ZoneID
@@ -748,10 +772,13 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
 		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
 		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.FreeMemory = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeMemory))
+		agent.FreeDisk = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeDisk))
 		agent.HmacKey = manager.encrypt(common.GetKey(16))
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
-		tx.addAgent(agent)
+		//tx.addAgent(agent)
+		txManager.AddAgent(tx, agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
 		agent.IsActive = 1
 		agent.LastAccessTime = time.Now().UTC()
@@ -760,10 +787,13 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.Cpu = manager.encrypt(strconv.Itoa(paramAgent.Resource.Core))
 		agent.Memory = manager.encrypt(strconv.Itoa(paramAgent.Resource.Memory))
 		agent.Disk = manager.encrypt(strconv.Itoa(paramAgent.Resource.Disk))
+		agent.FreeMemory = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeMemory))
+		agent.FreeDisk = manager.encrypt(strconv.Itoa(paramAgent.Resource.FreeDisk))
 		agent.HmacKey = manager.encrypt(common.GetKey(16))
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
-		tx.updateAgent(agent)
+		//tx.updateAgent(agent)
+		txManager.UpdateAgent(tx, agent)
 	}
 }
 

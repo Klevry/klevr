@@ -1,5 +1,5 @@
 log:
-    level: debug
+    level: info 
     logPath: ./log/klevr-manager.log
     maxSize: 1
     maxBackups: 3
@@ -26,7 +26,7 @@ klevr:
             durable: true
             autoDelete: false
     agent:
-        callCycle: 10 #seconds
+        callCycle: 5 #seconds
         logLevel: INFO
     db:
         type: 'mysql'
@@ -36,5 +36,11 @@ klevr:
         maxConnLifeTime: 1
         showSql: false
         logLevel: warn
+        cache: true
+    cache:
+        type: 'redis'
+        address: '192.168.8.71'
+        port: 6379
+        password: 'Ncloud2370!'
     console:
         usage: false

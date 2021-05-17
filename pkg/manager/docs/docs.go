@@ -1164,6 +1164,32 @@ var doc = `{
                 }
             }
         },
+        "/inner/users/agents": {
+            "get": {
+                "description": "모든 agent 정보를 반환한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "전체 agent 목록을 반환한다.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.Agent"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inner/variables": {
             "get": {
                 "description": "TASK inline command에서 사용할 수 있는 시스템 변수 목록을 조회한다.",
@@ -1202,6 +1228,12 @@ var doc = `{
                     "type": "integer"
                 },
                 "disk": {
+                    "type": "integer"
+                },
+                "freeDisk": {
+                    "type": "integer"
+                },
+                "freeMemory": {
                     "type": "integer"
                 },
                 "ip": {
@@ -1415,6 +1447,12 @@ var doc = `{
                 },
                 "encKey": {
                     "type": "string"
+                },
+                "freeDisk": {
+                    "type": "integer"
+                },
+                "freeMemory": {
+                    "type": "integer"
                 },
                 "hmacKey": {
                     "type": "string"

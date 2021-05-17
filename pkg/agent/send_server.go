@@ -46,9 +46,11 @@ func (s sendServer) StatusCheck(ctx context.Context, in *pb.Status) (*pb.Status,
 	agentStatus := &common.AgentStatus{
 		AgentKey: s.agentKey,
 		Resource: &common.Resource{
-			Core:   runtime.NumCPU(),
-			Memory: int(memory.Total / MB),
-			Disk:   int(disk.All / MB),
+			Core:       runtime.NumCPU(),
+			Memory:     int(memory.Total / MB),
+			Disk:       int(disk.All / MB),
+			FreeMemory: int(memory.Free / MB),
+			FreeDisk:   int(disk.Free / MB),
 		},
 	}
 

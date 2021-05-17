@@ -62,9 +62,11 @@ type Agent struct {
 
 // Resource agent resource
 type Resource struct {
-	Core   int `json:"core"`
-	Memory int `json:"memory"`
-	Disk   int `json:"disk"`
+	Core       int `json:"core"`
+	Memory     int `json:"memory"`
+	Disk       int `json:"disk"`
+	FreeMemory int `json:"freeMemory"`
+	FreeDisk   int `json:"freeDisk"`
 }
 
 // AgentStatus Agent(secondary) check status info

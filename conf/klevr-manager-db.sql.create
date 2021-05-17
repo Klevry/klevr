@@ -45,10 +45,15 @@ CREATE TABLE `AGENTS` (
   `CPU` varchar(50) DEFAULT NULL,
   `MEMORY` varchar(50) DEFAULT NULL,
   `DISK` varchar(50) DEFAULT NULL,
+  `FREE_MEMORY` varchar(50) DEFAULT NULL,
+  `FREE_DISK` varchar(50) DEFAULT NULL,
   `VERSION` varchar(45) DEFAULT NULL COMMENT '에이전트 버전',
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='Agent 테이블\n전체 agent 정보를 관리';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+ALTER TABLE `klevr`.`AGENTS` 
+ADD INDEX `IDX_AGENTS_01` (`AGENT_KEY` ASC) ;
 
 --
 -- Table structure for table `AGENT_GROUPS`

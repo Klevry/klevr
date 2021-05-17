@@ -8,13 +8,14 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
+	github.com/go-co-op/gocron v1.5.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75
 	github.com/gorilla/context v1.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
-	github.com/jasonlvhit/gocron v0.0.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mackerelio/go-osstat v0.1.0
 	github.com/orcaman/concurrent-map v0.0.0-20210106121528-16402b402231
