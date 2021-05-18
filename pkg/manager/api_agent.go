@@ -274,35 +274,13 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debugf("polling received data : [%+v]", param)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 	// response 데이터 생성
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
+	agent := AccessAgentEvent(tx, ch.AgentKey, ch.ZoneID)
 	logger.Debugf("%+v", agent)
-
-	// 수행한 task 상태 정보 업데이트
-	var taskLength = len(param.Task)
-
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
-	if taskLength > 0 {
-		var pTaskMap = make(map[uint64]Tasks)
-		var tIds = make([]uint64, len(param.Task))
-
-		for i, task := range param.Task {
-			tIds[i] = task.ID
-		}
-
-		pTasks, _ := tx.getTasksByIds(manager, tIds)
-		for _, pt := range *pTasks {
-			pTaskMap[pt.Id] = pt
-		}
-
-		logger.Debugf("map for update - [%+v]", pTaskMap)
-
-		updateTaskStatus(ctx, pTaskMap, &param.Task)
-	}
 
 	rb.Agent.Primary, _ = getPrimary(ctx, tx, ch.ZoneID, agent)
 
@@ -325,16 +303,22 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			if a.LastAliveCheckTime != nil {
 				arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
 			}
-			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
-			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
-			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
-			arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
-			arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 
 			if agent.AgentKey == a.AgentKey {
+				arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(param.Me.Resource.Core))
+				arrAgent[i].Memory = manager.encrypt(strconv.Itoa(param.Me.Resource.Memory))
+				arrAgent[i].Disk = manager.encrypt(strconv.Itoa(param.Me.Resource.Disk))
+				arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(param.Me.Resource.FreeMemory))
+				arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(param.Me.Resource.FreeDisk))
 				arrAgent[i].IsActive = 1
 			} else {
+				arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
+				arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
+				arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
+				arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
+				arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
+
 				if a.IsActive == false {
 					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
 						agentKeys = append(agentKeys, a.AgentKey)
@@ -351,6 +335,27 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
+
+		// 수행한 task 상태 정보 업데이트
+		var taskLength = len(param.Task)
+
+		if taskLength > 0 {
+			var pTaskMap = make(map[uint64]Tasks)
+			var tIds = make([]uint64, len(param.Task))
+
+			for i, task := range param.Task {
+				tIds[i] = task.ID
+			}
+
+			pTasks, _ := tx.getTasksByIds(manager, tIds)
+			for _, pt := range *pTasks {
+				pTaskMap[pt.Id] = pt
+			}
+
+			logger.Debugf("map for update - [%+v]", pTaskMap)
+
+			updateTaskStatus(ctx, pTaskMap, &param.Task)
+		}
 
 		// Credential 조회
 		nCredentials, cnt := tx.getCredentials(ch.ZoneID)
@@ -546,8 +551,13 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	// response 데이터 생성
 	rb := &common.Body{}
 
-	// agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
+	// agent access에 대한 이벤트 발생
+	txManager := NewAgentStorage()
+	curTime := time.Now().UTC()
+	txManager.UpdateAccessAgent(tx, ch.ZoneID, ch.AgentKey, curTime)
+	tx.Commit()
+
+	agent := AccessAgentEvent(tx, ch.AgentKey, ch.ZoneID)
 
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
@@ -623,34 +633,22 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	return nil
 }
 
-func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
+func AccessAgentEvent(tx *Tx, agentKey string, zoneID uint64) *Agents {
 	txManager := NewAgentStorage()
 
-	//agent := tx.getAgentByAgentKey(agentKey, zoneID)
 	agent := txManager.GetAgentByAgentKey(tx, agentKey, zoneID)
 
 	oldStatus := agent.IsActive
-
 	curTime := time.Now().UTC()
 
-	// agent 접속 시간 갱신
-	// agent.IsActive = 1
-	// agent.LastAccessTime = time.Now().UTC()
-	// tx.updateAgent(agent)
-
-	//cnt := tx.updateAccessAgent(agentKey, curTime)
-	cnt := txManager.UpdateAccessAgent(tx, zoneID, agentKey, curTime)
-
-	if oldStatus == 0 && cnt > 0 {
+	if oldStatus == 0 {
 		AddEvent(&KlevrEvent{
 			EventType: AgentConnect,
 			AgentKey:  agentKey,
-			GroupID:   agent.GroupId,
+			GroupID:   zoneID,
 			EventTime: &common.JSONTime{Time: curTime},
 		})
 	}
-
-	tx.Commit()
 
 	return agent
 }
