@@ -183,12 +183,13 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	//agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
 	txManager := NewAgentStorage()
-	agent := txManager.GetAgentByAgentKey(tx, ch.AgentKey, ch.ZoneID)
+	agent := txManager.GetAgentByAgentKey(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
 	upsertAgent(ctx, tx, agent, ch, &paramAgent)
 
 	tx.Commit()
+	txManager.Close()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -279,7 +280,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := AccessAgentEvent(tx, ch.AgentKey, ch.ZoneID)
+	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 	logger.Debugf("%+v", agent)
 
 	rb.Agent.Primary, _ = getPrimary(ctx, tx, ch.ZoneID, agent)
@@ -329,12 +330,15 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//tx.updateZoneStatus(&arrAgent)
-		NewAgentStorage().UpdateZoneStatus(tx, ch.ZoneID, arrAgent)
+		//logger.Debugf("########## %d, %v", len(arrAgent), arrAgent)
+		txManager := NewAgentStorage()
+		txManager.UpdateZoneStatus(ctx, tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
 
 		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
+		txManager.Close()
 
 		// 수행한 task 상태 정보 업데이트
 		var taskLength = len(param.Task)
@@ -554,10 +558,11 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	// agent access에 대한 이벤트 발생
 	txManager := NewAgentStorage()
 	curTime := time.Now().UTC()
-	txManager.UpdateAccessAgent(tx, ch.ZoneID, ch.AgentKey, curTime)
+	txManager.UpdateAccessAgent(ctx, tx, ch.ZoneID, ch.AgentKey, curTime)
 	tx.Commit()
+	txManager.Close()
 
-	agent := AccessAgentEvent(tx, ch.AgentKey, ch.ZoneID)
+	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
@@ -596,7 +601,8 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	//cnt, agents := tx.getAgentsByGroupId(zoneID)
 	txManager := NewAgentStorage()
-	cnt, agents := txManager.GetAgentsByZoneID(tx, zoneID)
+	cnt, agents := txManager.GetAgentsByZoneID(ctx, tx, zoneID)
+	txManager.Close()
 
 	nodes := make([]common.Agent, cnt)
 
@@ -633,10 +639,10 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	return nil
 }
 
-func AccessAgentEvent(tx *Tx, agentKey string, zoneID uint64) *Agents {
+func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *Agents {
 	txManager := NewAgentStorage()
-
-	agent := txManager.GetAgentByAgentKey(tx, agentKey, zoneID)
+	agent := txManager.GetAgentByAgentKey(ctx, tx, agentKey, zoneID)
+	txManager.Close()
 
 	oldStatus := agent.IsActive
 	curTime := time.Now().UTC()
@@ -671,7 +677,8 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 	} else {
 		//primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 		txManager := NewAgentStorage()
-		primaryAgent = txManager.GetAgentByID(tx, zoneID, groupPrimary.AgentId)
+		primaryAgent = txManager.GetAgentByID(ctx, tx, zoneID, groupPrimary.AgentId)
+		txManager.Close()
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
@@ -728,7 +735,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 
 			//agent = tx.getAgentByID(pa.AgentId)
 			txManager := NewAgentStorage()
-			agent = txManager.GetAgentByID(tx, zoneID, pa.AgentId)
+			agent = txManager.GetAgentByID(ctx, tx, zoneID, pa.AgentId)
 
 			if agent.Id == 0 {
 				logger.Warning(fmt.Sprintf("primary agent not exist for id : %d, [%v]", agent.Id, agent))
@@ -736,6 +743,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			tx.Commit()
+			txManager.Close()
 		},
 		Catch: func(e error) {
 			if tx != nil {
@@ -776,7 +784,7 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		//tx.addAgent(agent)
-		txManager.AddAgent(tx, agent)
+		txManager.AddAgent(ctx, tx, agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
 		agent.IsActive = 1
 		agent.LastAccessTime = time.Now().UTC()
@@ -791,8 +799,10 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		//tx.updateAgent(agent)
-		txManager.UpdateAgent(tx, agent)
+		txManager.UpdateAgent(ctx, tx, agent)
 	}
+
+	txManager.Close()
 }
 
 func byteToBool(b byte) bool {

@@ -3,22 +3,25 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/go-redis/redis"
 )
 
 type ICache interface {
-	SyncAgent(zoneID uint64, agents *[]Agents) error
-	UpdateZoneStatus(zoneID uint64, agents []Agents) error
-	DeleteAllAgent(zoneID uint64) error
-	UpdateAccessAgent(zoneID uint64, agentKey string, accessTime time.Time) error
-	UpdateAgentDisabledStatus(inactiveAgents *[]Agents) error
-	GetAgentsForInactive(before time.Time) (int64, *[]Agents)
-	GetAgentsByZoneID(zoniID uint64) (int64, *[]Agents)
-	GetAgentByID(zoneID, agentID uint64) *Agents
-	GetAgentByAgentKey(zoneID uint64, agentKey string) *Agents
+	SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) error
+	UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Agents) error
+	DeleteAllAgent(ctx *common.Context, zoneID uint64) error
+	UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey string, accessTime time.Time) error
+	UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]Agents) error
+	GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]Agents)
+	GetAgentsByZoneID(ctx *common.Context, zoniID uint64) (int64, *[]Agents)
+	GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agents
+	GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *Agents
+	Close() error
 }
 
 type Cache struct {
@@ -37,7 +40,19 @@ func NewCache(address string, port int, password string) ICache {
 	return cache
 }
 
-func (c *Cache) SyncAgent(zoneID uint64, agents *[]Agents) error {
+func (c *Cache) Close() error {
+	return c.client.Close()
+}
+
+func (c *Cache) SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) error {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### syncAgent start ##########")
+		defer logger.Debug("######### syncAgent end ##########") //*/
+
 	logger.Debugf("AddAgent: %v", agents)
 
 	key := fmt.Sprintf("Agents.%d", zoneID)
@@ -60,6 +75,7 @@ func (c *Cache) SyncAgent(zoneID uint64, agents *[]Agents) error {
 				if cnt == 0 {
 					logger.Debug("there are no members of the deleted cache")
 				}
+
 			}
 		}
 
@@ -77,7 +93,15 @@ func (c *Cache) SyncAgent(zoneID uint64, agents *[]Agents) error {
 
 // UpdateZoneStatus에 전달된 agents의 정보는 Agents의 모든 필드를 채우고 있지 않음
 // cache에 등록되어 있던 agent의 정보에 변경된 내역만 변경해서 다시 등록
-func (c *Cache) UpdateZoneStatus(zoneID uint64, agents []Agents) error {
+func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Agents) error {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### UpdatezoneStatus start ##########")
+		defer logger.Debug("######### UpdateZoneStatus end ##########") //*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
@@ -99,7 +123,7 @@ func (c *Cache) UpdateZoneStatus(zoneID uint64, agents []Agents) error {
 				}
 
 				if cnt == 0 {
-					logger.Debug("there are no members of the deleted cache")
+					logger.Debugf("there are no members of the deleted cache : %v", string(member))
 				}
 			}
 		}
@@ -130,7 +154,15 @@ func (c *Cache) UpdateZoneStatus(zoneID uint64, agents []Agents) error {
 	return nil
 }
 
-func (c *Cache) DeleteAllAgent(zoneID uint64) error {
+func (c *Cache) DeleteAllAgent(ctx *common.Context, zoneID uint64) error {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### DeleteAllAgent start ##########")
+		defer logger.Debug("######### DeleteAllAgent end ##########") //*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
@@ -153,7 +185,15 @@ func (c *Cache) DeleteAllAgent(zoneID uint64) error {
 	return nil
 }
 
-func (c *Cache) UpdateAccessAgent(zoneID uint64, agentKey string, accessTime time.Time) error {
+func (c *Cache) UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey string, accessTime time.Time) error {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### UpdateAccessAgent start ##########")
+		defer logger.Debug("######### UpdateAccessAgent end ##########") //*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
@@ -162,24 +202,29 @@ func (c *Cache) UpdateAccessAgent(zoneID uint64, agentKey string, accessTime tim
 		return err
 	}
 
-	agentBuf := make([]Agents, 0)
 	var findAgent Agents
-	for _, member := range members {
-		var buf Agents
-		json.Unmarshal([]byte(member), &buf)
-		agentBuf = append(agentBuf, buf)
-		if buf.AgentKey == agentKey {
-			findAgent = buf
-			cnt, err := c.client.SRem(key, member).Result()
-			if err != nil {
-				logger.Debug(err)
-			}
+	originLength := len(members)
+	//logger.Debugf("### UpdateAccessAgent originLenght: %d", originLength)
 
-			if cnt == 0 {
-				logger.Debug("there are no members of the deleted cache")
-			}
+	if originLength > 0 {
+		for _, member := range members {
+			var buf Agents
+			json.Unmarshal([]byte(member), &buf)
+			if buf.AgentKey == agentKey {
+				//logger.Debugf("######### UpdateAccessAgent(SREM): %v", buf)
+				findAgent = buf
+				cnt, err := c.client.SRem(key, member).Result()
+				if err != nil {
+					logger.Debug(err)
+				}
 
-			break
+				if cnt == 0 {
+					logger.Debugf("there are no members of the deleted cache: %v", string(member))
+				}
+
+				//logger.Debugf("######### UpdateAccessAgent(SREM cnt): %d", cnt)
+				break
+			}
 		}
 	}
 
@@ -198,7 +243,15 @@ func (c *Cache) UpdateAccessAgent(zoneID uint64, agentKey string, accessTime tim
 }
 
 // agent들을 inactive 상태로 변경
-func (c *Cache) UpdateAgentDisabledStatus(inactiveAgents *[]Agents) error {
+func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]Agents) error {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### UpdateAgentDisabledStatus start ##########")
+		defer logger.Debug("######### UpdateAgentDisabledStatus end ##########") //*/
+
 	for _, a := range *inactiveAgents {
 		key := fmt.Sprintf("Agents.%d", a.GroupId)
 		members, err := c.client.SMembers(key).Result()
@@ -220,11 +273,11 @@ func (c *Cache) UpdateAgentDisabledStatus(inactiveAgents *[]Agents) error {
 					logger.Debug("there are no members of the deleted cache")
 				}
 
+				buf.IsActive = boolToByte(false)
+				item, _ := json.Marshal(buf)
+				c.client.SAdd(key, item)
 			}
 
-			buf.IsActive = boolToByte(false)
-			item, _ := json.Marshal(buf)
-			c.client.SAdd(key, item)
 		}
 	}
 	return nil
@@ -232,7 +285,15 @@ func (c *Cache) UpdateAgentDisabledStatus(inactiveAgents *[]Agents) error {
 
 // GetAgentsForInactive는 LastAccessTime이 before보다 이전에 접속했던 agent이거나
 // IsActive가 false 상태인 agent를 찾아준다.
-func (c *Cache) GetAgentsForInactive(before time.Time) (int64, *[]Agents) {
+func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]Agents) {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### GetAgentsForInactive start ##########")
+		defer logger.Debug("######### GetAgentsForInactive end ##########") //*/
+
 	keys, err := c.client.Keys("Agents.*").Result()
 	if err != nil {
 		logger.Debug(err)
@@ -263,7 +324,16 @@ func (c *Cache) GetAgentsForInactive(before time.Time) (int64, *[]Agents) {
 	return int64(len(inactivedAgents)), &inactivedAgents
 }
 
-func (c *Cache) GetAgentsByZoneID(zoneID uint64) (int64, *[]Agents) {
+func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[]Agents) {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### GetAgentsByZoneID start ##########")
+		defer logger.Debug("######### GetAgentsByZoneID end ##########")
+		//*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
@@ -281,7 +351,15 @@ func (c *Cache) GetAgentsByZoneID(zoneID uint64) (int64, *[]Agents) {
 	return int64(len(agents)), &agents
 }
 
-func (c *Cache) GetAgentByID(zoneID, agentID uint64) *Agents {
+func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agents {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### GetAgentByID start ##########")
+		defer logger.Debug("######### GetAgentByID end ##########") //*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
@@ -300,7 +378,16 @@ func (c *Cache) GetAgentByID(zoneID, agentID uint64) *Agents {
 	return nil
 }
 
-func (c *Cache) GetAgentByAgentKey(zoneID uint64, agentKey string) *Agents {
+func (c *Cache) GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *Agents {
+	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx.Lock()
+	defer mtx.Unlock()
+
+	/*
+		logger.Debug("######### GetAgentByAgentKey start ##########")
+		defer logger.Debug("######### GetAgentByAgentKey end ##########")
+		//*/
+
 	key := fmt.Sprintf("Agents.%d", zoneID)
 	members, err := c.client.SMembers(key).Result()
 	if err != nil {
