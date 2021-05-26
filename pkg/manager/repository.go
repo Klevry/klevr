@@ -749,3 +749,23 @@ func (tx *Tx) deleteCredential(id uint64) {
 		panic(err)
 	}
 }
+
+func (tx *Tx) getScheduledIterationTasks(zoneID uint64) (*[]Tasks, bool) {
+	var tasks []Tasks
+
+	stmt := tx.Where(builder.In("ZONE_ID", zoneID))
+
+	// condition 추가
+	stmt = stmt.And(builder.In("TASK_TYPE", string(common.Iteration)))
+
+	//tx.Engine().ShowSQL(true)
+
+	cnt, err := stmt.FindAndCount(&tasks)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Selected Tasks : %d", cnt)
+
+	return &tasks, cnt > 0
+}

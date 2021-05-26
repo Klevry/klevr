@@ -42,6 +42,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
+	registURI(agent, GET, "/scheduled/iteration", agentAPI.scheduledIterationTasks)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -596,6 +597,48 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 			EventTime: &common.JSONTime{Time: time.Now().UTC()},
 		})
 	}
+}
+
+// ScheduledIterationTasks godoc
+// @Summary 실행중인 Iteration 타입의 Task
+// @Description 해당 Zone에서 수행 중에 있는 Iteration 타입의 Task를 조회
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /agents/scheduled/iteration [get]
+// @Param X-API-KEY header string true "API KEY"
+// @Param X-AGENT-KEY header string true "AGENT KEY"
+// @Param X-ZONE-ID header string true "ZONE ID"
+// @Success 200 {object} []common.KlevrTask
+func (api *agentAPI) scheduledIterationTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	tx := GetDBConn(ctx)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	var b []byte
+	var err error
+
+	tasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitInterationSchedule)})
+	if cnt > 0 {
+		var dtos []common.KlevrTask = make([]common.KlevrTask, len(*tasks))
+		for i, t := range *tasks {
+			dtos[i] = *TaskPersistToDto(&t)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response: [%s]", string(b))
+	}
+
+	w.Write(b)
+	w.WriteHeader(200)
+
+	logger.Debugf("response: [%s]", string(b))
+
 }
 
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
