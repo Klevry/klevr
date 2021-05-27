@@ -41,6 +41,5 @@ klevr:
         type: 'redis'
         address: '192.168.8.71'
         port: 6379
-        password: 'Ncloud2370!'
     console:
         usage: false
