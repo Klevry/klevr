@@ -36,7 +36,6 @@ type Routes struct {
 	Root    *mux.Router
 	APIRoot *mux.Router
 
-	Legacy  *mux.Router
 	Agent   *mux.Router
 	Install *mux.Router
 	Inner   *mux.Router
@@ -105,8 +104,6 @@ func Init(ctx *common.Context) *API {
 	api.BaseRoutes.Root.PathPrefix("/swagger").Handler(swagger.WrapHandler)
 
 	api.BaseRoutes.APIRoot = api.BaseRoutes.Root
-
-	api.BaseRoutes.Legacy = api.BaseRoutes.APIRoot
 
 	api.BaseRoutes.Agent = api.BaseRoutes.APIRoot.PathPrefix("/agents").Subrouter()
 	api.BaseRoutes.Agent.Use(CommonWrappingHandler(ctx))

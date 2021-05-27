@@ -90,6 +90,13 @@ func main() {
 				Usage:    "WebHook URL",
 				Required: false,
 			},
+			&cli.StringFlag{
+				Name:     "cache.password",
+				Aliases:  []string{"cp"},
+				Usage:    "password to use the cache",
+				Required: false,
+				EnvVars:  []string{"KLEVR_CACHE_PASSWORD"},
+			},
 		},
 		Action: func(ctx *cli.Context) error {
 			// 설정파일 반영
@@ -117,6 +124,9 @@ func main() {
 			}
 			if ctx.String(hook) != "" {
 				config.Klevr.Server.Webhook.Url = ctx.String(hook)
+			}
+			if ctx.String("cache.password") != "" {
+				config.Klevr.Cache.Password = ctx.String("cache.password")
 			}
 
 			loggerEnv := &common.LoggerEnv{

@@ -140,6 +140,55 @@ var doc = `{
                 }
             }
         },
+        "/agents/scheduled/iteration": {
+            "get": {
+                "description": "해당 Zone에서 수행 중에 있는 Iteration 타입의 Task를 조회",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agents"
+                ],
+                "summary": "실행중인 Iteration 타입의 Task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API KEY",
+                        "name": "X-API-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "AGENT KEY",
+                        "name": "X-AGENT-KEY",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ZONE ID",
+                        "name": "X-ZONE-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/common.KlevrTask"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/agents/{agentKey}": {
             "put": {
                 "description": "primary 에이전트의 polling 요청을 받아 primary 에이전트의 실행정보 갱신, nodes 정보 갱신, task 할당 및 상태 업데이트를 수행한다.",

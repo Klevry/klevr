@@ -42,6 +42,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
+	registURI(agent, GET, "/scheduled/iteration", agentAPI.scheduledIterationTasks)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -183,12 +184,13 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 
 	//agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
 	txManager := NewAgentStorage()
-	agent := txManager.GetAgentByAgentKey(tx, ch.AgentKey, ch.ZoneID)
+	agent := txManager.GetAgentByAgentKey(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
 	upsertAgent(ctx, tx, agent, ch, &paramAgent)
 
 	tx.Commit()
+	txManager.Close()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -274,35 +276,13 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debugf("polling received data : [%+v]", param)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 	// response 데이터 생성
 	rb := &common.Body{}
 
 	// agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
+	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 	logger.Debugf("%+v", agent)
-
-	// 수행한 task 상태 정보 업데이트
-	var taskLength = len(param.Task)
-
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
-	if taskLength > 0 {
-		var pTaskMap = make(map[uint64]Tasks)
-		var tIds = make([]uint64, len(param.Task))
-
-		for i, task := range param.Task {
-			tIds[i] = task.ID
-		}
-
-		pTasks, _ := tx.getTasksByIds(manager, tIds)
-		for _, pt := range *pTasks {
-			pTaskMap[pt.Id] = pt
-		}
-
-		logger.Debugf("map for update - [%+v]", pTaskMap)
-
-		updateTaskStatus(ctx, pTaskMap, &param.Task)
-	}
 
 	rb.Agent.Primary, _ = getPrimary(ctx, tx, ch.ZoneID, agent)
 
@@ -325,16 +305,22 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			if a.LastAliveCheckTime != nil {
 				arrAgent[i].LastAliveCheckTime = a.LastAliveCheckTime.Time
 			}
-			arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
-			arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
-			arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
-			arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
-			arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 
 			if agent.AgentKey == a.AgentKey {
+				arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(param.Me.Resource.Core))
+				arrAgent[i].Memory = manager.encrypt(strconv.Itoa(param.Me.Resource.Memory))
+				arrAgent[i].Disk = manager.encrypt(strconv.Itoa(param.Me.Resource.Disk))
+				arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(param.Me.Resource.FreeMemory))
+				arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(param.Me.Resource.FreeDisk))
 				arrAgent[i].IsActive = 1
 			} else {
+				arrAgent[i].Cpu = manager.encrypt(strconv.Itoa(a.Core))
+				arrAgent[i].Memory = manager.encrypt(strconv.Itoa(a.Memory))
+				arrAgent[i].Disk = manager.encrypt(strconv.Itoa(a.Disk))
+				arrAgent[i].FreeMemory = manager.encrypt(strconv.Itoa(a.FreeMemory))
+				arrAgent[i].FreeDisk = manager.encrypt(strconv.Itoa(a.FreeDisk))
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
+
 				if a.IsActive == false {
 					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
 						agentKeys = append(agentKeys, a.AgentKey)
@@ -345,12 +331,36 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//tx.updateZoneStatus(&arrAgent)
-		NewAgentStorage().UpdateZoneStatus(tx, ch.ZoneID, arrAgent)
+		//logger.Debugf("########## %d, %v", len(arrAgent), arrAgent)
+		txManager := NewAgentStorage()
+		txManager.UpdateZoneStatus(ctx, tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
 
 		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
+		txManager.Close()
+
+		// 수행한 task 상태 정보 업데이트
+		var taskLength = len(param.Task)
+
+		if taskLength > 0 {
+			var pTaskMap = make(map[uint64]Tasks)
+			var tIds = make([]uint64, len(param.Task))
+
+			for i, task := range param.Task {
+				tIds[i] = task.ID
+			}
+
+			pTasks, _ := tx.getTasksByIds(manager, tIds)
+			for _, pt := range *pTasks {
+				pTaskMap[pt.Id] = pt
+			}
+
+			logger.Debugf("map for update - [%+v]", pTaskMap)
+
+			updateTaskStatus(ctx, pTaskMap, &param.Task)
+		}
 
 		// Credential 조회
 		nCredentials, cnt := tx.getCredentials(ch.ZoneID)
@@ -546,8 +556,14 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	// response 데이터 생성
 	rb := &common.Body{}
 
-	// agent access 정보 갱신
-	agent := updateAgentAccess(tx, ch.AgentKey, ch.ZoneID)
+	// agent access에 대한 이벤트 발생
+	txManager := NewAgentStorage()
+	curTime := time.Now().UTC()
+	txManager.UpdateAccessAgent(ctx, tx, ch.ZoneID, ch.AgentKey, curTime)
+	tx.Commit()
+	txManager.Close()
+
+	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	var oldPrimaryAgentKey string
 	rb.Agent.Primary, oldPrimaryAgentKey = getPrimary(ctx, tx, ch.ZoneID, agent)
@@ -583,10 +599,53 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ScheduledIterationTasks godoc
+// @Summary 실행중인 Iteration 타입의 Task
+// @Description 해당 Zone에서 수행 중에 있는 Iteration 타입의 Task를 조회
+// @Tags agents
+// @Accept json
+// @Produce json
+// @Router /agents/scheduled/iteration [get]
+// @Param X-API-KEY header string true "API KEY"
+// @Param X-AGENT-KEY header string true "AGENT KEY"
+// @Param X-ZONE-ID header string true "ZONE ID"
+// @Success 200 {object} []common.KlevrTask
+func (api *agentAPI) scheduledIterationTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
+	tx := GetDBConn(ctx)
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	var b []byte
+	var err error
+
+	tasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitInterationSchedule)})
+	if cnt > 0 {
+		var dtos []common.KlevrTask = make([]common.KlevrTask, len(*tasks))
+		for i, t := range *tasks {
+			dtos[i] = *TaskPersistToDto(&t)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response: [%s]", string(b))
+	}
+
+	w.Write(b)
+	w.WriteHeader(200)
+
+	logger.Debugf("response: [%s]", string(b))
+
+}
+
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	//cnt, agents := tx.getAgentsByGroupId(zoneID)
 	txManager := NewAgentStorage()
-	cnt, agents := txManager.GetAgentsByZoneID(tx, zoneID)
+	cnt, agents := txManager.GetAgentsByZoneID(ctx, tx, zoneID)
+	txManager.Close()
 
 	nodes := make([]common.Agent, cnt)
 
@@ -623,34 +682,22 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	return nil
 }
 
-func updateAgentAccess(tx *Tx, agentKey string, zoneID uint64) *Agents {
+func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *Agents {
 	txManager := NewAgentStorage()
-
-	//agent := tx.getAgentByAgentKey(agentKey, zoneID)
-	agent := txManager.GetAgentByAgentKey(tx, agentKey, zoneID)
+	agent := txManager.GetAgentByAgentKey(ctx, tx, agentKey, zoneID)
+	txManager.Close()
 
 	oldStatus := agent.IsActive
-
 	curTime := time.Now().UTC()
 
-	// agent 접속 시간 갱신
-	// agent.IsActive = 1
-	// agent.LastAccessTime = time.Now().UTC()
-	// tx.updateAgent(agent)
-
-	//cnt := tx.updateAccessAgent(agentKey, curTime)
-	cnt := txManager.UpdateAccessAgent(tx, zoneID, agentKey, curTime)
-
-	if oldStatus == 0 && cnt > 0 {
+	if oldStatus == 0 {
 		AddEvent(&KlevrEvent{
 			EventType: AgentConnect,
 			AgentKey:  agentKey,
-			GroupID:   agent.GroupId,
+			GroupID:   zoneID,
 			EventTime: &common.JSONTime{Time: curTime},
 		})
 	}
-
-	tx.Commit()
 
 	return agent
 }
@@ -673,7 +720,8 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 	} else {
 		//primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
 		txManager := NewAgentStorage()
-		primaryAgent = txManager.GetAgentByID(tx, zoneID, groupPrimary.AgentId)
+		primaryAgent = txManager.GetAgentByID(ctx, tx, zoneID, groupPrimary.AgentId)
+		txManager.Close()
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
@@ -730,7 +778,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 
 			//agent = tx.getAgentByID(pa.AgentId)
 			txManager := NewAgentStorage()
-			agent = txManager.GetAgentByID(tx, zoneID, pa.AgentId)
+			agent = txManager.GetAgentByID(ctx, tx, zoneID, pa.AgentId)
 
 			if agent.Id == 0 {
 				logger.Warning(fmt.Sprintf("primary agent not exist for id : %d, [%v]", agent.Id, agent))
@@ -738,6 +786,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			tx.Commit()
+			txManager.Close()
 		},
 		Catch: func(e error) {
 			if tx != nil {
@@ -778,7 +827,7 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		//tx.addAgent(agent)
-		txManager.AddAgent(tx, agent)
+		txManager.AddAgent(ctx, tx, agent)
 	} else { // 기존에 등록된 에이전트 재접속일 경우 접속 정보 업데이트
 		agent.IsActive = 1
 		agent.LastAccessTime = time.Now().UTC()
@@ -793,8 +842,10 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		agent.EncKey = manager.encrypt(common.GetKey(32))
 
 		//tx.updateAgent(agent)
-		txManager.UpdateAgent(tx, agent)
+		txManager.UpdateAgent(ctx, tx, agent)
 	}
+
+	txManager.Close()
 }
 
 func byteToBool(b byte) bool {

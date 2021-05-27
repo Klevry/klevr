@@ -141,6 +141,7 @@ func (manager *KlevrManager) Run() error {
 	ctx.Put(CtxServer, manager)
 	ctx.Put(CtxDbConn, db)
 	ctx.Put(CtxPrimary, &sync.Mutex{})
+	ctx.Put(CtxCache, &sync.Mutex{})
 
 	if serverConfig.EventHandler == "mq" {
 		mqConfig := serverConfig.Mq
@@ -611,7 +612,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 
 					//cnt, agents := tx.getAgentsForInactive(before)
 					txManager := NewAgentStorage()
-					cnt, agents := txManager.GetAgentsForInactive(tx, before)
+					cnt, agents := txManager.GetAgentsForInactive(ctx, tx, before)
 
 					if cnt > 0 {
 						len := len(*agents)
@@ -643,8 +644,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						}
 
 						//tx.updateAgentStatus(ids)
-						txManager := NewAgentStorage()
-						txManager.UpdateAgentStatus(tx, agents, ids)
+						txManager.UpdateAgentStatus(ctx, tx, agents, ids)
 						tx.updateShutdownTasks(taskIDs)
 
 						RemoveShutdownTask(agentKeys)
@@ -653,6 +653,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 					}
 
 					tx.Commit()
+					txManager.Close()
 				},
 				Catch: func(e error) {
 					if !tx.IsClosed() {
