@@ -36,6 +36,8 @@ func (agent *KlevrAgent) primaryStatusReport() {
 
 	if body.Agent.Primary.IP == localIPAddress(agent.NetworkInterfaceName) {
 		agent.Primary = body.Agent.Primary
+		agent.Agents = body.Agent.Nodes
+
 		agent.startScheduler()
 	}
 
