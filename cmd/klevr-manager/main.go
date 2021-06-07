@@ -83,6 +83,7 @@ func main() {
 				Value:    "8090",
 				Usage:    "default port used by the klevr-manager(default:8090)",
 				Required: false,
+				EnvVars:  []string{"KLEVR_PORT"},
 			},
 			&cli.StringFlag{
 				Name:     hook,
