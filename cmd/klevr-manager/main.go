@@ -83,7 +83,6 @@ func main() {
 				Value:    "8090",
 				Usage:    "default port used by the klevr-manager(default:8090)",
 				Required: false,
-				EnvVars:  []string{"KLEVR_PORT"},
 			},
 			&cli.StringFlag{
 				Name:     hook,
@@ -96,7 +95,6 @@ func main() {
 				Aliases:  []string{"cp"},
 				Usage:    "password to use the cache",
 				Required: false,
-				EnvVars:  []string{"KLEVR_CACHE_PASSWORD"},
 			},
 		},
 		Action: func(ctx *cli.Context) error {
