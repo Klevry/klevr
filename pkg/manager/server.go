@@ -610,14 +610,14 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 					current := time.Now().UTC()
 					before := current.Add(-time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second)
 
-					//cnt, agents := tx.getAgentsForInactive(before)
 					txManager := NewAgentStorage()
 					cnt, agents := txManager.GetAgentsForInactive(ctx, tx, before)
 
 					if cnt > 0 {
 						len := len(*agents)
-						ids := make([]uint64, len)
-						agentKeys := make([]string, 0)
+						inactiveIDs := make([]uint64, len)
+						inactiveAgentKeys := make([]string, len)
+						forceShutdownAgentKeys := make([]string, 0)
 						taskIDs := make([]uint64, 0)
 
 						var events = make([]KlevrEvent, len)
@@ -626,9 +626,11 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						for i := 0; i < len; i++ {
 							agent := (*agents)[i]
 
-							ids[i] = agent.Id
+							inactiveIDs[i] = agent.Id
+							inactiveAgentKeys[i] = agent.AgentKey
+
 							if tid, ok := CheckShutdownTask(agent.AgentKey); ok {
-								agentKeys = append(agentKeys, agent.AgentKey)
+								forceShutdownAgentKeys = append(forceShutdownAgentKeys, agent.AgentKey)
 								taskIDs = append(taskIDs, tid)
 							}
 
@@ -644,10 +646,11 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						}
 
 						//tx.updateAgentStatus(ids)
-						txManager.UpdateAgentStatus(ctx, tx, agents, ids)
+						txManager.UpdateAgentStatus(ctx, tx, agents, inactiveIDs)
+						tx.updateInitIterationTasks(inactiveAgentKeys)
 						tx.updateShutdownTasks(taskIDs)
 
-						RemoveShutdownTask(agentKeys)
+						RemoveShutdownTask(forceShutdownAgentKeys)
 
 						AddEvents(&events)
 					}

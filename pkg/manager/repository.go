@@ -356,6 +356,26 @@ func (tx *Tx) updateHandoverTasks(ids []uint64) {
 	}
 }
 
+func (tx *Tx) updateInitIterationTasks(agentKeys []string) {
+	stmt := tx.Table(new(Tasks)).Where("TASK_TYPE = ?", string(common.Iteration))
+	stmt = stmt.And("AGENT_KEY = ?", "")
+	stmt = stmt.And(builder.In("EXE_AGENT_KEY", agentKeys))
+	_, err := stmt.Update(map[string]interface{}{"STATUS": common.WaitPolling})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (tx *Tx) updateRetryScheduledTask(agentKey string) {
+	stmt := tx.Table(new(Tasks)).Where("TASK_TYPE = ?", string(common.Iteration))
+	stmt = stmt.And("AGENT_KEY = ?", agentKey)
+	stmt = stmt.And("EXE_AGENT_KEY = ?", agentKey)
+	_, err := stmt.Update(map[string]interface{}{"STATUS": common.WaitPolling})
+	if err != nil {
+		panic(err)
+	}
+}
+
 // task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
 func (tx *Tx) updateShutdownTasks(ids []uint64) {
 
