@@ -138,5 +138,9 @@ func (a *AgentStorage) GetAgentByAgentKey(ctx *common.Context, tx *Tx, agentKey 
 }
 
 func (a *AgentStorage) Close() error {
-	return a.agentCache.Close()
+	if a.agentCache != nil {
+		return a.agentCache.Close()
+	}
+
+	return nil
 }

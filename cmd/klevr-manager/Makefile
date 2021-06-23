@@ -12,7 +12,7 @@ require: ## Check go requirement
 	go get -u
 #	curl -sL bit.ly/go_req | bash
 build: ##require
-	GOOS=linux GOARCH=amd64 go build -o ../../Dockerfile/manager/klevr-manager ./main.go
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s -w' -o ../../Dockerfile/manager/klevr-manager ./main.go
 
 run: ## Run main.go with klevr-manager-local.yaml
 	go run ./main.go -config ../../conf/klevr-manager-local.yml

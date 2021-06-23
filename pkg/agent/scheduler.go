@@ -44,7 +44,8 @@ func (agent *KlevrAgent) primaryTaskSend(ip string, task []byte) {
 	logger.Debugf("this is response: %v", r)
 }
 
-func (agent *KlevrAgent) primaryStatusCheck() {
+// ZoneStatusCheck는 현재 소속된 zone의 agent들의 상태 정보를 확인
+func (agent *KlevrAgent) zoneStatusCheck() {
 	for i, n := range agent.Agents {
 		if (agent.Primary.IP == n.IP) && (agent.Primary.AgentKey == n.AgentKey) {
 			agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
@@ -78,7 +79,7 @@ func (agent *KlevrAgent) primaryStatusCheck() {
 					agent.Agents[i].IsActive = false
 				}
 			} else {
-				logger.Debugf("PrimaryStatusCheck error: %v", resErr)
+				logger.Debugf("zoneStatusCheck error: %v", resErr)
 				agent.Agents[i].IsActive = false
 			}
 		}

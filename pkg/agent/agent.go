@@ -94,7 +94,7 @@ func (agent *KlevrAgent) startScheduler() {
 		agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
 	} else {
 		go agent.secondaryServer()
-		agent.scheduler.Every(int(interval)).Seconds().Do(statusCheck, agent)
+		agent.scheduler.Every(int(interval)).Seconds().Do(primaryStatusCheck, agent)
 	}
 
 	agent.scheduler.StartAsync()
@@ -121,7 +121,7 @@ func (agent *KlevrAgent) updateScheduler() {
 				if agent.checkPrimary(agent.Primary.IP) {
 					agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
 				} else {
-					agent.scheduler.Every(int(interval)).Seconds().Do(statusCheck, agent)
+					agent.scheduler.Every(int(interval)).Seconds().Do(primaryStatusCheck, agent)
 				}
 			}
 			oldSchedulerInterval = interval

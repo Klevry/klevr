@@ -95,7 +95,6 @@ func main() {
 				Aliases:  []string{"cp"},
 				Usage:    "password to use the cache",
 				Required: false,
-				EnvVars:  []string{"KLEVR_CACHE_PASSWORD"},
 			},
 		},
 		Action: func(ctx *cli.Context) error {

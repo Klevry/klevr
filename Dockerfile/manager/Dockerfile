@@ -1,5 +1,7 @@
-FROM ubuntu
-LABEL version=0.2
+FROM alpine:3.13.2
+LABEL version=0.3
+
+RUN apk update && apk add curl bash vim
 
 COPY ./conf/* /conf/
 COPY ./klevr-manager /

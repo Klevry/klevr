@@ -22,7 +22,7 @@ func polling(agent *KlevrAgent) {
 	rb := &common.Body{}
 	agent.setBodyMeInfo(rb)
 
-	agent.primaryStatusCheck()
+	agent.zoneStatusCheck()
 
 	var updateMap = make(map[uint64]common.KlevrTask)
 

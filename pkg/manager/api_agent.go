@@ -189,6 +189,8 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	// agent 생성 or 수정
 	upsertAgent(ctx, tx, agent, ch, &paramAgent)
 
+	tx.updateRetryScheduledTask(ch.AgentKey)
+
 	tx.Commit()
 	txManager.Close()
 
@@ -299,6 +301,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		manager := ctx.Get(CtxServer).(*KlevrManager)
 
 		agentKeys := make([]string, nodeLength)
+		inactiveAgentKeys := make([]string, 0)
 		taskIDs := make([]uint64, nodeLength)
 		for i, a := range nodes {
 			arrAgent[i].AgentKey = a.AgentKey
@@ -322,6 +325,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
 
 				if a.IsActive == false {
+					inactiveAgentKeys = append(inactiveAgentKeys, agent.AgentKey)
 					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
 						agentKeys = append(agentKeys, a.AgentKey)
 						taskIDs = append(taskIDs, tid)
@@ -335,6 +339,9 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		txManager := NewAgentStorage()
 		txManager.UpdateZoneStatus(ctx, tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
+		if len(inactiveAgentKeys) > 0 {
+			tx.updateInitIterationTasks(inactiveAgentKeys)
+		}
 
 		RemoveShutdownTask(agentKeys)
 
