@@ -59,7 +59,6 @@ func (agent *KlevrAgent) zoneStatusCheck() {
 
 			ctx, _ := context.WithTimeout(context.Background(), time.Second)
 			c := pb.NewTaskSendClient(conn)
-			defer conn.Close()
 
 			s, resErr := c.StatusCheck(ctx, &pb.Status{})
 			if resErr == nil {
@@ -83,6 +82,8 @@ func (agent *KlevrAgent) zoneStatusCheck() {
 				logger.Debugf("zoneStatusCheck error: %v", resErr)
 				agent.Agents[i].IsActive = false
 			}
+
+			conn.Close()
 		}
 	}
 }
