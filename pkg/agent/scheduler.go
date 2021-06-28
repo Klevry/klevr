@@ -82,6 +82,8 @@ func (agent *KlevrAgent) zoneStatusCheck() {
 				logger.Debugf("zoneStatusCheck error: %v", resErr)
 				agent.Agents[i].IsActive = false
 			}
+
+			conn.Close()
 		}
 	}
 }
