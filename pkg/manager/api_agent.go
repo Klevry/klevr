@@ -325,7 +325,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 				arrAgent[i].IsActive = boolToByte(a.IsActive)
 
 				if a.IsActive == false {
-					inactiveAgentKeys = append(inactiveAgentKeys, agent.AgentKey)
+					inactiveAgentKeys = append(inactiveAgentKeys, a.AgentKey)
 					if tid, ok := CheckShutdownTask(a.AgentKey); ok {
 						agentKeys = append(agentKeys, a.AgentKey)
 						taskIDs = append(taskIDs, tid)

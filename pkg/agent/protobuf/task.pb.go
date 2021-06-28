@@ -4,7 +4,7 @@
 // 	protoc        v3.15.6
 // source: protobuf/task.proto
 
-package agent
+package protobuf
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

@@ -36,7 +36,7 @@ klevr:
         maxConnLifeTime: 1
         showSql: false
         logLevel: warn
-        cache: true
+        cache: false
     cache:
         type: 'redis'
         address: '192.168.10.12'
