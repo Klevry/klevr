@@ -91,10 +91,10 @@ func (agent *KlevrAgent) startScheduler() {
 	logger.Debugf("agentSchedulerInterval: %d", interval)
 
 	if agent.checkPrimary(agent.Primary.IP) {
-		agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
+		agent.scheduler.Every(int(interval)).Seconds().Do(agent.polling)
 	} else {
 		go agent.secondaryServer()
-		agent.scheduler.Every(int(interval)).Seconds().Do(primaryStatusCheck, agent)
+		agent.scheduler.Every(int(interval)).Seconds().Do(agent.primaryStatusCheck)
 	}
 
 	agent.scheduler.StartAsync()
@@ -119,9 +119,9 @@ func (agent *KlevrAgent) updateScheduler() {
 			if agent.scheduler.IsRunning() == true {
 				agent.scheduler.Clear()
 				if agent.checkPrimary(agent.Primary.IP) {
-					agent.scheduler.Every(int(interval)).Seconds().Do(polling, agent)
+					agent.scheduler.Every(int(interval)).Seconds().Do(agent.polling)
 				} else {
-					agent.scheduler.Every(int(interval)).Seconds().Do(primaryStatusCheck, agent)
+					agent.scheduler.Every(int(interval)).Seconds().Do(agent.primaryStatusCheck)
 				}
 			}
 			oldSchedulerInterval = interval

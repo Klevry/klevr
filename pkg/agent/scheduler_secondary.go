@@ -42,7 +42,7 @@ func (agent *KlevrAgent) secondaryServer() {
 }
 
 // primaryStatusCheck는 seconday agent에서 primary agent가 정상적으로 동작하고 있는지 확인
-func primaryStatusCheck(agent *KlevrAgent) {
+func (agent *KlevrAgent) primaryStatusCheck() {
 	_, err := net.DialTimeout("tcp", agent.Primary.IP+":"+strconv.Itoa(agent.Primary.Port), 3*time.Second)
 	if err != nil {
 		logger.Errorf("%v", err)
