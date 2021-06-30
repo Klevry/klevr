@@ -29,7 +29,7 @@ func CommonWrappingHandler(ctx *common.Context) mux.MiddlewareFunc {
 						StatusCode:     http.StatusOK,
 					}
 
-					w.Header().Set("Content-Type", "json/application; charset=utf-8")
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
 					w.Header().Set("X-Content-Type-Options", "nosniff")
 
 					// DB session 시작
