@@ -31,7 +31,7 @@ klevr:
     db:
         type: 'mysql'
         uRL: 'klevr:klevr@tcp(127.0.0.1:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'
-        maxOpenConns: 10
+        maxOpenConns: 15
         maxIdleConns: 5
         maxConnLifeTime: 1
         showSql: false
