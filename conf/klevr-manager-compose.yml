@@ -42,4 +42,4 @@ klevr:
         address: '192.168.8.71'
         port: 6379
     console:
-        usage: false
+        usage: true 
