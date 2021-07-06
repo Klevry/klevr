@@ -43,4 +43,4 @@ klevr:
         port: 6379
         password: ''
     console:
-        usage: false
+        usage: true 
