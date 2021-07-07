@@ -35,6 +35,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	registURI(console, GET, "/signout", consoleAPI.SignOut)
 	registURI(console, POST, "/changepassword", consoleAPI.ChangePassword)
 	registURI(console, GET, "/activated/{id}", consoleAPI.Activated)
+	registURI(console, DELETE, "/unactivated/{id}", consoleAPI.UnActivated)
 	registURI(console, DELETE, "/groups/{groupID}/agents/{agentKey}", consoleAPI.ShutdownAgent)
 	registURI(console, GET, "/taskstatus", consoleAPI.ListTaskStatus)
 }
@@ -215,6 +216,42 @@ func (api *ConsoleAPI) Activated(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", resp)
+}
+
+// UnActivated godoc
+// @Summary 사용자 초기화 상태
+// @Description Klevr Console 사용자를 비활성화 상태로 초기화 한다.
+// @Tags Console
+// @Accept json
+// @Produce json
+// @Router /console/unactivated/{id} [delete]
+// @Param id path string true "User ID"
+// @Success 200
+func (api *ConsoleAPI) UnActivated(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	tx := GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+	userID := vars["id"]
+
+	if userID != "admin" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	cnt, pms := tx.getConsoleMember(userID)
+	if cnt == 0 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	pm := (*pms)[0]
+	if pm.Activated == true {
+		pm.Activated = false
+		tx.updateConsoleMember(&pm)
+	}
+
+	w.WriteHeader(200)
 }
 
 // ShutdownAgent godoc

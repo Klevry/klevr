@@ -527,6 +527,25 @@ paths:
       summary: Task Status 리스트.
       tags:
       - Console
+  /console/unactivated/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Klevr Console 사용자를 비활성화 상태로 초기화 한다.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      summary: 사용자 초기화 상태
+      tags:
+      - Console
   /inner/commands:
     get:
       consumes:
