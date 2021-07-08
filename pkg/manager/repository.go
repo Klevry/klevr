@@ -669,13 +669,23 @@ func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
 	return p
 }
 
-func (tx *Tx) updateConsoleMember(p *PageMembers) {
-	cnt, err := tx.Where("USER_ID = ?", p.UserId).Cols("ACTIVATED").Update(p)
-	logger.Debugf("Updated PageMember(%d) : %v", cnt, p)
-
+func (tx *Tx) updateConsoleMember(p *PageMembers) bool {
+	result, err := tx.Exec("UPDATE PAGE_MEMBERS SET USER_PASSWORD = ?, ACTIVATED = ? WHERE USER_ID = ?",
+		p.UserPassword, p.Activated, p.UserId)
 	if err != nil {
 		panic(err)
 	}
+
+	cnt, _ := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	if cnt == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (tx *Tx) deleteApiAuthentication(zoneID uint64) {
