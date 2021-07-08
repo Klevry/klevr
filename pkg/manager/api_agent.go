@@ -42,7 +42,7 @@ func (api *API) InitAgent(agent *mux.Router) {
 	registURI(agent, PUT, "/handshake", agentAPI.receiveHandshake)
 	registURI(agent, PUT, "/{agentKey}", agentAPI.receivePolling)
 	registURI(agent, GET, "/reports/{agentKey}", agentAPI.checkPrimaryInfo)
-	registURI(agent, GET, "/scheduled/iteration", agentAPI.scheduledIterationTasks)
+	//registURI(agent, GET, "/scheduled/iteration", agentAPI.scheduledIterationTasks)
 
 	// agent API 핸들러 추가
 	agent.Use(func(next http.Handler) http.Handler {
@@ -617,7 +617,7 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 // @Param X-AGENT-KEY header string true "AGENT KEY"
 // @Param X-ZONE-ID header string true "ZONE ID"
 // @Success 200 {object} []common.KlevrTask
-func (api *agentAPI) scheduledIterationTasks(w http.ResponseWriter, r *http.Request) {
+/*func (api *agentAPI) scheduledIterationTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
 	tx := GetDBConn(ctx)
@@ -646,7 +646,7 @@ func (api *agentAPI) scheduledIterationTasks(w http.ResponseWriter, r *http.Requ
 
 	logger.Debugf("response: [%s]", string(b))
 
-}
+}*/
 
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	//cnt, agents := tx.getAgentsByGroupId(zoneID)
