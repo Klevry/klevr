@@ -4,6 +4,7 @@ import MainLayout from 'src/components/MainLayout';
 import TaskList from 'src/pages/TaskList';
 import Overview from 'src/pages/Overview';
 import Login from 'src/pages/Login';
+import Activate from 'src/pages/Activate';
 import NotFound from 'src/pages/NotFound';
 import Settings from 'src/pages/Settings';
 
@@ -23,8 +24,9 @@ const routes = [
     element: <MainLayout />,
     children: [
       { path: 'login', element: <Login /> },
+      { path: 'activate', element: <Activate /> },
       { path: '404', element: <NotFound /> },
-      { path: '/', element: <Navigate to="/app/overview" /> },
+      { path: '/', element: <Navigate to="/login" /> },
       { path: '*', element: <Navigate to="/404" /> }
     ]
   }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { AppBar, Box, Hidden, IconButton, Toolbar } from '@material-ui/core';
 import GitHubIcon from '@material-ui/icons/GitHub';
@@ -13,6 +14,8 @@ import Select from '@material-ui/core/Select';
 import FormControl from '@material-ui/core/FormControl';
 import { makeStyles } from '@material-ui/core/styles';
 import { API_SERVER, GROUP_ID } from '../config';
+import { useDispatch, useSelector } from 'react-redux';
+import { filterByZone } from './store/actions/klevrActions';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -25,6 +28,9 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const Zone = () => {
+  const currentZone = useSelector((store) => store.zoneReducer);
+  const dispatch = useDispatch();
+
   const [data, setData] = useState(null);
   const classes = useStyles();
   useEffect(() => {
@@ -34,6 +40,7 @@ const Zone = () => {
         withCredentials: true
       });
       if (!completed) setData(result.data);
+      dispatch(filterByZone(result.data[0].Id));
     }
     get();
     return () => {
@@ -44,14 +51,25 @@ const Zone = () => {
   if (!data) {
     return null;
   }
+
+  const selectZone = (id) => {
+    dispatch(filterByZone(id));
+    console.log(id);
+  };
+
   return (
     <FormControl className={classes.formControl}>
       <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
-        {GROUP_ID}
+        {/* {GROUP_ID} */}
+        {currentZone}
       </InputLabel>
-      <Select disabled>
+      <Select>
         {data.map((item) => (
-          <MenuItem value={item.GroupName} key={item.Id}>
+          <MenuItem
+            value={item.GroupName}
+            key={item.Id}
+            onClick={() => selectZone(item.Id)}
+          >
             {item.GroupName}
           </MenuItem>
         ))}
@@ -61,6 +79,23 @@ const Zone = () => {
 };
 
 const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
+  const navigate = useNavigate();
+
+  const signOutHandler = () => {
+    async function signOut() {
+      const result = await axios.get(`${API_SERVER}/console/signout`, {
+        withCredentials: true
+      });
+      console.log(result.status === 200);
+      if (result.status === 200) {
+        navigate('/login', { replace: true });
+      }
+    }
+    signOut();
+
+    console.log('signout');
+  };
+
   return (
     <AppBar elevation={0} {...rest}>
       <Toolbar>
@@ -81,7 +116,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
           </IconButton>
         </Hidden>
         <Hidden lgDown>
-          <IconButton color="inherit">
+          <IconButton color="inherit" onClick={signOutHandler}>
             <InputIcon />
           </IconButton>
         </Hidden>
