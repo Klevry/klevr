@@ -52,7 +52,9 @@
     "react-scripts": "^4.0.3",
     "uuid": "^8.3.0",
     "xstyle": "^0.3.3",
-    "yup": "^0.29.3"
+    "yup": "^0.29.3",
+    "react-redux": "^7.2.2",
+    "redux": "^4.0.5"
   },
   "devDependencies": {
     "eslint-config-airbnb": "^18.2.1",

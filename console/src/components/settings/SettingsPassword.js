@@ -9,11 +9,12 @@ import {
   Divider,
   TextField
 } from '@material-ui/core';
+import { API_SERVER } from 'src/config';
 
 const SettingsPassword = (props) => {
   const [values, setValues] = useState({
-    password: '',
-    confirm: ''
+    current: '',
+    new: ''
   });
 
   const handleChange = (event) => {
@@ -23,14 +24,29 @@ const SettingsPassword = (props) => {
     });
   };
 
-  const updateHandler = () => {
-    axios.post('/console/changepassword').then((response) => {
-      if (response.data.success) {
-        window.history.push('/login');
-      } else {
-        console.log('logout fail');
+  const updateHandler = async () => {
+    console.log(values.new);
+    console.log(values.confirm);
+
+    const headers = {
+      'Content-Type': 'multipart/form-data'
+    };
+
+    let form = new FormData();
+    form.append('id', 'admin');
+    form.append('pw', values.current);
+    form.append('cpw', values.new);
+
+    const response = await axios.post(
+      `${API_SERVER}/console/changepassword`,
+      form,
+      { headers },
+      {
+        withCredentials: true
       }
-    });
+    );
+
+    console.log(response);
   };
 
   return (
@@ -40,10 +56,17 @@ const SettingsPassword = (props) => {
         <Divider />
         <CardContent>
           <TextField
+            disabled
             fullWidth
-            label="Password"
+            label="ID"
+            defaultValue="admin"
+            variant="outlined"
+          />
+          <TextField
+            fullWidth
+            label="Current password"
             margin="normal"
-            name="password"
+            name="current"
             onChange={handleChange}
             type="password"
             value={values.password}
@@ -51,9 +74,9 @@ const SettingsPassword = (props) => {
           />
           <TextField
             fullWidth
-            label="Confirm password"
+            label="New password"
             margin="normal"
-            name="confirm"
+            name="new"
             onChange={handleChange}
             type="password"
             value={values.confirm}

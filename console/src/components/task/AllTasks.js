@@ -11,16 +11,18 @@ import {
   TableRow,
   TableHead
 } from '@material-ui/core';
+import { useSelector } from 'react-redux';
 
 const TaskList = () => {
   const [data, setData] = useState(null);
+  const currentZone = useSelector((store) => store.zoneReducer);
 
   useEffect(() => {
     let completed = false;
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/tasks?groupID=${GROUP_ID}`,
+        `${API_SERVER}/inner/tasks?groupID=${currentZone}`,
         {
           withCredentials: true
         }
@@ -32,6 +34,24 @@ const TaskList = () => {
       completed = true;
     };
   }, []);
+
+  useEffect(() => {
+    let completed = false;
+
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/tasks?groupID=${currentZone}`,
+        {
+          withCredentials: true
+        }
+      );
+      if (!completed) setData(result.data);
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  }, [currentZone]);
 
   if (!data) {
     return null;

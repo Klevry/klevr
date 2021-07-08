@@ -10,32 +10,13 @@ import {
 } from '@material-ui/core';
 import axios from 'axios';
 import { API_SERVER } from 'src/config';
-import { useEffect } from 'react';
-// import { useHistory } from 'react-router-dom';
 
-const Login = () => {
-  // const history = useHistory();
+const Activate = () => {
   const navigate = useNavigate();
   const SignupSchema = Yup.object().shape({
     userId: Yup.string().max(255).required('ID is required'),
-    password: Yup.string().max(255).required('Password is required')
+    password: Yup.string().max(255).required('Comfirm password is required')
   });
-
-  useEffect(() => {
-    async function check() {
-      const result = await axios.get(`${API_SERVER}/console/activated/admin`, {
-        withCredentials: true
-      });
-
-      if (result.data.status === 'initialized') {
-        navigate('/activate', { replace: true });
-        // history.push('/activate');
-      } else if (result.data.status === 'activated') {
-        return;
-      }
-    }
-    check();
-  }, []);
 
   return (
     <>
@@ -65,7 +46,7 @@ const Login = () => {
               form.append('pw', touched.password);
 
               const response = await axios.post(
-                `${API_SERVER}/console/signin`,
+                `${API_SERVER}/console/changepassword`,
                 form,
                 { headers },
                 {
@@ -73,8 +54,9 @@ const Login = () => {
                 }
               );
 
-              response.data.token &&
-                navigate('/app/overview', { replace: true });
+              if (response.status === 200) {
+                navigate('/login', { replace: true });
+              }
             }}
           >
             {({
@@ -89,7 +71,7 @@ const Login = () => {
               <form onSubmit={handleSubmit}>
                 <Box sx={{ mb: 3 }}>
                   <Typography color="textPrimary" variant="h2">
-                    Sign in
+                    Activate
                   </Typography>
                 </Box>
                 <TextField
@@ -109,7 +91,7 @@ const Login = () => {
                   error={Boolean(touched.password && errors.password)}
                   fullWidth
                   helperText={touched.password && errors.password}
-                  label="Password"
+                  label="Confirm Password"
                   margin="normal"
                   name="password"
                   onBlur={handleBlur}
@@ -127,7 +109,7 @@ const Login = () => {
                     type="submit"
                     variant="contained"
                   >
-                    Sign in
+                    Apply
                   </Button>
                 </Box>
               </form>
@@ -139,4 +121,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Activate;

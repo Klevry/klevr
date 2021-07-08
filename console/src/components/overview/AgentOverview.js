@@ -14,16 +14,18 @@ import {
   TableHead,
   TableRow
 } from '@material-ui/core';
+import { useSelector } from 'react-redux';
 
 const AgentList = () => {
   const [data, setData] = useState(null);
+  const currentZone = useSelector((store) => store.zoneReducer);
 
   useEffect(() => {
     let completed = false;
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/groups/${GROUP_ID}/agents`,
+        `${API_SERVER}/inner/groups/${currentZone}/agents`,
         {
           withCredentials: true
         }
@@ -35,6 +37,24 @@ const AgentList = () => {
       completed = true;
     };
   }, []);
+
+  useEffect(() => {
+    let completed = false;
+
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/groups/${currentZone}/agents`,
+        {
+          withCredentials: true
+        }
+      );
+      if (!completed) setData(result.data);
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  }, [currentZone]);
 
   if (!data) {
     return null;
