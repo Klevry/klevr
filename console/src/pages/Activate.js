@@ -43,7 +43,7 @@ const Activate = () => {
 
               let form = new FormData();
               form.append('id', touched.userId);
-              form.append('pw', touched.password);
+              form.append('cpw', touched.password);
 
               const response = await axios.post(
                 `${API_SERVER}/console/changepassword`,
