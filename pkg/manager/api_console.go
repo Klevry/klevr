@@ -161,6 +161,11 @@ func (api *ConsoleAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if cpw == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	encPassword, err := common.Encrypt(manager.Config.Server.EncryptionKey, cpw)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -247,7 +252,15 @@ func (api *ConsoleAPI) UnActivated(w http.ResponseWriter, r *http.Request) {
 
 	pm := (*pms)[0]
 	if pm.Activated == true {
+		manager := ctx.Get(CtxServer).(*KlevrManager)
+		encPassword, err := common.Encrypt(manager.Config.Server.EncryptionKey, "admin")
+		if err != nil {
+			logger.Debug(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		pm.Activated = false
+		pm.UserPassword = encPassword
 		tx.updateConsoleMember(&pm)
 	}
 

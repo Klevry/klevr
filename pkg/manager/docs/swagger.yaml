@@ -365,39 +365,6 @@ paths:
       summary: secondary 에이전트의 primary 상태 확인 요청을 처리한다.
       tags:
       - agents
-  /agents/scheduled/iteration:
-    get:
-      consumes:
-      - application/json
-      description: 해당 Zone에서 수행 중에 있는 Iteration 타입의 Task를 조회
-      parameters:
-      - description: API KEY
-        in: header
-        name: X-API-KEY
-        required: true
-        type: string
-      - description: AGENT KEY
-        in: header
-        name: X-AGENT-KEY
-        required: true
-        type: string
-      - description: ZONE ID
-        in: header
-        name: X-ZONE-ID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/common.KlevrTask'
-            type: array
-      summary: 실행중인 Iteration 타입의 Task
-      tags:
-      - agents
   /console/activated/{id}:
     get:
       consumes:
