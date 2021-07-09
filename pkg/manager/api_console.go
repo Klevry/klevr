@@ -161,6 +161,11 @@ func (api *ConsoleAPI) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if cpw == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	encPassword, err := common.Encrypt(manager.Config.Server.EncryptionKey, cpw)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
