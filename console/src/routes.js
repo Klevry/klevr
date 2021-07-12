@@ -3,6 +3,7 @@ import DashboardLayout from 'src/components/DashboardLayout';
 import MainLayout from 'src/components/MainLayout';
 import TaskList from 'src/pages/TaskList';
 import Overview from 'src/pages/Overview';
+import ZoneList from 'src/pages/ZoneList';
 import Login from 'src/pages/Login';
 import Activate from 'src/pages/Activate';
 import NotFound from 'src/pages/NotFound';
@@ -15,6 +16,7 @@ const routes = [
     children: [
       { path: 'tasks', element: <TaskList /> },
       { path: 'overview', element: <Overview /> },
+      { path: 'zones', element: <ZoneList /> },
       { path: 'settings', element: <Settings /> },
       { path: '*', element: <Navigate to="/404" /> }
     ]

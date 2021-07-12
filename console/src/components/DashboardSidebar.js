@@ -6,7 +6,8 @@ import { Box, Divider, Drawer, Hidden, List } from '@material-ui/core';
 import {
   BarChart as BarChartIcon,
   Settings as SettingsIcon,
-  FileText as TaskIcon
+  FileText as TaskIcon,
+  Grid as ZoneIcon
 } from 'react-feather';
 import NavItem from './NavItem';
 
@@ -20,6 +21,11 @@ const items = [
     href: '/app/tasks',
     icon: TaskIcon,
     title: 'Tasks'
+  },
+  {
+    href: '/app/zones',
+    icon: ZoneIcon,
+    title: 'Zones'
   },
   {
     href: '/app/settings',
