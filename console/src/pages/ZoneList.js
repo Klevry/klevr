@@ -10,6 +10,8 @@ import React, { useState } from 'react';
 import 'antd/dist/antd.css';
 import { Modal, Button, Form, Input, Select } from 'antd';
 import { API_SERVER } from 'src/config';
+import { useDispatch } from 'react-redux';
+import { getZoneList } from 'src/components/store/actions/klevrActions';
 
 const { Option } = Select;
 const layout = {
@@ -28,17 +30,24 @@ const tailLayout = {
 };
 
 const Dashboard = () => {
+  const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   const [groupname, setGroupname] = useState('');
   const [platform, setPlatform] = useState('');
+  const dispatch = useDispatch();
+
+  const onReset = () => {
+    form.resetFields();
+  };
 
   const showModal = () => {
     setVisible(true);
   };
 
   const handleOk = async () => {
+    setConfirmLoading(true);
     console.log(`groupname: ${groupname}, platform: ${platform}`);
 
     const headers = {
@@ -57,17 +66,25 @@ const Dashboard = () => {
       }
     );
 
-    console.log(response);
-
-    setConfirmLoading(true);
-    setTimeout(() => {
-      //성공응답받으면 이걸로 처리하기!
+    console.log(response.status === 200);
+    if (response.status === 200) {
+      async function get() {
+        const result = await axios.get(`${API_SERVER}/inner/groups`, {
+          withCredentials: true
+        });
+        dispatch(getZoneList(result.data));
+      }
+      get();
       setVisible(false);
       setConfirmLoading(false);
-    }, 2000);
+    }
+
+    onReset();
   };
 
   const handleCancel = () => {
+    console.log('cancel');
+    onReset();
     setVisible(false);
   };
 
@@ -107,7 +124,7 @@ const Dashboard = () => {
               confirmLoading={confirmLoading}
               onCancel={handleCancel}
             >
-              <Form {...layout} name="control-ref">
+              <Form {...layout} name="control-ref" form={form}>
                 <Form.Item
                   required
                   name="groupname"
