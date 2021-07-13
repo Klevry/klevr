@@ -33,10 +33,7 @@ const AgentList = () => {
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/groups/${currentZone}/agents`,
-        {
-          withCredentials: true
-        }
+        `${API_SERVER}/inner/groups/${currentZone}/agents`
       );
       if (!completed) dispatch(getAgentList(result.data));
     }
@@ -112,10 +109,7 @@ const AddAgent = () => {
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/groups/${currentZone}/agents`,
-        {
-          withCredentials: true
-        }
+        `${API_SERVER}/inner/groups/${currentZone}/agents`
       );
       dispatch(getAgentList(result.data));
 

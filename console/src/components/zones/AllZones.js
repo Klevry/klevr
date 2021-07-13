@@ -30,9 +30,7 @@ const TaskList = () => {
     let completed = false;
 
     async function get() {
-      const result = await axios.get(`${API_SERVER}/inner/groups`, {
-        withCredentials: true
-      });
+      const result = await axios.get(`${API_SERVER}/inner/groups`);
       if (!completed) dispatch(getZoneList(result.data));
     }
     get();
@@ -57,18 +55,18 @@ const TaskList = () => {
         console.log(`delete zone id ${id}`);
 
         async function deleteZone() {
-          // const headers = {
-          //   accept: 'application/json',
-          //   'Content-Type': 'application/json'
-          // };
-          // const response = await axios.delete(
-          //   `${API_SERVER}/inner/groups/${id}`,
-          //   { headers },
-          //   {
-          //     withCredentials: true
-          //   }
-          // );
-          // console.log(response);
+          const headers = {
+            accept: 'application/json',
+            'Content-Type': 'application/json'
+          };
+          const response = await axios.delete(
+            `${API_SERVER}/inner/groups/${id}`,
+            { headers }
+          );
+          if (response.status === 200) {
+            const result = await axios.get(`${API_SERVER}/inner/groups`);
+            dispatch(getZoneList(result.data));
+          }
         }
         deleteZone();
       },

@@ -22,10 +22,7 @@ const TaskList = () => {
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/tasks?groupID=${currentZone}`,
-        {
-          withCredentials: true
-        }
+        `${API_SERVER}/inner/tasks?groupID=${currentZone}`
       );
       if (!completed) setData(result.data);
     }
@@ -40,10 +37,7 @@ const TaskList = () => {
 
     async function get() {
       const result = await axios.get(
-        `${API_SERVER}/inner/tasks?groupID=${currentZone}`,
-        {
-          withCredentials: true
-        }
+        `${API_SERVER}/inner/tasks?groupID=${currentZone}`
       );
       if (!completed) setData(result.data);
     }
