@@ -48,10 +48,7 @@ const Activate = () => {
               const response = await axios.post(
                 `${API_SERVER}/console/changepassword`,
                 form,
-                { headers },
-                {
-                  withCredentials: true
-                }
+                { headers }
               );
 
               if (response.status === 200) {
