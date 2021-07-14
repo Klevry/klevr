@@ -5,6 +5,8 @@ import AllTasks from 'src/components/task/AllTasks';
 import OrderList from 'src/components/task/OrderList';
 import SchedulerList from 'src/components/task/SchedulerList';
 
+import AddTask from 'src/components/task/AddTask';
+
 const content = [
   {
     tab: 'All',
@@ -53,9 +55,7 @@ const TaskList = () => {
                 </Button>
               ))}
             </div>
-            <Button color="primary" variant="contained" disabled>
-              Add Task
-            </Button>
+            <AddTask />
           </x.div>
           {contentItem.content}
         </Container>

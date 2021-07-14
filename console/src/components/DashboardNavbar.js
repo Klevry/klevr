@@ -52,7 +52,6 @@ const Zone = () => {
 
   const selectZone = (id) => {
     dispatch(filterByZone(id));
-    console.log(id);
   };
 
   return (

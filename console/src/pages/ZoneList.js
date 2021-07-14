@@ -63,7 +63,6 @@ const Dashboard = () => {
       { headers }
     );
 
-    console.log(response.status === 200);
     if (response.status === 200) {
       async function get() {
         const result = await axios.get(`${API_SERVER}/inner/groups`);
