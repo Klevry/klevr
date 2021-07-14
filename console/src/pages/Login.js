@@ -23,9 +23,7 @@ const Login = () => {
 
   useEffect(() => {
     async function check() {
-      const result = await axios.get(`${API_SERVER}/console/activated/admin`, {
-        withCredentials: true
-      });
+      const result = await axios.get(`${API_SERVER}/console/activated/admin`);
 
       if (result.data.status === 'initialized') {
         navigate('/activate', { replace: true });
@@ -67,10 +65,7 @@ const Login = () => {
               const response = await axios.post(
                 `${API_SERVER}/console/signin`,
                 form,
-                { headers },
-                {
-                  withCredentials: true
-                }
+                { headers }
               );
 
               response.data.token &&

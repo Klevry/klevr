@@ -36,9 +36,7 @@ const Zone = () => {
   useEffect(() => {
     let completed = false;
     async function get() {
-      const result = await axios.get(`${API_SERVER}/inner/groups`, {
-        withCredentials: true
-      });
+      const result = await axios.get(`${API_SERVER}/inner/groups`);
       if (!completed) setData(result.data);
       dispatch(filterByZone(result.data[0].Id));
     }
@@ -83,9 +81,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
 
   const signOutHandler = () => {
     async function signOut() {
-      const result = await axios.get(`${API_SERVER}/console/signout`, {
-        withCredentials: true
-      });
+      const result = await axios.get(`${API_SERVER}/console/signout`);
       console.log(result.status === 200);
       if (result.status === 200) {
         navigate('/login', { replace: true });

@@ -40,10 +40,7 @@ const SettingsPassword = (props) => {
     const response = await axios.post(
       `${API_SERVER}/console/changepassword`,
       form,
-      { headers },
-      {
-        withCredentials: true
-      }
+      { headers }
     );
 
     console.log(response);
