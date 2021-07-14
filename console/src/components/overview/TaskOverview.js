@@ -17,11 +17,13 @@ import {
   TableRow
 } from '@material-ui/core';
 import ArrowRightIcon from '@material-ui/icons/ArrowRight';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { getTaskList } from '../store/actions/klevrActions';
 
 const TaskList = () => {
-  const [data, setData] = useState(null);
+  const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
+  const taskList = useSelector((store) => store.taskListReducer);
 
   useEffect(() => {
     let completed = false;
@@ -30,7 +32,7 @@ const TaskList = () => {
       const result = await axios.get(
         `${API_SERVER}/inner/tasks?groupID=${currentZone}`
       );
-      if (!completed) setData(result.data);
+      if (!completed) dispatch(getTaskList(result.data));
     }
     get();
     return () => {
@@ -45,7 +47,7 @@ const TaskList = () => {
       const result = await axios.get(
         `${API_SERVER}/inner/tasks?groupID=${currentZone}`
       );
-      if (!completed) setData(result.data);
+      if (!completed) dispatch(getTaskList(result.data));
     }
     get();
     return () => {
@@ -53,12 +55,12 @@ const TaskList = () => {
     };
   }, [currentZone]);
 
-  if (!data) {
+  if (!taskList) {
     return null;
   }
   return (
     <TableBody>
-      {data.slice(0, 5).map((item) => (
+      {taskList.slice(0, 5).map((item) => (
         <TableRow hover key={item.agentKey}>
           <TableCell>{`${item.id}`}</TableCell>
           <TableCell>{`${item.name}`}</TableCell>

@@ -11,48 +11,44 @@ import {
   TableRow,
   TableHead
 } from '@material-ui/core';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { getTaskList } from '../store/actions/klevrActions';
 
 const TaskList = () => {
-  const [data, setData] = useState(null);
+  const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
+  const taskList = useSelector((store) => store.taskListReducer);
 
-  useEffect(() => {
+  const fetchTaskList = () => {
     let completed = false;
 
     async function get() {
       const result = await axios.get(
         `${API_SERVER}/inner/tasks?groupID=${currentZone}`
       );
-      if (!completed) setData(result.data);
+      if (!completed) dispatch(getTaskList(result.data));
     }
     get();
     return () => {
       completed = true;
     };
+  };
+
+  useEffect(() => {
+    fetchTaskList();
   }, []);
 
   useEffect(() => {
-    let completed = false;
-
-    async function get() {
-      const result = await axios.get(
-        `${API_SERVER}/inner/tasks?groupID=${currentZone}`
-      );
-      if (!completed) setData(result.data);
-    }
-    get();
-    return () => {
-      completed = true;
-    };
+    fetchTaskList();
   }, [currentZone]);
 
-  if (!data) {
+  if (!taskList) {
     return null;
   }
+
   return (
     <TableBody>
-      {data.map((item) => (
+      {taskList.map((item) => (
         <TableRow hover key={item.agentKey}>
           {item.taskType === 'atOnce' && (
             <>
