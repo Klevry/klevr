@@ -4,7 +4,7 @@ import { x } from '@xstyled/emotion';
 import { Modal, Form, Input, Select, Radio, Divider, Button } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { API_SERVER } from 'src/config';
-import { getAgentList } from '../store/actions/klevrActions';
+import { getAgentList, getTaskList } from '../store/actions/klevrActions';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -17,9 +17,10 @@ const AddTask = () => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [cronValid, setCronValid] = useState();
 
   const [taskValues, setTaskValues] = useState({
-    exeAgentChangeable: false,
+    exeAgentChangeable: true,
     hasRecover: false,
     name: '',
     taskType: '',
@@ -78,10 +79,25 @@ const AddTask = () => {
   const handleOk = async () => {
     setConfirmLoading(true);
 
-    //일단 이것만 살리기.. 지울거
-    setVisible(false);
-    setConfirmLoading(false);
-    //
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    };
+
+    const response = await axios.post(`${API_SERVER}/inner/tasks`, taskValues, {
+      headers
+    });
+
+    if (response.status === 200) {
+      async function get() {
+        const result = await axios.get(
+          `${API_SERVER}/inner/tasks?groupID=${currentZone}`
+        );
+        dispatch(getTaskList(result.data));
+      }
+      get();
+      setVisible(false);
+      setConfirmLoading(false);
+    }
 
     onReset();
   };
@@ -104,7 +120,33 @@ const AddTask = () => {
 
   const onAgentChange = (value) => {
     if (value === 'none') {
+      setTaskValues({
+        ...taskValues,
+        agentKey: '',
+        exeAgentChangeable: true
+      });
       return;
+    }
+
+    setTaskValues({
+      ...taskValues,
+      agentKey: value,
+      exeAgentChangeable: false
+    });
+
+    console.log(value);
+  };
+
+  const onCronValidator = (e) => {
+    const cron = require('cron-validator');
+
+    setCronValid(cron.isValidCron(e.target.value, { seconds: true }));
+
+    if (cron.isValidCron(e.target.value, { seconds: true })) {
+      setTaskValues({
+        ...taskValues,
+        [e.target.name]: e.target.value
+      });
     }
   };
 
@@ -186,10 +228,14 @@ const AddTask = () => {
                       required: true
                     }
                   ]}
+                  label="Fail"
+                  validateStatus={cronValid ? 'success' : 'error'}
+                  help="Please adjust the crontab format."
                 >
                   <Input
                     placeholder="crontab"
-                    onChange={ontaskChange}
+                    // onChange={ontaskChange}
+                    onChange={onCronValidator}
                     name="cron"
                   />
                 </Form.Item>
@@ -214,37 +260,50 @@ const AddTask = () => {
             <Input onChange={ontaskChange} name="parameter" />
           </Form.Item>
           <Divider />
-          <Form.Item
-            required
-            label="Command Name"
-            name="commandName"
-            rules={[
-              {
-                required: true,
-                message: 'Please put step name'
-              }
-            ]}
-          >
-            <Input onChange={handleStepChange} name="commandName" />
-          </Form.Item>
-          <Form.Item label="Command Type" required name="commandType">
-            <Select
-              placeholder="Select a step type"
-              onChange={handleCmdType}
-              allowClear
+          <x.div border="1px solid #e4e4e4" pt="15px" pb="15px" mb="20px">
+            <x.h5
+              fontWeight="bold"
+              pb="10px"
+              pl="15px"
+              pr="15px"
+              mb="20px"
+              borderBottom="1px solid #e4e4e4"
+              fontSize="1.1rem"
             >
-              <Select.Option value="inline">inline</Select.Option>
-              <Select.Option value="reserved">reserved</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            label="Command"
-            required
-            name="command"
-            onChange={handleStepChange}
-          >
-            <TextArea rows={4} name="command" />
-          </Form.Item>
+              Step
+            </x.h5>
+            <Form.Item
+              required
+              label="Command Name"
+              name="commandName"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please put step name'
+                }
+              ]}
+            >
+              <Input onChange={handleStepChange} name="commandName" />
+            </Form.Item>
+            <Form.Item label="Command Type" required name="commandType">
+              <Select
+                placeholder="Select a step type"
+                onChange={handleCmdType}
+                allowClear
+              >
+                <Select.Option value="inline">inline</Select.Option>
+                <Select.Option value="reserved">reserved</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="Command"
+              required
+              name="command"
+              onChange={handleStepChange}
+            >
+              <TextArea rows={4} name="command" />
+            </Form.Item>
+          </x.div>
         </Form>
       </Modal>
     </>
