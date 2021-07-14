@@ -1244,6 +1244,40 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/install/agents/bootstrap": {
+            "post": {
+                "description": "에이전트가 설치되기 위한 최소 정보를 이용해 설치를 할 수 있는 스크립트를 생성한다",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Install"
+                ],
+                "summary": "agent setup script 생성",
+                "parameters": [
+                    {
+                        "description": "Bootstrap Info",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.BootstrapCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1545,6 +1579,23 @@ var doc = `{
                     "type": "string"
                 },
                 "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "manager.BootstrapCommand": {
+            "type": "object",
+            "properties": {
+                "apiKey": {
+                    "type": "string"
+                },
+                "managerUrl": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "zoneId": {
                     "type": "integer"
                 }
             }

@@ -197,6 +197,17 @@ definitions:
       userId:
         type: integer
     type: object
+  manager.BootstrapCommand:
+    properties:
+      apiKey:
+        type: string
+      managerUrl:
+        type: string
+      platform:
+        type: string
+      zoneId:
+        type: integer
+    type: object
   manager.KlevrVariable:
     properties:
       description:
@@ -1052,4 +1063,26 @@ paths:
       summary: Klevr에서 제공하는 시스템 변수 목록을 조회한다.
       tags:
       - servers
+  /install/agents/bootstrap:
+    post:
+      consumes:
+      - application/json
+      description: 에이전트가 설치되기 위한 최소 정보를 이용해 설치를 할 수 있는 스크립트를 생성한다
+      parameters:
+      - description: Bootstrap Info
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/manager.BootstrapCommand'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: agent setup script 생성
+      tags:
+      - Install
 swagger: "2.0"

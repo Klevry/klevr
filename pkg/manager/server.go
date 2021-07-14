@@ -12,6 +12,7 @@ import (
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/rabbitmq"
 	"github.com/NexClipper/logger"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	concurrent "github.com/orcaman/concurrent-map"
 	"github.com/pkg/errors"
@@ -174,9 +175,16 @@ func (manager *KlevrManager) Run() error {
 		}
 	}
 
+	headerOk := handlers.AllowedHeaders([]string{"*"})
+	//originOk := handlers.AllowedOrigins([]string{"http://localhost:3000"})
+	originOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "OPTIONS", "DELETE"})
+	credentialsOk := handlers.AllowCredentials()
+	corsHandler := handlers.CORS(headerOk, originOk, methodsOk, credentialsOk)(manager.RootRouter)
+
 	s := &http.Server{
 		Addr:         fmt.Sprintf(":%d", serverConfig.Port),
-		Handler:      manager.RootRouter,
+		Handler:      corsHandler,
 		ReadTimeout:  time.Duration(serverConfig.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(serverConfig.WriteTimeout) * time.Second,
 	}
