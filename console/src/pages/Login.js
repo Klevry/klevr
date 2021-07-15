@@ -88,6 +88,14 @@ const Login = () => {
                   </Typography>
                 </Box>
                 <TextField
+                  fullWidth
+                  label="Klevr Manager URL"
+                  margin="normal"
+                  onBlur={handleBlur}
+                  value={API_SERVER}
+                  disabled
+                />
+                <TextField
                   error={Boolean(touched.userId && errors.userId)}
                   fullWidth
                   helperText={touched.userId && errors.userId}
