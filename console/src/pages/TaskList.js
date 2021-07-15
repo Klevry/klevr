@@ -50,7 +50,7 @@ const TaskList = () => {
           >
             <div>
               {content.map((section, index) => (
-                <Button onClick={() => contentChange(index)}>
+                <Button onClick={() => contentChange(index)} key={index}>
                   {section.tab}
                 </Button>
               ))}

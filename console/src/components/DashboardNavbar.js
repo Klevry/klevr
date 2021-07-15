@@ -15,7 +15,7 @@ import FormControl from '@material-ui/core/FormControl';
 import { makeStyles } from '@material-ui/core/styles';
 import { API_SERVER, GROUP_ID } from '../config';
 import { useDispatch, useSelector } from 'react-redux';
-import { filterByZone } from './store/actions/klevrActions';
+import { filterByZone, getZoneList } from './store/actions/klevrActions';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -28,16 +28,16 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const Zone = () => {
-  const currentZone = useSelector((store) => store.zoneReducer);
   const dispatch = useDispatch();
+  const currentZone = useSelector((store) => store.zoneReducer);
+  const zoneList = useSelector((store) => store.zoneListReducer);
 
-  const [data, setData] = useState(null);
   const classes = useStyles();
   useEffect(() => {
     let completed = false;
     async function get() {
       const result = await axios.get(`${API_SERVER}/inner/groups`);
-      if (!completed) setData(result.data);
+      if (!completed) dispatch(getZoneList(result.data));
       dispatch(filterByZone(result.data[0].Id));
     }
     get();
@@ -46,7 +46,7 @@ const Zone = () => {
     };
   }, []);
 
-  if (!data) {
+  if (!zoneList) {
     return null;
   }
 
@@ -61,7 +61,7 @@ const Zone = () => {
         {currentZone}
       </InputLabel>
       <Select>
-        {data.map((item) => (
+        {zoneList.map((item) => (
           <MenuItem
             value={item.GroupName}
             key={item.Id}
