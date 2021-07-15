@@ -77,6 +77,7 @@ const Zone = () => {
 
 const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
   const navigate = useNavigate();
+  const pageCheck = window.location.pathname !== '/login';
 
   const signOutHandler = () => {
     async function signOut() {
@@ -87,14 +88,12 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
       }
     }
     signOut();
-
-    console.log('signout');
   };
 
   return (
     <AppBar elevation={0} {...rest}>
       <Toolbar>
-        <RouterLink to="/">
+        <RouterLink to={pageCheck ? '/app/overview' : '/'}>
           <Logo />
         </RouterLink>
         <Box sx={{ flexGrow: 1 }} />
