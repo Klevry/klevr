@@ -28,6 +28,7 @@ const useStyles = makeStyles({
 const ApiKey = () => {
   const classes = useStyles();
   const [key, setKey] = useState(undefined);
+  const [inputKey, setInputKey] = useState('');
   const currentZone = useSelector((store) => store.zoneReducer);
   const currentZoneName = useSelector((store) => store.zoneNameReducer);
 
@@ -57,6 +58,22 @@ const ApiKey = () => {
     fetchKey();
   }, [currentZone]);
 
+  const handleInput = (e) => {
+    setInputKey(e.target.value);
+  };
+
+  const handleRegist = async () => {
+    const response = await axios.post(
+      `${API_SERVER}/inner/groups/${currentZone}/apikey`,
+      inputKey
+    );
+
+    if (response.status === 200) {
+      setInputKey('');
+      fetchKey();
+    }
+  };
+
   return (
     <Card className={classes.root} variant="outlined" marginBottom="30px">
       <x.div
@@ -79,7 +96,7 @@ const ApiKey = () => {
             id="outlined-full-width"
             label="API Key"
             style={{ margin: 8 }}
-            placeholder="Please register by pressing the button next to the input."
+            placeholder="Please input the API key and press the registration button next to."
             //   helperText="Full width!"
             fullWidth
             margin="normal"
@@ -88,8 +105,9 @@ const ApiKey = () => {
             }}
             variant="outlined"
             disabled={key}
-            value={key === undefined ? '' : key}
+            value={key === undefined ? inputKey : key}
             size="medium"
+            onChange={handleInput}
           />
           <Button
             variant="contained"
@@ -97,6 +115,7 @@ const ApiKey = () => {
             disableElevation
             className={classes.btn}
             disabled={key}
+            onClick={handleRegist}
           >
             ADD KEY
           </Button>

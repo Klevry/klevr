@@ -88,7 +88,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
   const signOutHandler = () => {
     async function signOut() {
       const result = await axios.get(`${API_SERVER}/console/signout`);
-      console.log(result.status === 200);
+
       if (result.status === 200) {
         navigate('/login', { replace: true });
       }
