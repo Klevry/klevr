@@ -40,7 +40,8 @@ type BootstrapCommand struct {
 // @Param b body manager.BootstrapCommand true "Bootstrap Info"
 // @Success 200 {string} string
 func (api *API) generateBootstrapCommand(w http.ResponseWriter, r *http.Request) {
-	var cmd = "curl -sL gg.gg/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}"
+	// install.p8s.me : https://raw.githubusercontent.com/Klevry/klevr/master/cmd/klevr-agent/agent_installer.sh
+	var cmd = "curl -sL install.p8s.me/klevr |bash  && ./klevr -apiKey=\"{apiKey}\" -platform={platform} -manager=\"{managerUrl}\" -zoneId={zoneId}"
 
 	var bc BootstrapCommand
 	err := json.NewDecoder(r.Body).Decode(&bc)
