@@ -19,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getZoneList } from '../store/actions/klevrActions';
 import { Button, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import AddZone from './AddZone';
 
 const TaskList = () => {
   const [data, setData] = useState(null);
@@ -100,8 +101,14 @@ const TaskList = () => {
 const Alltasks = ({ customers, ...rest }) => {
   return (
     <Card>
-      <x.div display="flex" alignItems="center">
+      <x.div
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        paddingRight="10px"
+      >
         <CardHeader title="Zone" />
+        <AddZone />
       </x.div>
       <Divider />
       <PerfectScrollbar>
