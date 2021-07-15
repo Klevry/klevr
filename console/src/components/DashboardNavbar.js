@@ -15,7 +15,11 @@ import FormControl from '@material-ui/core/FormControl';
 import { makeStyles } from '@material-ui/core/styles';
 import { API_SERVER, GROUP_ID } from '../config';
 import { useDispatch, useSelector } from 'react-redux';
-import { filterByZone, getZoneList } from './store/actions/klevrActions';
+import {
+  filterByZone,
+  getZoneList,
+  getZoneName
+} from './store/actions/klevrActions';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
@@ -39,6 +43,7 @@ const Zone = () => {
       const result = await axios.get(`${API_SERVER}/inner/groups`);
       if (!completed) dispatch(getZoneList(result.data));
       dispatch(filterByZone(result.data[0].Id));
+      dispatch(getZoneName(result.data[0].GroupName));
     }
     get();
     return () => {
@@ -50,8 +55,9 @@ const Zone = () => {
     return null;
   }
 
-  const selectZone = (id) => {
+  const selectZone = (id, groupName) => {
     dispatch(filterByZone(id));
+    dispatch(getZoneName(groupName));
   };
 
   return (
@@ -65,7 +71,7 @@ const Zone = () => {
           <MenuItem
             value={item.GroupName}
             key={item.Id}
-            onClick={() => selectZone(item.Id)}
+            onClick={() => selectZone(item.Id, item.GroupName)}
           >
             {item.GroupName}
           </MenuItem>
