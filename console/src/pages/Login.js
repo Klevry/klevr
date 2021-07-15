@@ -10,10 +10,11 @@ import {
 } from '@material-ui/core';
 import axios from 'axios';
 import { API_SERVER } from 'src/config';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 // import { useHistory } from 'react-router-dom';
 
 const Login = () => {
+  const [pwValid, setPwValid] = useState(false);
   // const history = useHistory();
   const navigate = useNavigate();
   const SignupSchema = Yup.object().shape({
@@ -62,14 +63,20 @@ const Login = () => {
               form.append('id', touched.userId);
               form.append('pw', touched.password);
 
-              const response = await axios.post(
-                `${API_SERVER}/console/signin`,
-                form,
-                { headers }
-              );
+              try {
+                const response = await axios.post(
+                  `${API_SERVER}/console/signin`,
+                  form,
+                  { headers }
+                );
 
-              response.data.token &&
-                navigate('/app/overview', { replace: true });
+                if (response.data.token) {
+                  setPwValid(false);
+                  navigate('/app/overview', { replace: true });
+                }
+              } catch (err) {
+                setPwValid(true);
+              }
             }}
           >
             {({
@@ -87,6 +94,14 @@ const Login = () => {
                     Sign in
                   </Typography>
                 </Box>
+                <TextField
+                  fullWidth
+                  label="Klevr Manager URL"
+                  margin="normal"
+                  onBlur={handleBlur}
+                  value={API_SERVER}
+                  disabled
+                />
                 <TextField
                   error={Boolean(touched.userId && errors.userId)}
                   fullWidth
@@ -112,6 +127,7 @@ const Login = () => {
                   type="password"
                   value={values.password}
                   variant="outlined"
+                  error={pwValid}
                 />
                 <Box sx={{ py: 2 }}>
                   <Button
