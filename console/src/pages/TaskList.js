@@ -6,6 +6,7 @@ import OrderList from 'src/components/task/OrderList';
 import SchedulerList from 'src/components/task/SchedulerList';
 
 import AddTask from 'src/components/task/AddTask';
+import Refresh from 'src/components/common/Refresh';
 
 const content = [
   {
@@ -55,7 +56,10 @@ const TaskList = () => {
                 </Button>
               ))}
             </div>
-            <AddTask />
+            <x.div w="160px" display="flex" justifyContent="space-between">
+              <AddTask />
+              <Refresh from="task" />
+            </x.div>
           </x.div>
           {contentItem.content}
         </Container>

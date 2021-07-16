@@ -20,6 +20,7 @@ import { getZoneList } from '../store/actions/klevrActions';
 import { Button, Modal } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import AddZone from './AddZone';
+import Refresh from '../common/Refresh';
 
 const TaskList = () => {
   const [data, setData] = useState(null);
@@ -108,7 +109,10 @@ const Alltasks = ({ customers, ...rest }) => {
         paddingRight="10px"
       >
         <CardHeader title="Zone" />
-        <AddZone />
+        <x.div w="160px" display="flex" justifyContent="space-between">
+          <AddZone />
+          <Refresh from="zone" />
+        </x.div>
       </x.div>
       <Divider />
       <PerfectScrollbar>
