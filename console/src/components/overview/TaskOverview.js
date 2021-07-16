@@ -20,6 +20,8 @@ import ArrowRightIcon from '@material-ui/icons/ArrowRight';
 import { useDispatch, useSelector } from 'react-redux';
 import { getTaskList } from '../store/actions/klevrActions';
 
+import Refresh from '../common/Refresh';
+
 const TaskList = () => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
@@ -76,8 +78,14 @@ const TaskList = () => {
 const TaskOverview = (props) => {
   return (
     <Card {...props}>
-      <x.div display="flex" alignItems="center">
+      <x.div
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        paddingRight="10px"
+      >
         <CardHeader title="Task" />
+        <Refresh from="task" />
       </x.div>
       <Divider />
       <PerfectScrollbar>

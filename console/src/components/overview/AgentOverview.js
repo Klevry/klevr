@@ -22,8 +22,7 @@ import { message } from 'antd';
 import { CopyOutlined as CopyOutlinedIcon } from '@ant-design/icons';
 import { getAgentList } from '../store/actions/klevrActions';
 import { Link as RouterLink } from 'react-router-dom';
-
-import { Plus as AddIcon } from 'react-feather';
+import Refresh from '../common/Refresh';
 
 const { Option } = Select;
 
@@ -275,9 +274,17 @@ const AddAgent = () => {
 const AgentOverview = (props) => {
   return (
     <Card {...props}>
-      <x.div display="flex" alignItems="center" paddingRight="10px">
-        <CardHeader title="Agent" />
-        <AddAgent />
+      <x.div
+        display="flex"
+        alignItems="center"
+        paddingRight="10px"
+        justifyContent="space-between"
+      >
+        <x.div display="flex" alignItems="center">
+          <CardHeader title="Agent" />
+          <AddAgent />
+        </x.div>
+        <Refresh from="agent" />
       </x.div>
       <Divider />
       <PerfectScrollbar>
