@@ -10,7 +10,7 @@ import InputIcon from '@material-ui/icons/Input';
 import Logo from './Logo';
 import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
-import Select from '@material-ui/core/Select';
+import NativeSelect from '@material-ui/core/Select';
 import FormControl from '@material-ui/core/FormControl';
 import { makeStyles } from '@material-ui/core/styles';
 import { API_SERVER, GROUP_ID } from '../config';
@@ -24,7 +24,7 @@ import {
 const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: theme.spacing(1),
-    width: 120
+    width: 160
   },
   selectEmpty: {
     marginTop: theme.spacing(2)
@@ -35,6 +35,7 @@ const Zone = () => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const zoneList = useSelector((store) => store.zoneListReducer);
+  const [iz, setIz] = useState();
 
   const classes = useStyles();
   useEffect(() => {
@@ -44,6 +45,7 @@ const Zone = () => {
       if (!completed) dispatch(getZoneList(result.data));
       dispatch(filterByZone(result.data[0].Id));
       dispatch(getZoneName(result.data[0].GroupName));
+      setIz(result.data[0].Id);
     }
     get();
     return () => {
@@ -55,6 +57,10 @@ const Zone = () => {
     return null;
   }
 
+  if (!iz) {
+    return null;
+  }
+
   const selectZone = (id, groupName) => {
     dispatch(filterByZone(id));
     dispatch(getZoneName(groupName));
@@ -62,21 +68,20 @@ const Zone = () => {
 
   return (
     <FormControl className={classes.formControl}>
-      <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
-        {/* {GROUP_ID} */}
-        {currentZone}
-      </InputLabel>
-      <Select>
+      {/* <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
+        Zone
+      </InputLabel> */}
+      <NativeSelect defaultValue={iz}>
         {zoneList.map((item) => (
           <MenuItem
-            value={item.GroupName}
+            value={item.Id}
             key={item.Id}
             onClick={() => selectZone(item.Id, item.GroupName)}
           >
-            {item.GroupName}
+            {`${item.GroupName} (${item.Id})`}
           </MenuItem>
         ))}
-      </Select>
+      </NativeSelect>
     </FormControl>
   );
 };
