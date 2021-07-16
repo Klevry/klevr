@@ -713,8 +713,8 @@ func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthe
 func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentials {
 	c.Value = manager.encrypt(c.Value)
 
-	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`name`,`value`) VALUES (?,?,?)",
-		c.ZoneId, c.Name, c.Value)
+	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`key`,`value`, `hash`) VALUES (?,?,?,?)",
+		c.ZoneId, c.Key, c.Value, c.Hash)
 
 	if err != nil {
 		panic(err)
@@ -731,6 +731,23 @@ func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentia
 	return c
 }
 
+func (tx *Tx) updateCredential(manager *KlevrManager, c *Credentials) int64 {
+	c.Value = manager.encrypt(c.Value)
+
+	result, err := tx.Exec("UPDATE `CREDENTIALS` SET `VALUE` = ?, `HASH` = ? WHERE `ID` = ?",
+		c.Value, c.Hash, c.Id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, _ := result.RowsAffected()
+
+	logger.Debugf("Credential information updated Credentials(%d), ID(%d)", cnt, c.Id)
+
+	return cnt
+}
+
 func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, bool) {
 	var credential Credentials
 
@@ -740,6 +757,19 @@ func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, boo
 	return &credential, exist
 }
 
+func (tx *Tx) getCredentialByName(zoneID uint64, credentialName string) *Credentials {
+	var credential Credentials
+
+	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ZONE_ID = ?", zoneID).And("CREDENTIALS.KEY = ?", credentialName).Get(&credential))
+	logger.Debugf("Selected Credentials : exist[%v], id[%d], key[%s]", exist, credential.Id, credential.Key)
+
+	if exist == false {
+		return nil
+	}
+
+	return &credential
+}
+
 func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
 	var credentials []Credentials
 
@@ -747,7 +777,7 @@ func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string)
 
 	// condition 추가
 	if credentialNames != nil {
-		stmt = stmt.And(builder.In("NAME", credentialNames))
+		stmt = stmt.And(builder.In("KEY", credentialNames))
 	}
 
 	tx.Engine().ShowSQL(true)

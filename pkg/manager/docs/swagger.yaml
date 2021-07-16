@@ -53,9 +53,11 @@ definitions:
     properties:
       createdAt:
         $ref: '#/definitions/common.JSONTime'
+      hash:
+        type: string
       id:
         type: integer
-      name:
+      key:
         type: string
       updatedAt:
         $ref: '#/definitions/common.JSONTime'
@@ -561,6 +563,27 @@ paths:
           schema:
             $ref: '#/definitions/common.KlevrCredential'
       summary: Credential을 등록한다.
+      tags:
+      - servers
+    put:
+      consumes:
+      - application/json
+      description: KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 수정한다.
+      parameters:
+      - description: Credential
+        in: body
+        name: b
+        required: true
+        schema:
+          $ref: '#/definitions/common.KlevrCredential'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrCredential'
+      summary: Credential을 수정한다.
       tags:
       - servers
   /inner/credentials/{credentialID}:
