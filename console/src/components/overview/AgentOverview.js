@@ -22,7 +22,8 @@ import { message } from 'antd';
 import { CopyOutlined as CopyOutlinedIcon } from '@ant-design/icons';
 import { getAgentList } from '../store/actions/klevrActions';
 import { Link as RouterLink } from 'react-router-dom';
-import { platform } from 'chart.js';
+
+import { Plus as AddIcon } from 'react-feather';
 
 const { Option } = Select;
 
@@ -190,8 +191,8 @@ const AddAgent = () => {
 
   return (
     <>
-      <Button type="primary" onClick={showModal}>
-        ADD AGENT
+      <Button size="small" onClick={showModal}>
+        +
       </Button>
       <Modal
         title="Install Agent"
@@ -274,12 +275,7 @@ const AddAgent = () => {
 const AgentOverview = (props) => {
   return (
     <Card {...props}>
-      <x.div
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        paddingRight="10px"
-      >
+      <x.div display="flex" alignItems="center" paddingRight="10px">
         <CardHeader title="Agent" />
         <AddAgent />
       </x.div>
