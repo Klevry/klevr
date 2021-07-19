@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { API_SERVER } from 'src/config';
 import {
   getAgentList,
+  getCredential,
   getTaskList,
   getZoneList
 } from '../store/actions/klevrActions';
@@ -56,10 +57,26 @@ const Refresh = ({ from }) => {
     };
   };
 
+  const fetchCredential = () => {
+    let completed = false;
+
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/groups/${currentZone}/credentials`
+      );
+      if (!completed) dispatch(getCredential(result.data));
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  };
+
   const handleRefresh = () => {
     from === 'task' && fetchTask();
     from === 'agent' && fetchAgent();
     from === 'zone' && fetchZone();
+    from === 'credential' && fetchCredential();
   };
 
   return (
