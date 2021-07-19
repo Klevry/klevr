@@ -60,6 +60,7 @@ const Refresh = ({ from }) => {
     from === 'task' && fetchTask();
     from === 'agent' && fetchAgent();
     from === 'zone' && fetchZone();
+    from === 'credential' && console.log('refresh Credential');
   };
 
   return (

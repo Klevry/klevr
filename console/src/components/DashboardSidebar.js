@@ -7,7 +7,8 @@ import {
   BarChart as BarChartIcon,
   Settings as SettingsIcon,
   FileText as TaskIcon,
-  Grid as ZoneIcon
+  Grid as ZoneIcon,
+  Key as CredentialIcon
 } from 'react-feather';
 import NavItem from './NavItem';
 
@@ -26,6 +27,11 @@ const items = [
     href: '/app/zones',
     icon: ZoneIcon,
     title: 'Zones'
+  },
+  {
+    href: '/app/credentials',
+    icon: CredentialIcon,
+    title: 'Credentials'
   },
   {
     href: '/app/settings',

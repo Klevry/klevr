@@ -8,6 +8,7 @@ import Login from 'src/pages/Login';
 import Activate from 'src/pages/Activate';
 import NotFound from 'src/pages/NotFound';
 import Settings from 'src/pages/Settings';
+import Credentials from 'src/pages/Credentials';
 
 const routes = [
   {
@@ -17,6 +18,7 @@ const routes = [
       { path: 'tasks', element: <TaskList /> },
       { path: 'overview', element: <Overview /> },
       { path: 'zones', element: <ZoneList /> },
+      { path: 'credentials', element: <Credentials /> },
       { path: 'settings', element: <Settings /> },
       { path: '*', element: <Navigate to="/404" /> }
     ]
