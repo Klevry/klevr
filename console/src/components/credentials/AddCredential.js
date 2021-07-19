@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Modal, Button, Form, Input, Divider } from 'antd';
 import { API_SERVER } from 'src/config';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import 'antd/dist/antd.css';
 import { x } from '@xstyled/emotion';
 import { Plus as AddIcon } from 'react-feather';
+import { getCredential } from '../store/actions/klevrActions';
+import { useEffect } from 'react';
 
 const layout = {
   labelCol: {
@@ -15,24 +17,32 @@ const layout = {
     span: 16
   }
 };
-const tailLayout = {
-  wrapperCol: {
-    offset: 8,
-    span: 16
-  }
-};
 
 const AddZone = () => {
+  const dispatch = useDispatch();
+  const currentZone = useSelector((store) => store.zoneReducer);
   const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-
   const [keyValue, setKeyValue] = useState({
     key: '',
-    value: ''
+    value: '',
+    zoneId: ''
   });
-  const [platform, setPlatform] = useState('');
-  const dispatch = useDispatch();
+
+  useEffect(() => {
+    setKeyValue({
+      ...keyValue,
+      zoneId: currentZone
+    });
+  }, []);
+
+  useEffect(() => {
+    setKeyValue({
+      ...keyValue,
+      zoneId: currentZone
+    });
+  }, [currentZone]);
 
   const onReset = () => {
     form.resetFields();
@@ -44,46 +54,39 @@ const AddZone = () => {
 
   const handleOk = async () => {
     if (keyValue.key === '' || keyValue.value === '') {
-      console.log('ERROR');
       return;
     }
 
-    console.log('SUCCESS');
     setConfirmLoading(true);
-    console.log(keyValue);
 
-    // const headers = {
-    //   'Content-Type': 'application/x-www-form-urlencoded'
-    // };
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    };
 
-    // const response = await axios.post(
-    //   `${API_SERVER}/inner/groups`,
-    //   {
-    //     groupName: groupname,
-    //     platform: platform
-    //   },
-    //   { headers }
-    // );
+    const response = await axios.post(
+      `${API_SERVER}/inner/credentials`,
+      keyValue,
+      {
+        headers
+      }
+    );
 
-    // if (response.status === 200) {
-    //   async function get() {
-    //     const result = await axios.get(`${API_SERVER}/inner/groups`);
-    //     dispatch(getZoneList(result.data));
-    //   }
-    //   get();
-    //   setVisible(false);
-    //   setConfirmLoading(false);
-    // }
-
-    //지우기
-    setVisible(false);
-    setConfirmLoading(false);
+    if (response.status === 200) {
+      async function get() {
+        const result = await axios.get(
+          `${API_SERVER}/inner/groups/${currentZone}/credentials`
+        );
+        dispatch(getCredential(result.data));
+      }
+      get();
+      setVisible(false);
+      setConfirmLoading(false);
+    }
 
     onReset();
   };
 
   const handleCancel = () => {
-    console.log('cancel');
     setKeyValue({
       ...keyValue,
       key: '',

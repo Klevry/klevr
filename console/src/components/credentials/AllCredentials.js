@@ -19,33 +19,39 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { API_SERVER } from 'src/config';
 import Refresh from '../common/Refresh';
 import AddCredential from './AddCredential';
+import { getCredential } from '../store/actions/klevrActions';
 
 const CredentialList = () => {
-  const [data, setDate] = useState([
-    {
-      id: 2,
-      zoneId: 932,
-      key: 'test',
-      value: '',
-      hash: '21232f297a57a5a743894a0e4a801fc3',
-      createdAt: '2021-07-19T03:59:17.000000Z',
-      updatedAt: '2021-07-19T03:59:17.000000Z'
-    },
-    {
-      id: 3,
-      zoneId: 932,
-      key: 'test2',
-      value: '',
-      hash: '21232f297a57a5a743894a0e4a801fc3',
-      createdAt: '2021-07-19T03:59:17.000000Z',
-      updatedAt: '2021-07-19T03:59:17.000000Z'
-    }
-  ]);
+  const dispatch = useDispatch();
+  const currentZone = useSelector((store) => store.zoneReducer);
+  const credentialList = useSelector((store) => store.credentialReducer);
+
   const { confirm } = Modal;
 
-  useEffect(() => {}, []);
+  const fetchCredential = () => {
+    let completed = false;
 
-  if (!data) {
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/groups/${currentZone}/credentials`
+      );
+      if (!completed) dispatch(getCredential(result.data));
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  };
+
+  useEffect(() => {
+    fetchCredential();
+  }, []);
+
+  useEffect(() => {
+    fetchCredential();
+  }, [currentZone]);
+
+  if (!credentialList) {
     return null;
   }
 
@@ -83,13 +89,16 @@ const CredentialList = () => {
   }
   return (
     <TableBody>
-      {data.map((item) => (
+      {credentialList.map((item) => (
         <TableRow hover key={item.agentKey}>
           <TableCell>{`${item.key}`}</TableCell>
           <TableCell>{`${item.hash}`}</TableCell>
           <TableCell>{`${item.updatedAt}`}</TableCell>
           <TableCell>{`${item.createdAt}`}</TableCell>
           <TableCell>
+            <Button onClick={() => showDeleteConfirm(item.key)} type="dashed">
+              Update
+            </Button>
             <Button onClick={() => showDeleteConfirm(item.key)} type="dashed">
               Delete
             </Button>
