@@ -625,17 +625,17 @@ func (tx *Tx) cancelTask(id uint64) bool {
 
 // Task 부가 데이터 삭제
 func (tx *Tx) purgeTask(id uint64) {
-	_, err := tx.Where("TASK_ID = ?").Delete(&TaskDetail{})
+	_, err := tx.Where("TASK_ID = ?", id).Delete(&TaskDetail{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?").Delete(&TaskLogs{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskLogs{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskSteps{})
 	if err != nil {
 		panic(err)
 	}
