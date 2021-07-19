@@ -5,7 +5,6 @@ import { API_SERVER } from 'src/config';
 import { useDispatch, useSelector } from 'react-redux';
 import 'antd/dist/antd.css';
 import { x } from '@xstyled/emotion';
-import { Plus as AddIcon } from 'react-feather';
 import { getCredential } from '../store/actions/klevrActions';
 import { useEffect } from 'react';
 
@@ -18,7 +17,7 @@ const layout = {
   }
 };
 
-const AddCredential = () => {
+const UpdateCredential = ({ CdKey }) => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const [form] = Form.useForm();
@@ -53,7 +52,7 @@ const AddCredential = () => {
   };
 
   const handleOk = async () => {
-    if (keyValue.key === '' || keyValue.value === '') {
+    if (keyValue.value === '') {
       return;
     }
 
@@ -63,7 +62,7 @@ const AddCredential = () => {
       'Content-Type': 'application/x-www-form-urlencoded'
     };
 
-    const response = await axios.post(
+    const response = await axios.put(
       `${API_SERVER}/inner/credentials`,
       keyValue,
       {
@@ -89,7 +88,6 @@ const AddCredential = () => {
   const handleCancel = () => {
     setKeyValue({
       ...keyValue,
-      key: '',
       value: ''
     });
     onReset();
@@ -100,17 +98,18 @@ const AddCredential = () => {
     setKeyValue(e.target.value);
     setKeyValue({
       ...keyValue,
+      key: CdKey,
       [e.target.name]: e.target.value
     });
   };
 
   return (
     <>
-      <Button type="primary" onClick={showModal}>
-        <AddIcon size="14px" />
+      <Button type="dashed" onClick={showModal}>
+        Update
       </Button>
       <Modal
-        title="Add credential"
+        title="Update Credential"
         centered
         visible={visible}
         confirmLoading={confirmLoading}
@@ -118,17 +117,8 @@ const AddCredential = () => {
         footer={false}
       >
         <Form {...layout} name="control-ref" form={form} onFinish={handleOk}>
-          <Form.Item
-            name="key"
-            label="Key"
-            rules={[
-              {
-                required: true,
-                message: 'Please input Key'
-              }
-            ]}
-          >
-            <Input onChange={handleChange} name="key" />
+          <Form.Item name="key" label="Key">
+            <Input name="key" placeholder={CdKey} disabled />
           </Form.Item>
           <Form.Item
             required
@@ -145,10 +135,10 @@ const AddCredential = () => {
           </Form.Item>
 
           <x.div display="flex" justifyContent="flex-end" mt="40px">
-            <x.div display="flex" justifyContent="space-between" w="145px">
+            <x.div display="flex" justifyContent="space-between" w="165px">
               <Button onClick={handleCancel}>Cancel</Button>
               <Button type="primary" htmlType="submit">
-                Add
+                Update
               </Button>
             </x.div>
           </x.div>
@@ -158,4 +148,4 @@ const AddCredential = () => {
   );
 };
 
-export default AddCredential;
+export default UpdateCredential;

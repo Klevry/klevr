@@ -20,6 +20,7 @@ import { API_SERVER } from 'src/config';
 import Refresh from '../common/Refresh';
 import AddCredential from './AddCredential';
 import { getCredential } from '../store/actions/klevrActions';
+import UpdateCredential from './UpdateCredential';
 
 const CredentialList = () => {
   const dispatch = useDispatch();
@@ -94,15 +95,15 @@ const CredentialList = () => {
           <TableCell>{`${item.updatedAt}`}</TableCell>
           <TableCell>{`${item.createdAt}`}</TableCell>
           <TableCell>
-            <Button onClick={() => showDeleteConfirm(item.key)} type="dashed">
-              Update
-            </Button>
-            <Button
-              onClick={() => showDeleteConfirm(item.key, item.id)}
-              type="dashed"
-            >
-              Delete
-            </Button>
+            <x.div w="160px" display="flex" justifyContent="space-between">
+              <UpdateCredential CdKey={item.key} />
+              <Button
+                onClick={() => showDeleteConfirm(item.key, item.id)}
+                type="dashed"
+              >
+                Delete
+              </Button>
+            </x.div>
           </TableCell>
         </TableRow>
       ))}
