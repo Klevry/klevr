@@ -5,6 +5,7 @@ import { Modal, Form, Input, Select, Radio, Divider, Button } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { API_SERVER } from 'src/config';
 import { getAgentList, getTaskList } from '../store/actions/klevrActions';
+import { Plus as AddIcon } from 'react-feather';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -109,9 +110,6 @@ const AddTask = () => {
 
   //task settings
   const ontaskChange = (e) => {
-    console.log(e.target.name);
-    console.log(e.target.value);
-
     setTaskValues({
       ...taskValues,
       [e.target.name]: e.target.value
@@ -133,8 +131,6 @@ const AddTask = () => {
       agentKey: value,
       exeAgentChangeable: false
     });
-
-    console.log(value);
   };
 
   const onCronValidator = (e) => {
@@ -168,17 +164,16 @@ const AddTask = () => {
   return (
     <>
       <Button type="primary" onClick={showModal}>
-        ADD TASK
+        <AddIcon size="14px" />
       </Button>
       <Modal
         title="Add task"
         centered
-        okText="Add"
         visible={visible}
-        onOk={handleOk}
         confirmLoading={confirmLoading}
         onCancel={handleCancel}
         width={700}
+        footer={false}
       >
         <Form
           form={form}
@@ -189,6 +184,7 @@ const AddTask = () => {
           wrapperCol={{
             span: 17
           }}
+          onFinish={handleOk}
         >
           <Form.Item
             required
@@ -197,13 +193,23 @@ const AddTask = () => {
             rules={[
               {
                 required: true,
-                message: 'Please put name'
+                message: 'Please input Task name'
               }
             ]}
           >
             <Input onChange={ontaskChange} name="name" />
           </Form.Item>
-          <Form.Item label="Type" name="taskType" required>
+          <Form.Item
+            label="Type"
+            name="taskType"
+            required
+            rules={[
+              {
+                required: true,
+                message: 'Please select a type'
+              }
+            ]}
+          >
             <Radio.Group allowClear onChange={ontaskChange} name="taskType">
               <Radio.Button value="atOnce">Order</Radio.Button>
               <Radio.Button value="iteration">Scheduler</Radio.Button>
@@ -228,9 +234,8 @@ const AddTask = () => {
                       required: true
                     }
                   ]}
-                  label="Fail"
                   validateStatus={cronValid ? 'success' : 'error'}
-                  help="Please adjust the crontab format."
+                  help={cronValid ? '' : 'Please adjust the crontab format.'}
                 >
                   <Input
                     placeholder="crontab"
@@ -242,7 +247,17 @@ const AddTask = () => {
               ) : null
             }
           </Form.Item>
-          <Form.Item label="Target Agent" required name="agentKey">
+          <Form.Item
+            label="Target Agent"
+            required
+            name="agentKey"
+            rules={[
+              {
+                required: true,
+                message: 'Please select a target agent'
+              }
+            ]}
+          >
             <Select
               placeholder="Select a target agent"
               onChange={onAgentChange}
@@ -279,13 +294,23 @@ const AddTask = () => {
               rules={[
                 {
                   required: true,
-                  message: 'Please put step name'
+                  message: 'Please input Command Name'
                 }
               ]}
             >
               <Input onChange={handleStepChange} name="commandName" />
             </Form.Item>
-            <Form.Item label="Command Type" required name="commandType">
+            <Form.Item
+              label="Command Type"
+              required
+              name="commandType"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please select a command type'
+                }
+              ]}
+            >
               <Select
                 placeholder="Select a step type"
                 onChange={handleCmdType}
@@ -300,9 +325,23 @@ const AddTask = () => {
               required
               name="command"
               onChange={handleStepChange}
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input Command'
+                }
+              ]}
             >
               <TextArea rows={4} name="command" />
             </Form.Item>
+          </x.div>
+          <x.div display="flex" justifyContent="flex-end" mt="40px">
+            <x.div display="flex" justifyContent="space-between" w="145px">
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit">
+                Add
+              </Button>
+            </x.div>
           </x.div>
         </Form>
       </Modal>
