@@ -113,6 +113,17 @@ type KlevrTaskCallback struct {
 	Result string     `json:"result"`
 }
 
+type KlevrTaskLog struct {
+	ID          uint64     `json:"id"`
+	ZoneID      uint64     `json:"zoneId"`
+	Name        string     `json:"name"`
+	ExeAgentKey string     `json:"exeAgentKey"`
+	Status      TaskStatus `json:"status"`
+	Log         string     `json:"log"`
+	CreatedAt   JSONTime   `json:"createdAt"`
+	UpdatedAt   JSONTime   `json:"updatedAt"`
+}
+
 func TaskStatusAdd(task *KlevrTask) *KlevrTask {
 	if task.Schedule.IsZero() {
 		task.Status = WaitPolling

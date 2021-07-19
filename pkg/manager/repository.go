@@ -2,6 +2,7 @@ package manager
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"xorm.io/builder"
@@ -552,7 +553,8 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 			rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
 		}
 		if rt.Tasks.Logs.Logs != "" {
-			rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+			buf := manager.decrypt(rt.Tasks.Logs.Logs)
+			rt.Tasks.Logs.Logs = strings.TrimSpace(buf)
 		}
 
 		tasks = append(tasks, *rt.Tasks)
@@ -587,6 +589,24 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	logger.Debugf("Selected Tasks : %d", cnt)
 
 	return &tasks, cnt > 0
+}
+
+func (tx *Tx) getLogs(manager *KlevrManager, zoneID uint64) (*[]Tasks, int64) {
+	var tasks *[]Tasks
+	var rts []RetriveTask
+
+	//stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
+	stmt := tx.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
+
+	cnt, err := stmt.Where("ZONE_ID = ?", zoneID).FindAndCount(&rts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	tasks = toTasks(manager, &rts)
+
+	return tasks, cnt
 }
 
 func (tx *Tx) updateScheduledTask() int64 {

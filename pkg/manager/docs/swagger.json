@@ -1206,6 +1206,38 @@
                 }
             }
         },
+        "/inner/tasks/{zoneID}/logs": {
+            "get": {
+                "description": "Zone에 해당하는 TASK들의 로그를 조회한다",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Zone에서 실행된 TASK의 최종 로그를 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "zone id",
+                        "name": "zoneID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTaskLog"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/users/agents": {
             "get": {
                 "description": "모든 agent 정보를 반환한다.",
@@ -1477,6 +1509,35 @@
                 },
                 "untilRun": {
                     "$ref": "#/definitions/common.JSONTime"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.KlevrTaskLog": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "exeAgentKey": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "log": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "updatedAt": {
                     "$ref": "#/definitions/common.JSONTime"

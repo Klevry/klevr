@@ -39,6 +39,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.cancelTask)
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
+	registURI(inner, GET, "/tasks/{zoneID}/logs", serversAPI.getZoneLogs)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
 	registURI(inner, GET, "/health", serversAPI.healthCheck)
 	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
@@ -584,6 +585,58 @@ func (api *serversAPI) cancelTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"canceled\":%v}", canceled)
 }
 
+// getZoneLogs godoc
+// @Summary Zone에서 실행된 TASK의 최종 로그를 조회한다.
+// @Description Zone에 해당하는 TASK들의 로그를 조회한다
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{zoneID}/logs [get]
+// @Param zoneID path uint64 true "zone id"
+// @Success 200 {object} common.KlevrTaskLog
+func (api *serversAPI) getZoneLogs(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	zoneID, err := strconv.ParseUint(vars["zoneID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["zoneID"]))
+		return
+	}
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	tasks, exist := tx.getLogs(manager, zoneID)
+
+	var b []byte
+
+	if exist > 0 {
+		var dtos []common.KlevrTaskLog = make([]common.KlevrTaskLog, len(*tasks))
+
+		for i, t := range *tasks {
+			dtos[i] = *TaskPersistToKlevrTaskLog(&t)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+		fmt.Fprintf(w, "%s", b)
+		//w.Write(b)
+		w.WriteHeader(200)
+
+		logger.Debugf("response : [%s]", string(b))
+
+		return
+	}
+
+	common.NewHTTPError(404, fmt.Sprintf("Not exist task for zoneID - %d", zoneID))
+}
+
 // getTask godoc
 // @Summary TASK를 조회한다.
 // @Description taskID에 해당하는 TASK를 조회한다.
@@ -1069,6 +1122,30 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	logger.Debugf("TaskDtoToPerist \ndto : [%+v]\npersist : [%+v]", dto, persist)
 
 	return persist
+}
+
+func TaskPersistToKlevrTaskLog(persist *Tasks) *common.KlevrTaskLog {
+	detail := persist.TaskDetail
+
+	logger.Debugf("detail [%+v]", detail)
+
+	dto := &common.KlevrTaskLog{
+		ID:          persist.Id,
+		ZoneID:      persist.ZoneId,
+		Name:        persist.Name,
+		ExeAgentKey: persist.ExeAgentKey,
+		Status:      persist.Status,
+		CreatedAt:   common.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt:   common.JSONTime{Time: persist.UpdatedAt},
+	}
+
+	if persist.Logs != nil {
+		dto.Log = persist.Logs.Logs
+	}
+
+	logger.Debugf("TaskPersistToKlevrTaskLog \npersist : [%+v]\nKlevrTaskLog : [%+v]", persist, dto)
+
+	return dto
 }
 
 func TaskPersistToDto(persist *Tasks) *common.KlevrTask {

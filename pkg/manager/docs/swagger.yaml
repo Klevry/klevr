@@ -125,6 +125,25 @@ definitions:
       zoneId:
         type: integer
     type: object
+  common.KlevrTaskLog:
+    properties:
+      createdAt:
+        $ref: '#/definitions/common.JSONTime'
+      exeAgentKey:
+        type: string
+      id:
+        type: integer
+      log:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        $ref: '#/definitions/common.JSONTime'
+      zoneId:
+        type: integer
+    type: object
   common.KlevrTaskStep:
     properties:
       command:
@@ -1050,6 +1069,27 @@ paths:
           schema:
             $ref: '#/definitions/common.KlevrTask'
       summary: TASK를 조회한다.
+      tags:
+      - servers
+  /inner/tasks/{zoneID}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Zone에 해당하는 TASK들의 로그를 조회한다
+      parameters:
+      - description: zone id
+        in: path
+        name: zoneID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.KlevrTaskLog'
+      summary: Zone에서 실행된 TASK의 최종 로그를 조회한다.
       tags:
       - servers
   /inner/users/agents:
