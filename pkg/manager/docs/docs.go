@@ -453,6 +453,38 @@ var doc = `{
             }
         },
         "/inner/credentials": {
+            "put": {
+                "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 수정한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 수정한다.",
+                "parameters": [
+                    {
+                        "description": "Credential",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
                 "consumes": [
@@ -1364,10 +1396,13 @@ var doc = `{
                 "createdAt": {
                     "$ref": "#/definitions/common.JSONTime"
                 },
+                "hash": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "name": {
+                "key": {
                     "type": "string"
                 },
                 "updatedAt": {

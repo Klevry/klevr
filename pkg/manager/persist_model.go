@@ -140,8 +140,9 @@ type PageMembers struct {
 type Credentials struct {
 	Id        uint64 `xorm:"PK"`
 	ZoneId    uint64
-	Name      string
+	Key       string
 	Value     string
+	Hash      string
 	CreatedAt time.Time `xorm:"created"`
 	UpdatedAt time.Time `xorm:"updated"`
 	DeletedAt time.Time

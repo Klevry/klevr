@@ -44,6 +44,7 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
 	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
+	registURI(inner, PUT, "/credentials", serversAPI.updateCredential)
 	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
 	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
 	registURI(inner, GET, "/users/agents", serversAPI.getTotalAgents)
@@ -1160,7 +1161,7 @@ func TaskMatchingCredential(manager *KlevrManager, task Tasks, credential *[]Cre
 	}
 
 	for _, c := range *credential {
-		pattern := fmt.Sprintf("{{2}%s}{2}", c.Name)
+		pattern := fmt.Sprintf("{{2}%s}{2}", c.Key)
 		v := manager.decrypt(c.Value)
 
 		re := regexp.MustCompile(pattern)
@@ -1193,6 +1194,12 @@ func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debugf("request add credential : [%+v]", c)
 
+	reservedCredential := tx.getCredentialByName(c.ZoneID, c.Key)
+	if reservedCredential != nil {
+		common.WriteHTTPError(400, w, nil, "Key of the same name")
+		return
+	}
+
 	// DTO -> entity
 	persistCredential := *CredentialDtoToPerist(&c)
 
@@ -1201,9 +1208,60 @@ func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
 	// DB insert
 	persistCredential = *tx.insertCredential(manager, &persistCredential)
 
-	task, _ := tx.getTask(manager, persistCredential.Id)
+	credential, _ := tx.getCredential(manager, persistCredential.Id)
 
-	dto := TaskPersistToDto(task)
+	dto := CredentialPersistToDto(credential)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// updateCredential godoc
+// @Summary Credential을 수정한다.
+// @Description KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 수정한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [put]
+// @Param b body common.KlevrCredential true "Credential"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) updateCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+	var c common.KlevrCredential
+
+	err := json.NewDecoder(r.Body).Decode(&c)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	logger.Debugf("request add credential : [%+v]", c)
+
+	reservedCredential := tx.getCredentialByName(c.ZoneID, c.Key)
+	if reservedCredential == nil {
+		common.WriteHTTPError(400, w, nil, "Credential does not exist")
+		return
+	}
+
+	reservedCredential.Value = c.Value
+	reservedCredential.Hash = common.GetMd5Hash(c.Value)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	tx.updateCredential(manager, reservedCredential)
+
+	credential, _ := tx.getCredential(manager, reservedCredential.Id)
+
+	dto := CredentialPersistToDto(credential)
 
 	b, err := json.Marshal(dto)
 	if err != nil {
@@ -1330,15 +1388,16 @@ func (api *serversAPI) deleteCredential(w http.ResponseWriter, r *http.Request) 
 	tx.deleteCredential(credentialID)
 
 	w.WriteHeader(200)
-	fmt.Fprint(w, "{\"deletedd\": true}")
+	fmt.Fprint(w, "{\"deleted\": true}")
 }
 
 func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
 	persist := &Credentials{
 		Id:     dto.ID,
 		ZoneId: dto.ZoneID,
-		Name:   dto.Name,
+		Key:    dto.Key,
 		Value:  dto.Value,
+		Hash:   common.GetMd5Hash(dto.Value),
 	}
 
 	logger.Debugf("CredentialDtoToPerist \ndto : [%+v]\npersist : [%+v]", dto, persist)
@@ -1348,10 +1407,11 @@ func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
 
 func CredentialPersistToDto(persist *Credentials) *common.KlevrCredential {
 	dto := &common.KlevrCredential{
-		ID:        persist.Id,
-		ZoneID:    persist.ZoneId,
-		Name:      persist.Name,
-		Value:     persist.Value,
+		ID:     persist.Id,
+		ZoneID: persist.ZoneId,
+		Key:    persist.Key,
+		//Value:     persist.Value,
+		Hash:      persist.Hash,
 		CreatedAt: common.JSONTime{Time: persist.CreatedAt},
 		UpdatedAt: common.JSONTime{Time: persist.UpdatedAt},
 	}
