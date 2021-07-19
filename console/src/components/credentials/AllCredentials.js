@@ -55,7 +55,7 @@ const CredentialList = () => {
     return null;
   }
 
-  function showDeleteConfirm(key) {
+  function showDeleteConfirm(key, id) {
     confirm({
       title: `Are you sure delete the credential? [key:${key}]`,
       icon: <ExclamationCircleOutlined />,
@@ -63,30 +63,28 @@ const CredentialList = () => {
       okType: 'danger',
       cancelText: 'No',
       onOk() {
-        console.log('OK');
-        console.log(`delete key : ${key}`);
-
-        // async function deleteZone() {
-        //   const headers = {
-        //     accept: 'application/json',
-        //     'Content-Type': 'application/json'
-        //   };
-        //   const response = await axios.delete(
-        //     `${API_SERVER}/inner/groups/${id}`,
-        //     { headers }
-        //   );
-        //   if (response.status === 200) {
-        //     const result = await axios.get(`${API_SERVER}/inner/groups`);
-        //     dispatch(getZoneList(result.data));
-        //   }
-        // }
-        // deleteZone();
+        async function deleteKey() {
+          const headers = {
+            accept: 'application/json',
+            'Content-Type': 'application/json'
+          };
+          const response = await axios.delete(
+            `${API_SERVER}/inner/credentials/${id}`,
+            { headers }
+          );
+          if (response.status === 200) {
+            const result = await axios.get(
+              `${API_SERVER}/inner/groups/${currentZone}/credentials`
+            );
+            dispatch(getCredential(result.data));
+          }
+        }
+        deleteKey();
       },
-      onCancel() {
-        console.log('credential delete cancel');
-      }
+      onCancel() {}
     });
   }
+
   return (
     <TableBody>
       {credentialList.map((item) => (
@@ -99,7 +97,10 @@ const CredentialList = () => {
             <Button onClick={() => showDeleteConfirm(item.key)} type="dashed">
               Update
             </Button>
-            <Button onClick={() => showDeleteConfirm(item.key)} type="dashed">
+            <Button
+              onClick={() => showDeleteConfirm(item.key, item.id)}
+              type="dashed"
+            >
               Delete
             </Button>
           </TableCell>
