@@ -23,14 +23,9 @@ const Dashboard = () => {
         }}
       >
         <Container maxWidth={false}>
-          <Grid container spacing={3}>
-            <Grid item lg={12} md={12} xl={9} xs={12}>
-              <TaskOverview />
-            </Grid>
-            <Grid item lg={12} md={12} xl={9} xs={12}>
-              <AgentOverview />
-            </Grid>
-          </Grid>
+          <TaskOverview />
+          <AgentOverview />
+
           <Card sx={{ mt: 3 }}>
             <x.div display="flex" alignItems="center">
               <CardHeader title="Credential" />

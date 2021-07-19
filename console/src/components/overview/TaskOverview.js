@@ -77,7 +77,12 @@ const TaskList = () => {
 
 const TaskOverview = (props) => {
   return (
-    <Card {...props}>
+    <Card
+      {...props}
+      sx={{
+        marginBottom: '25px'
+      }}
+    >
       <x.div
         display="flex"
         alignItems="center"

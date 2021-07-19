@@ -15,12 +15,8 @@ const Dashboard = () => {
         }}
       >
         <Container maxWidth={false}>
-          <Grid container spacing={3}>
-            <Grid item lg={12} md={12} xl={9} xs={12}>
-              <ApiKey />
-              <AllZones />
-            </Grid>
-          </Grid>
+          <ApiKey />
+          <AllZones />
         </Container>
       </Box>
     </>
