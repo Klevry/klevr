@@ -213,9 +213,7 @@ const AddTask = () => {
             <Radio.Group allowClear onChange={ontaskChange} name="taskType">
               <Radio.Button value="atOnce">Order</Radio.Button>
               <Radio.Button value="iteration">Scheduler</Radio.Button>
-              <Radio.Button value="provisioning" disabled>
-                Provisioning
-              </Radio.Button>
+              <Radio.Button value="longTerm">Provisioning</Radio.Button>
             </Radio.Group>
           </Form.Item>
           <Form.Item

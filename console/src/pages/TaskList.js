@@ -8,6 +8,7 @@ import SchedulerList from 'src/components/task/SchedulerList';
 import AddTask from 'src/components/task/AddTask';
 import Refresh from 'src/components/common/Refresh';
 import TaskLog from 'src/components/task/TaskLog';
+import ProvisioningList from 'src/components/task/ProvisioningList';
 
 const content = [
   {
@@ -21,6 +22,10 @@ const content = [
   {
     tab: 'Scheduler',
     content: <SchedulerList />
+  },
+  {
+    tab: 'Provisioning',
+    content: <ProvisioningList />
   }
 ];
 
