@@ -45,14 +45,18 @@ const TaskList = () => {
   if (!taskList) {
     return null;
   }
+
+  console.log(taskList);
   return (
     <TableBody>
       {taskList.map((item) => (
         <TableRow hover key={item.agentKey}>
           <TableCell>{`${item.id}`}</TableCell>
           <TableCell>{`${item.name}`}</TableCell>
-          <TableCell>{`${item.createdAt}`}</TableCell>
+          <TableCell>{`${item.exeAgentKey}`}</TableCell>
           <TableCell>{`${item.status}`}</TableCell>
+          <TableCell>{`${item.taskType}`}</TableCell>
+          <TableCell>{`${item.createdAt}`}</TableCell>
         </TableRow>
       ))}
     </TableBody>
@@ -69,8 +73,10 @@ const Alltasks = ({ customers, ...rest }) => {
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>Name</TableCell>
-                <TableCell>Created At</TableCell>
+                <TableCell>ExeAgent</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Task Type</TableCell>
+                <TableCell>Created At</TableCell>
               </TableRow>
             </TableHead>
             <TaskList />
