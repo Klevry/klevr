@@ -109,7 +109,7 @@ const Alltasks = ({ customers, ...rest }) => {
         paddingRight="10px"
       >
         <CardHeader title="Zone" />
-        <x.div w="160px" display="flex" justifyContent="space-between">
+        <x.div w="100px" display="flex" justifyContent="space-between">
           <AddZone />
           <Refresh from="zone" />
         </x.div>

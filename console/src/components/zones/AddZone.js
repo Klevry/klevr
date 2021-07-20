@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Modal, Button, Form, Input, Select } from 'antd';
+import { x } from '@xstyled/emotion';
 import { API_SERVER } from 'src/config';
-import { useDispatch } from 'react-redux';
 import { getZoneList } from '../store/actions/klevrActions';
+import { Plus as AddIcon } from 'react-feather';
 
 const { Option } = Select;
 const layout = {
@@ -14,18 +16,11 @@ const layout = {
     span: 16
   }
 };
-const tailLayout = {
-  wrapperCol: {
-    offset: 8,
-    span: 16
-  }
-};
 
 const AddZone = () => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-
   const [groupname, setGroupname] = useState('');
   const [platform, setPlatform] = useState('');
   const dispatch = useDispatch();
@@ -39,8 +34,11 @@ const AddZone = () => {
   };
 
   const handleOk = async () => {
+    if (groupname === '' || platform === '') {
+      return;
+    }
+
     setConfirmLoading(true);
-    console.log(`groupname: ${groupname}, platform: ${platform}`);
 
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
@@ -69,7 +67,6 @@ const AddZone = () => {
   };
 
   const handleCancel = () => {
-    console.log('cancel');
     onReset();
     setVisible(false);
   };
@@ -85,26 +82,25 @@ const AddZone = () => {
   return (
     <>
       <Button type="primary" onClick={showModal}>
-        ADD ZONE
+        <AddIcon size="14px" />
       </Button>
       <Modal
         title="Add zone"
         centered
-        okText="Add"
         visible={visible}
-        onOk={handleOk}
         confirmLoading={confirmLoading}
         onCancel={handleCancel}
+        footer={false}
       >
-        <Form {...layout} name="control-ref" form={form}>
+        <Form {...layout} name="control-ref" form={form} onFinish={handleOk}>
           <Form.Item
             required
             name="groupname"
-            label="Groupname"
+            label="Name"
             rules={[
               {
                 required: true,
-                message: 'Please put Groupname'
+                message: 'Please input Name'
               }
             ]}
           >
@@ -131,6 +127,15 @@ const AddZone = () => {
               <Option value="kubernetes">kubernetes</Option>
             </Select>
           </Form.Item>
+
+          <x.div display="flex" justifyContent="flex-end" mt="40px">
+            <x.div display="flex" justifyContent="space-between" w="145px">
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit">
+                Add
+              </Button>
+            </x.div>
+          </x.div>
         </Form>
       </Modal>
     </>

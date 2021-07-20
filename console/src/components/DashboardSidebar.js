@@ -24,14 +24,14 @@ const items = [
     title: 'Tasks'
   },
   {
-    href: '/app/zones',
-    icon: ZoneIcon,
-    title: 'Zones'
-  },
-  {
     href: '/app/credentials',
     icon: CredentialIcon,
     title: 'Credentials'
+  },
+  {
+    href: '/app/zones',
+    icon: ZoneIcon,
+    title: 'Zones'
   },
   {
     href: '/app/settings',

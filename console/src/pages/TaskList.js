@@ -56,7 +56,7 @@ const TaskList = () => {
                 </Button>
               ))}
             </div>
-            <x.div w="160px" display="flex" justifyContent="space-between">
+            <x.div w="100px" display="flex" justifyContent="space-between">
               <AddTask />
               <Refresh from="task" />
             </x.div>
