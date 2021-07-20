@@ -15,7 +15,7 @@ import {
   TableRow
 } from '@material-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
-import { Modal, Button, Form, Input, Select } from 'antd';
+import { Modal, Button, Form, Input, Select, Tag } from 'antd';
 import styled from '@emotion/styled/macro';
 import Copy from 'react-copy-to-clipboard';
 import { message } from 'antd';
@@ -30,6 +30,7 @@ const AgentList = () => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const agentList = useSelector((store) => store.agentListReducer);
+  const [primary, setPrimary] = useState(undefined);
 
   const fetchAgent = () => {
     let completed = false;
@@ -46,14 +47,32 @@ const AgentList = () => {
     };
   };
 
+  const fetchRole = () => {
+    let completed = false;
+
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/groups/${currentZone}/primary`
+      );
+      if (!completed) setPrimary(result.data.agentKey);
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  };
+
   useEffect(() => {
     fetchAgent();
+    fetchRole();
   }, []);
 
   useEffect(() => {
     fetchAgent();
+    fetchRole();
   }, [currentZone]);
 
+  console.log(primary);
   if (!agentList) {
     return null;
   }
@@ -64,8 +83,18 @@ const AgentList = () => {
         <TableRow hover key={item.agentKey}>
           <TableCell>{item.agentKey}</TableCell>
           <TableCell>{item.ip}</TableCell>
+          <TableCell>{item.port}</TableCell>
+          <TableCell>{item.core}</TableCell>
           <TableCell>{item.disk}</TableCell>
           <TableCell>{item.memory}</TableCell>
+          <TableCell>{item.isActive ? 'Active' : 'Inactive'}</TableCell>
+          <TableCell>
+            {item.agentKey === primary ? (
+              <Tag color="blue">Primary</Tag>
+            ) : (
+              <Tag>Secondary</Tag>
+            )}
+          </TableCell>
         </TableRow>
       ))}
     </TableBody>
@@ -299,8 +328,12 @@ const AgentOverview = (props) => {
               <TableRow>
                 <TableCell>Agent ID</TableCell>
                 <TableCell>IP</TableCell>
+                <TableCell>Port</TableCell>
+                <TableCell>CPU</TableCell>
                 <TableCell>Disk</TableCell>
                 <TableCell>Memory</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Role</TableCell>
               </TableRow>
             </TableHead>
             <AgentList />
