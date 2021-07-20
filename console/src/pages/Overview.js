@@ -24,8 +24,8 @@ const Dashboard = () => {
         }}
       >
         <Container maxWidth={false}>
-          <TaskOverview />
           <AgentOverview />
+          <TaskOverview />
           <CredentialOverview />
         </Container>
       </Box>
