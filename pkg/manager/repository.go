@@ -368,13 +368,18 @@ func (tx *Tx) updateInitIterationTasks(agentKeys []string) {
 }
 
 func (tx *Tx) updateRetryScheduledTask(agentKey string) {
-	stmt := tx.Table(new(Tasks)).Where("TASK_TYPE = ?", string(common.Iteration))
-	stmt = stmt.And("AGENT_KEY = ?", agentKey)
-	stmt = stmt.And("EXE_AGENT_KEY = ?", agentKey)
-	_, err := stmt.Update(map[string]interface{}{"STATUS": common.WaitPolling})
+	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE TASK_TYPE = ? AND AGENT_KEY = ? AND EXE_AGENT_KEY = ?",
+		string(common.WaitPolling), string(common.Iteration), agentKey, agentKey)
 	if err != nil {
 		panic(err)
 	}
+
+	cnt, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Retry ScheduledTask Update(%d)", cnt)
 }
 
 // task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
