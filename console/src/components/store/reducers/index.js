@@ -6,6 +6,7 @@ import agentListReducer from './agentListReducer';
 import taskListReducer from './taskListReducer';
 import zoneNameReducer from './zoneNameReducer';
 import credentialReducer from './credentialReducer';
+import taskLogReducer from './taskLogReducer';
 
 export default combineReducers({
   zoneReducer,
@@ -13,5 +14,6 @@ export default combineReducers({
   agentListReducer,
   taskListReducer,
   zoneNameReducer,
-  credentialReducer
+  credentialReducer,
+  taskLogReducer
 });

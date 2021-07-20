@@ -4,6 +4,7 @@ const GET_AGENT_LIST = 'GET_AGENT_LIST';
 const GET_TASK_LIST = 'GET_TASK_LIST';
 const GET_ZONE_NAME = 'GET_ZONE_NAME';
 const GET_CREDENTIAL = 'GET_CREDENTIAL';
+const GET_TASK_LOG = 'GET_TASK_LOG';
 
 export const filterByZone = (payload) => ({
   type: FILTER_BY_ZONE,
@@ -32,5 +33,10 @@ export const getZoneName = (payload) => ({
 
 export const getCredential = (payload) => ({
   type: GET_CREDENTIAL,
+  payload
+});
+
+export const getTasklog = (payload) => ({
+  type: GET_TASK_LOG,
   payload
 });

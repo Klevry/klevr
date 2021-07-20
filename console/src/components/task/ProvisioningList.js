@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import axios from 'axios';
-import { API_SERVER, GROUP_ID } from '../../config';
+import { API_SERVER } from '../../config';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import {
   Box,
@@ -50,7 +50,7 @@ const TaskList = () => {
     <TableBody>
       {taskList.map((item) => (
         <TableRow hover key={item.agentKey}>
-          {item.taskType === 'iteration' && (
+          {item.taskType === 'longTerm' && (
             <>
               <TableCell>{`${item.id}`}</TableCell>
               <TableCell>{`${item.name}`}</TableCell>
@@ -66,7 +66,7 @@ const TaskList = () => {
   );
 };
 
-const SchedulerList = ({ customers, ...rest }) => {
+const ProvisioningList = ({ customers, ...rest }) => {
   return (
     <Card>
       <PerfectScrollbar>
@@ -90,4 +90,4 @@ const SchedulerList = ({ customers, ...rest }) => {
   );
 };
 
-export default SchedulerList;
+export default ProvisioningList;
