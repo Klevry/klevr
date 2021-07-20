@@ -7,6 +7,7 @@ import SchedulerList from 'src/components/task/SchedulerList';
 
 import AddTask from 'src/components/task/AddTask';
 import Refresh from 'src/components/common/Refresh';
+import TaskLog from 'src/components/task/TaskLog';
 
 const content = [
   {
@@ -62,6 +63,9 @@ const TaskList = () => {
             </x.div>
           </x.div>
           {contentItem.content}
+        </Container>
+        <Container maxWidth={false}>
+          <TaskLog />
         </Container>
       </Box>
     </>

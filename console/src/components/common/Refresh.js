@@ -7,6 +7,7 @@ import {
   getAgentList,
   getCredential,
   getTaskList,
+  getTasklog,
   getZoneList
 } from '../store/actions/klevrActions';
 
@@ -72,11 +73,27 @@ const Refresh = ({ from }) => {
     };
   };
 
+  const fetchTasklog = () => {
+    let completed = false;
+
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/tasks/${currentZone}/logs`
+      );
+      if (!completed) dispatch(getTasklog(result.data));
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  };
+
   const handleRefresh = () => {
     from === 'task' && fetchTask();
     from === 'agent' && fetchAgent();
     from === 'zone' && fetchZone();
     from === 'credential' && fetchCredential();
+    from === 'log' && fetchTasklog();
   };
 
   return (

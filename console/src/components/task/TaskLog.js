@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import axios from 'axios';
 import { API_SERVER } from '../../config';
 import PerfectScrollbar from 'react-perfect-scrollbar';
@@ -14,22 +14,45 @@ import {
   TableRow,
   TableHead
 } from '@material-ui/core';
-
-import { useSelector } from 'react-redux';
+import Refresh from '../common/Refresh';
+import { useDispatch, useSelector } from 'react-redux';
+import { getTasklog } from '../store/actions/klevrActions';
 
 const TaskLogList = () => {
-  const [data, setData] = useState(null);
-  const zoneList = useSelector((store) => store.zoneListReducer);
+  const dispatch = useDispatch();
+  const taskLog = useSelector((store) => store.taskLogReducer);
+  const currentZone = useSelector((store) => store.zoneReducer);
 
-  useEffect(() => {}, []);
+  const fetchTasklog = () => {
+    let completed = false;
 
-  if (!data) {
+    async function get() {
+      const result = await axios.get(
+        `${API_SERVER}/inner/tasks/${currentZone}/logs`
+      );
+      if (!completed) dispatch(getTasklog(result.data));
+    }
+    get();
+    return () => {
+      completed = true;
+    };
+  };
+
+  useEffect(() => {
+    fetchTasklog();
+  }, []);
+
+  useEffect(() => {
+    fetchTasklog();
+  }, [currentZone]);
+
+  if (!taskLog) {
     return null;
   }
 
   return (
     <TableBody>
-      {data
+      {taskLog
         .filter((log) => log.log !== '')
         .map((item) => (
           <TableRow hover key={item.id}>
@@ -56,10 +79,7 @@ const TaskLog = ({ customers, ...rest }) => {
         paddingRight="10px"
       >
         <CardHeader title="Logs" />
-        <x.div w="100px" display="flex" justifyContent="space-between">
-          {/* <AddZone /> */}
-          {/* <Refresh from="zone" /> */}
-        </x.div>
+        <Refresh from="log" />
       </x.div>
       <Divider />
       <PerfectScrollbar>
@@ -69,7 +89,7 @@ const TaskLog = ({ customers, ...rest }) => {
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>Log</TableCell>
-                <TableCell>Updated At</TableCell>
+                <TableCell style={{ width: 260 }}>Updated At</TableCell>
               </TableRow>
             </TableHead>
             <TaskLogList />
