@@ -72,7 +72,6 @@ const AgentList = () => {
     fetchRole();
   }, [currentZone]);
 
-  console.log(primary);
   if (!agentList) {
     return null;
   }
