@@ -22,10 +22,10 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import AddZone from './AddZone';
 import Refresh from '../common/Refresh';
 
-const TaskList = () => {
-  const [data, setData] = useState(null);
+const ZoneList = () => {
   const dispatch = useDispatch();
   const zoneList = useSelector((store) => store.zoneListReducer);
+  const currentZone = useSelector((store) => store.zoneReducer);
   const { confirm } = Modal;
 
   useEffect(() => {
@@ -53,9 +53,6 @@ const TaskList = () => {
       okType: 'danger',
       cancelText: 'No',
       onOk() {
-        console.log('OK');
-        console.log(`delete zone id ${id}`);
-
         async function deleteZone() {
           const headers = {
             accept: 'application/json',
@@ -72,9 +69,7 @@ const TaskList = () => {
         }
         deleteZone();
       },
-      onCancel() {
-        console.log('cancel');
-      }
+      onCancel() {}
     });
   }
   return (
@@ -89,6 +84,7 @@ const TaskList = () => {
             <Button
               onClick={() => showDeleteConfirm(item.Id, item.GroupName)}
               type="dashed"
+              disabled={item.Id === currentZone}
             >
               Delete
             </Button>
@@ -127,7 +123,7 @@ const Alltasks = ({ customers, ...rest }) => {
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            <TaskList />
+            <ZoneList />
           </Table>
         </Box>
       </PerfectScrollbar>
