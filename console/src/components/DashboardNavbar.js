@@ -17,6 +17,7 @@ import { API_SERVER, GROUP_ID } from '../config';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   filterByZone,
+  getLoginStatus,
   getZoneList,
   getZoneName
 } from './store/actions/klevrActions';
@@ -88,6 +89,7 @@ const Zone = () => {
 
 const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const pageCheck = window.location.pathname !== '/login';
 
   const signOutHandler = () => {
@@ -95,6 +97,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
       const result = await axios.get(`${API_SERVER}/console/signout`);
 
       if (result.status === 200) {
+        dispatch(getLoginStatus(false));
         navigate('/login', { replace: true });
       }
     }
