@@ -5,6 +5,11 @@ import AllTasks from 'src/components/task/AllTasks';
 import OrderList from 'src/components/task/OrderList';
 import SchedulerList from 'src/components/task/SchedulerList';
 
+import AddTask from 'src/components/task/AddTask';
+import Refresh from 'src/components/common/Refresh';
+import TaskLog from 'src/components/task/TaskLog';
+import ProvisioningList from 'src/components/task/ProvisioningList';
+
 const content = [
   {
     tab: 'All',
@@ -17,6 +22,10 @@ const content = [
   {
     tab: 'Scheduler',
     content: <SchedulerList />
+  },
+  {
+    tab: 'Provisioning',
+    content: <ProvisioningList />
   }
 ];
 
@@ -48,16 +57,20 @@ const TaskList = () => {
           >
             <div>
               {content.map((section, index) => (
-                <Button onClick={() => contentChange(index)}>
+                <Button onClick={() => contentChange(index)} key={index}>
                   {section.tab}
                 </Button>
               ))}
             </div>
-            <Button color="primary" variant="contained" disabled>
-              Add Task
-            </Button>
+            <x.div w="100px" display="flex" justifyContent="space-between">
+              <AddTask />
+              <Refresh from="task" />
+            </x.div>
           </x.div>
           {contentItem.content}
+        </Container>
+        <Container maxWidth={false}>
+          <TaskLog />
         </Container>
       </Box>
     </>

@@ -11,11 +11,60 @@ import (
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
 
-func polling(agent *KlevrAgent) {
+func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.KlevrTask) {
+	executor := common.GetTaskExecutor()
+
+	for i := 0; i < len(task); i++ {
+		if task[i].Status == common.WaitPolling || task[i].Status == common.HandOver {
+			task[i].Status = common.WaitExec
+		}
+
+		logger.Debugf("%v", task[i].ExeAgentChangeable)
+
+		if task[i].ExeAgentChangeable {
+			task[i].ExeAgentKey = agent.AgentKey
+			executor.RunTask(agent.AgentKey, &task[i])
+		} else {
+			logger.Debugf("%v", &task[i])
+
+			if len(task[i].AgentKey) > 0 {
+				sendCompleted := false
+				for _, v := range agent.Agents {
+					if v.AgentKey == task[i].AgentKey {
+						task[i].ExeAgentKey = v.AgentKey
+
+						if v.AgentKey == primaryAgentKey {
+							executor.RunTask(agent.AgentKey, &task[i])
+						} else {
+							ip := v.IP
+							t := jsonMarshal(&task[i])
+							logger.Debugf("%v", task[i])
+							agent.primaryTaskSend(ip, t)
+						}
+
+						sendCompleted = true
+						break
+					}
+				}
+				if sendCompleted == false {
+					task[i].ExeAgentKey = agent.AgentKey
+					executor.RunTask(agent.AgentKey, &task[i])
+				}
+			} else {
+				task[i].ExeAgentKey = agent.AgentKey
+				executor.RunTask(agent.AgentKey, &task[i])
+			}
+
+		}
+	}
+}
+
+func (agent *KlevrAgent) polling() {
 	if agent.taskPollingPause == true {
 		logger.Debug("Polling aborted because authentication failed.")
 		return
 	}
+
 	executor := common.GetTaskExecutor()
 	uri := agent.Manager + "/agents/" + agent.AgentKey
 
@@ -107,50 +156,7 @@ func polling(agent *KlevrAgent) {
 
 	// change task status
 	logger.Debugf("%+v", body.Task)
-
-	for i := 0; i < len(body.Task); i++ {
-		if body.Task[i].Status == common.WaitPolling || body.Task[i].Status == common.HandOver {
-			body.Task[i].Status = common.WaitExec
-		}
-
-		logger.Debugf("%v", body.Task[i].ExeAgentChangeable)
-
-		if body.Task[i].ExeAgentChangeable {
-			body.Task[i].ExeAgentKey = agent.AgentKey
-			executor.RunTask(agent.AgentKey, &body.Task[i])
-		} else {
-			logger.Debugf("%v", &body.Task[i])
-
-			if len(body.Task[i].AgentKey) > 0 {
-				sendCompleted := false
-				for _, v := range agent.Agents {
-					if v.AgentKey == body.Task[i].AgentKey {
-						body.Task[i].ExeAgentKey = v.AgentKey
-
-						if v.AgentKey == body.Agent.Primary.AgentKey {
-							executor.RunTask(agent.AgentKey, &body.Task[i])
-						} else {
-							ip := v.IP
-							t := jsonMarshal(&body.Task[i])
-							logger.Debugf("%v", body.Task[i])
-							agent.primaryTaskSend(ip, t)
-						}
-
-						sendCompleted = true
-						break
-					}
-				}
-				if sendCompleted == false {
-					body.Task[i].ExeAgentKey = agent.AgentKey
-					executor.RunTask(agent.AgentKey, &body.Task[i])
-				}
-			} else {
-				body.Task[i].ExeAgentKey = agent.AgentKey
-				executor.RunTask(agent.AgentKey, &body.Task[i])
-			}
-
-		}
-	}
+	agent.assignmentTask(body.Agent.Primary.AgentKey, body.Task)
 
 	receivedTasks = body.Task
 }

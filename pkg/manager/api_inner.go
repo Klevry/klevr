@@ -39,11 +39,13 @@ func (api *API) InitInner(inner *mux.Router) {
 	registURI(inner, DELETE, "/tasks/{taskID}", serversAPI.cancelTask)
 	registURI(inner, GET, "/tasks/{taskID}", serversAPI.getTask)
 	registURI(inner, GET, "/tasks", serversAPI.getTasks)
+	registURI(inner, GET, "/tasks/{zoneID}/logs", serversAPI.getZoneLogs)
 	registURI(inner, GET, "/commands", serversAPI.getReservedCommands)
 	registURI(inner, GET, "/health", serversAPI.healthCheck)
 	registURI(inner, PUT, "/loglevel", serversAPI.updateLogLevel)
 	registURI(inner, GET, "/loglevel", serversAPI.getLogLevel)
 	registURI(inner, POST, "/credentials", serversAPI.addCredential)
+	registURI(inner, PUT, "/credentials", serversAPI.updateCredential)
 	registURI(inner, GET, "/credentials/{credentialID}", serversAPI.getCredential)
 	registURI(inner, DELETE, "/credentials/{credentialID}", serversAPI.deleteCredential)
 	registURI(inner, GET, "/users/agents", serversAPI.getTotalAgents)
@@ -583,6 +585,58 @@ func (api *serversAPI) cancelTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{\"canceled\":%v}", canceled)
 }
 
+// getZoneLogs godoc
+// @Summary Zone에서 실행된 TASK의 최종 로그를 조회한다.
+// @Description Zone에 해당하는 TASK들의 로그를 조회한다
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/tasks/{zoneID}/logs [get]
+// @Param zoneID path uint64 true "zone id"
+// @Success 200 {object} common.KlevrTaskLog
+func (api *serversAPI) getZoneLogs(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+
+	vars := mux.Vars(r)
+
+	zoneID, err := strconv.ParseUint(vars["zoneID"], 10, 64)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, fmt.Sprintf("Invalid zone id : %+v", vars["zoneID"]))
+		return
+	}
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	tasks, exist := tx.getLogs(manager, zoneID)
+
+	var b []byte
+
+	if exist > 0 {
+		var dtos []common.KlevrTaskLog = make([]common.KlevrTaskLog, len(*tasks))
+
+		for i, t := range *tasks {
+			dtos[i] = *TaskPersistToKlevrTaskLog(&t)
+		}
+
+		b, err = json.Marshal(dtos)
+		if err != nil {
+			panic(err)
+		}
+
+		logger.Debugf("response : [%s]", string(b))
+		fmt.Fprintf(w, "%s", b)
+		//w.Write(b)
+		w.WriteHeader(200)
+
+		logger.Debugf("response : [%s]", string(b))
+
+		return
+	}
+
+	common.NewHTTPError(404, fmt.Sprintf("Not exist task for zoneID - %d", zoneID))
+}
+
 // getTask godoc
 // @Summary TASK를 조회한다.
 // @Description taskID에 해당하는 TASK를 조회한다.
@@ -1070,6 +1124,30 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	return persist
 }
 
+func TaskPersistToKlevrTaskLog(persist *Tasks) *common.KlevrTaskLog {
+	detail := persist.TaskDetail
+
+	logger.Debugf("detail [%+v]", detail)
+
+	dto := &common.KlevrTaskLog{
+		ID:          persist.Id,
+		ZoneID:      persist.ZoneId,
+		Name:        persist.Name,
+		ExeAgentKey: persist.ExeAgentKey,
+		Status:      persist.Status,
+		CreatedAt:   common.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt:   common.JSONTime{Time: persist.UpdatedAt},
+	}
+
+	if persist.Logs != nil {
+		dto.Log = persist.Logs.Logs
+	}
+
+	logger.Debugf("TaskPersistToKlevrTaskLog \npersist : [%+v]\nKlevrTaskLog : [%+v]", persist, dto)
+
+	return dto
+}
+
 func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	detail := persist.TaskDetail
 
@@ -1160,7 +1238,7 @@ func TaskMatchingCredential(manager *KlevrManager, task Tasks, credential *[]Cre
 	}
 
 	for _, c := range *credential {
-		pattern := fmt.Sprintf("{{2}%s}{2}", c.Name)
+		pattern := fmt.Sprintf("{{2}%s}{2}", c.Key)
 		v := manager.decrypt(c.Value)
 
 		re := regexp.MustCompile(pattern)
@@ -1193,6 +1271,12 @@ func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debugf("request add credential : [%+v]", c)
 
+	reservedCredential := tx.getCredentialByName(c.ZoneID, c.Key)
+	if reservedCredential != nil {
+		common.WriteHTTPError(400, w, nil, "Key of the same name")
+		return
+	}
+
 	// DTO -> entity
 	persistCredential := *CredentialDtoToPerist(&c)
 
@@ -1201,9 +1285,60 @@ func (api *serversAPI) addCredential(w http.ResponseWriter, r *http.Request) {
 	// DB insert
 	persistCredential = *tx.insertCredential(manager, &persistCredential)
 
-	task, _ := tx.getTask(manager, persistCredential.Id)
+	credential, _ := tx.getCredential(manager, persistCredential.Id)
 
-	dto := TaskPersistToDto(task)
+	dto := CredentialPersistToDto(credential)
+
+	b, err := json.Marshal(dto)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("response : [%s]", string(b))
+
+	w.WriteHeader(200)
+	fmt.Fprintf(w, "%s", b)
+}
+
+// updateCredential godoc
+// @Summary Credential을 수정한다.
+// @Description KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 수정한다.
+// @Tags servers
+// @Accept json
+// @Produce json
+// @Router /inner/credentials [put]
+// @Param b body common.KlevrCredential true "Credential"
+// @Success 200 {object} common.KlevrCredential
+func (api *serversAPI) updateCredential(w http.ResponseWriter, r *http.Request) {
+	ctx := CtxGetFromRequest(r)
+	var tx = GetDBConn(ctx)
+	var c common.KlevrCredential
+
+	err := json.NewDecoder(r.Body).Decode(&c)
+	if err != nil {
+		common.WriteHTTPError(500, w, err, "JSON parsing error")
+		return
+	}
+
+	logger.Debugf("request add credential : [%+v]", c)
+
+	reservedCredential := tx.getCredentialByName(c.ZoneID, c.Key)
+	if reservedCredential == nil {
+		common.WriteHTTPError(400, w, nil, "Credential does not exist")
+		return
+	}
+
+	reservedCredential.Value = c.Value
+	reservedCredential.Hash = common.GetMd5Hash(c.Value)
+
+	manager := ctx.Get(CtxServer).(*KlevrManager)
+
+	// DB insert
+	tx.updateCredential(manager, reservedCredential)
+
+	credential, _ := tx.getCredential(manager, reservedCredential.Id)
+
+	dto := CredentialPersistToDto(credential)
 
 	b, err := json.Marshal(dto)
 	if err != nil {
@@ -1330,15 +1465,16 @@ func (api *serversAPI) deleteCredential(w http.ResponseWriter, r *http.Request) 
 	tx.deleteCredential(credentialID)
 
 	w.WriteHeader(200)
-	fmt.Fprint(w, "{\"deletedd\": true}")
+	fmt.Fprint(w, "{\"deleted\": true}")
 }
 
 func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
 	persist := &Credentials{
 		Id:     dto.ID,
 		ZoneId: dto.ZoneID,
-		Name:   dto.Name,
+		Key:    dto.Key,
 		Value:  dto.Value,
+		Hash:   common.GetMd5Hash(dto.Value),
 	}
 
 	logger.Debugf("CredentialDtoToPerist \ndto : [%+v]\npersist : [%+v]", dto, persist)
@@ -1348,10 +1484,11 @@ func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
 
 func CredentialPersistToDto(persist *Credentials) *common.KlevrCredential {
 	dto := &common.KlevrCredential{
-		ID:        persist.Id,
-		ZoneID:    persist.ZoneId,
-		Name:      persist.Name,
-		Value:     persist.Value,
+		ID:     persist.Id,
+		ZoneID: persist.ZoneId,
+		Key:    persist.Key,
+		//Value:     persist.Value,
+		Hash:      persist.Hash,
 		CreatedAt: common.JSONTime{Time: persist.CreatedAt},
 		UpdatedAt: common.JSONTime{Time: persist.UpdatedAt},
 	}

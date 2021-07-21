@@ -121,55 +121,6 @@
                 }
             }
         },
-        "/agents/scheduled/iteration": {
-            "get": {
-                "description": "해당 Zone에서 수행 중에 있는 Iteration 타입의 Task를 조회",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "agents"
-                ],
-                "summary": "실행중인 Iteration 타입의 Task",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "API KEY",
-                        "name": "X-API-KEY",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "AGENT KEY",
-                        "name": "X-AGENT-KEY",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "ZONE ID",
-                        "name": "X-ZONE-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/common.KlevrTask"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/agents/{agentKey}": {
             "put": {
                 "description": "primary 에이전트의 polling 요청을 받아 primary 에이전트의 실행정보 갱신, nodes 정보 갱신, task 할당 및 상태 업데이트를 수행한다.",
@@ -427,6 +378,35 @@
                 }
             }
         },
+        "/console/unactivated/{id}": {
+            "delete": {
+                "description": "Klevr Console 사용자를 비활성화 상태로 초기화 한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Console"
+                ],
+                "summary": "사용자 초기화 상태",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/inner/commands": {
             "get": {
                 "description": "Klevr에서 사용할 수 있는 예약어 커맨드 정보를 반환한다. 사용자는 이 정보를 토대로 task를 생성하여 요청할 수 있다.",
@@ -454,6 +434,38 @@
             }
         },
         "/inner/credentials": {
+            "put": {
+                "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 수정한다.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Credential을 수정한다.",
+                "parameters": [
+                    {
+                        "description": "Credential",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrCredential"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "KlevrCredential 모델에 기입된 ZONE에서 사용할 Credential을 등록한다.",
                 "consumes": [
@@ -1194,6 +1206,38 @@
                 }
             }
         },
+        "/inner/tasks/{zoneID}/logs": {
+            "get": {
+                "description": "Zone에 해당하는 TASK들의 로그를 조회한다",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "servers"
+                ],
+                "summary": "Zone에서 실행된 TASK의 최종 로그를 조회한다.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "zone id",
+                        "name": "zoneID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.KlevrTaskLog"
+                        }
+                    }
+                }
+            }
+        },
         "/inner/users/agents": {
             "get": {
                 "description": "모든 agent 정보를 반환한다.",
@@ -1241,6 +1285,40 @@
                             "items": {
                                 "$ref": "#/definitions/manager.KlevrVariable"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/install/agents/bootstrap": {
+            "post": {
+                "description": "에이전트가 설치되기 위한 최소 정보를 이용해 설치를 할 수 있는 스크립트를 생성한다",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Install"
+                ],
+                "summary": "agent setup script 생성",
+                "parameters": [
+                    {
+                        "description": "Bootstrap Info",
+                        "name": "b",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/manager.BootstrapCommand"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1331,10 +1409,13 @@
                 "createdAt": {
                     "$ref": "#/definitions/common.JSONTime"
                 },
+                "hash": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "name": {
+                "key": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -1428,6 +1509,35 @@
                 },
                 "untilRun": {
                     "$ref": "#/definitions/common.JSONTime"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "common.KlevrTaskLog": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/common.JSONTime"
+                },
+                "exeAgentKey": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "log": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "updatedAt": {
                     "$ref": "#/definitions/common.JSONTime"
@@ -1546,6 +1656,23 @@
                     "type": "string"
                 },
                 "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "manager.BootstrapCommand": {
+            "type": "object",
+            "properties": {
+                "apiKey": {
+                    "type": "string"
+                },
+                "managerUrl": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "zoneId": {
                     "type": "integer"
                 }
             }

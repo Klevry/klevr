@@ -8,9 +8,33 @@ import {
   TextField,
   Typography
 } from '@material-ui/core';
+import axios from 'axios';
+import { API_SERVER } from 'src/config';
+import { useEffect, useState } from 'react';
+// import { useHistory } from 'react-router-dom';
 
 const Login = () => {
+  const [pwValid, setPwValid] = useState(false);
+  // const history = useHistory();
   const navigate = useNavigate();
+  const SignupSchema = Yup.object().shape({
+    userId: Yup.string().max(255).required('ID is required'),
+    password: Yup.string().max(255).required('Password is required')
+  });
+
+  useEffect(() => {
+    async function check() {
+      const result = await axios.get(`${API_SERVER}/console/activated/admin`);
+
+      if (result.data.status === 'initialized') {
+        navigate('/activate', { replace: true });
+        // history.push('/activate');
+      } else if (result.data.status === 'activated') {
+        return;
+      }
+    }
+    check();
+  }, []);
 
   return (
     <>
@@ -26,18 +50,33 @@ const Login = () => {
         <Container maxWidth="sm">
           <Formik
             initialValues={{
-              email: 'admin',
+              userId: 'admin',
               password: 'admin'
             }}
-            validationSchema={Yup.object().shape({
-              email: Yup.string()
-                .email('Must be a valid email')
-                .max(255)
-                .required('ID is required'),
-              password: Yup.string().max(255).required('Password is required')
-            })}
-            onSubmit={() => {
-              navigate('/app/dashboard', { replace: true });
+            validationSchema={SignupSchema}
+            onSubmit={async (touched) => {
+              const headers = {
+                'Content-Type': 'multipart/form-data'
+              };
+
+              let form = new FormData();
+              form.append('id', touched.userId);
+              form.append('pw', touched.password);
+
+              try {
+                const response = await axios.post(
+                  `${API_SERVER}/console/signin`,
+                  form,
+                  { headers }
+                );
+
+                if (response.data.token) {
+                  setPwValid(false);
+                  navigate('/app/overview', { replace: true });
+                }
+              } catch (err) {
+                setPwValid(true);
+              }
             }}
           >
             {({
@@ -56,16 +95,24 @@ const Login = () => {
                   </Typography>
                 </Box>
                 <TextField
-                  error={Boolean(touched.email && errors.email)}
                   fullWidth
-                  helperText={touched.email && errors.email}
+                  label="Klevr Manager URL"
+                  margin="normal"
+                  onBlur={handleBlur}
+                  value={API_SERVER}
+                  disabled
+                />
+                <TextField
+                  error={Boolean(touched.userId && errors.userId)}
+                  fullWidth
+                  helperText={touched.userId && errors.userId}
                   label="ID"
                   margin="normal"
-                  name="email"
+                  name="userId"
                   onBlur={handleBlur}
                   onChange={handleChange}
-                  type="email"
-                  value={values.email}
+                  type="userId"
+                  value={values.userId}
                   variant="outlined"
                 />
                 <TextField
@@ -80,6 +127,7 @@ const Login = () => {
                   type="password"
                   value={values.password}
                   variant="outlined"
+                  error={pwValid}
                 />
                 <Box sx={{ py: 2 }}>
                   <Button

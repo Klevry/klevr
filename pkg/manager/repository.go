@@ -2,6 +2,7 @@ package manager
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"xorm.io/builder"
@@ -367,13 +368,18 @@ func (tx *Tx) updateInitIterationTasks(agentKeys []string) {
 }
 
 func (tx *Tx) updateRetryScheduledTask(agentKey string) {
-	stmt := tx.Table(new(Tasks)).Where("TASK_TYPE = ?", string(common.Iteration))
-	stmt = stmt.And("AGENT_KEY = ?", agentKey)
-	stmt = stmt.And("EXE_AGENT_KEY = ?", agentKey)
-	_, err := stmt.Update(map[string]interface{}{"STATUS": common.WaitPolling})
+	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE TASK_TYPE = ? AND AGENT_KEY = ? AND EXE_AGENT_KEY = ?",
+		string(common.WaitPolling), string(common.Iteration), agentKey, agentKey)
 	if err != nil {
 		panic(err)
 	}
+
+	cnt, err := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Debugf("Retry ScheduledTask Update(%d)", cnt)
 }
 
 // task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
@@ -552,7 +558,8 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 			rt.Tasks.TaskDetail.Result = manager.decrypt(rt.Tasks.TaskDetail.Result)
 		}
 		if rt.Tasks.Logs.Logs != "" {
-			rt.Tasks.Logs.Logs = manager.decrypt(rt.Tasks.Logs.Logs)
+			buf := manager.decrypt(rt.Tasks.Logs.Logs)
+			rt.Tasks.Logs.Logs = strings.TrimSpace(buf)
 		}
 
 		tasks = append(tasks, *rt.Tasks)
@@ -587,6 +594,24 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	logger.Debugf("Selected Tasks : %d", cnt)
 
 	return &tasks, cnt > 0
+}
+
+func (tx *Tx) getLogs(manager *KlevrManager, zoneID uint64) (*[]Tasks, int64) {
+	var tasks *[]Tasks
+	var rts []RetriveTask
+
+	//stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
+	stmt := tx.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
+
+	cnt, err := stmt.Where("ZONE_ID = ?", zoneID).FindAndCount(&rts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	tasks = toTasks(manager, &rts)
+
+	return tasks, cnt
 }
 
 func (tx *Tx) updateScheduledTask() int64 {
@@ -625,17 +650,17 @@ func (tx *Tx) cancelTask(id uint64) bool {
 
 // Task 부가 데이터 삭제
 func (tx *Tx) purgeTask(id uint64) {
-	_, err := tx.Where("TASK_ID = ?").Delete(&TaskDetail{})
+	_, err := tx.Where("TASK_ID = ?", id).Delete(&TaskDetail{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?").Delete(&TaskLogs{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskLogs{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?").Delete(&TaskSteps{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskSteps{})
 	if err != nil {
 		panic(err)
 	}
@@ -669,13 +694,23 @@ func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
 	return p
 }
 
-func (tx *Tx) updateConsoleMember(p *PageMembers) {
-	cnt, err := tx.Where("USER_ID = ?", p.UserId).Cols("ACTIVATED").Update(p)
-	logger.Debugf("Updated PageMember(%d) : %v", cnt, p)
-
+func (tx *Tx) updateConsoleMember(p *PageMembers) bool {
+	result, err := tx.Exec("UPDATE PAGE_MEMBERS SET USER_PASSWORD = ?, ACTIVATED = ? WHERE USER_ID = ?",
+		p.UserPassword, p.Activated, p.UserId)
 	if err != nil {
 		panic(err)
 	}
+
+	cnt, _ := result.RowsAffected()
+	if err != nil {
+		panic(err)
+	}
+
+	if cnt == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (tx *Tx) deleteApiAuthentication(zoneID uint64) {
@@ -703,8 +738,8 @@ func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthe
 func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentials {
 	c.Value = manager.encrypt(c.Value)
 
-	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`name`,`value`) VALUES (?,?,?)",
-		c.ZoneId, c.Name, c.Value)
+	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`key`,`value`, `hash`) VALUES (?,?,?,?)",
+		c.ZoneId, c.Key, c.Value, c.Hash)
 
 	if err != nil {
 		panic(err)
@@ -721,6 +756,23 @@ func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentia
 	return c
 }
 
+func (tx *Tx) updateCredential(manager *KlevrManager, c *Credentials) int64 {
+	c.Value = manager.encrypt(c.Value)
+
+	result, err := tx.Exec("UPDATE `CREDENTIALS` SET `VALUE` = ?, `HASH` = ? WHERE `ID` = ?",
+		c.Value, c.Hash, c.Id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	cnt, _ := result.RowsAffected()
+
+	logger.Debugf("Credential information updated Credentials(%d), ID(%d)", cnt, c.Id)
+
+	return cnt
+}
+
 func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, bool) {
 	var credential Credentials
 
@@ -730,6 +782,19 @@ func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, boo
 	return &credential, exist
 }
 
+func (tx *Tx) getCredentialByName(zoneID uint64, credentialName string) *Credentials {
+	var credential Credentials
+
+	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ZONE_ID = ?", zoneID).And("CREDENTIALS.KEY = ?", credentialName).Get(&credential))
+	logger.Debugf("Selected Credentials : exist[%v], id[%d], key[%s]", exist, credential.Id, credential.Key)
+
+	if exist == false {
+		return nil
+	}
+
+	return &credential
+}
+
 func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
 	var credentials []Credentials
 
@@ -737,7 +802,7 @@ func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string)
 
 	// condition 추가
 	if credentialNames != nil {
-		stmt = stmt.And(builder.In("NAME", credentialNames))
+		stmt = stmt.And(builder.In("KEY", credentialNames))
 	}
 
 	tx.Engine().ShowSQL(true)

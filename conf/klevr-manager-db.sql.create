@@ -96,8 +96,9 @@ DROP TABLE IF EXISTS `CREDENTIALS`;
 CREATE TABLE `CREDENTIALS` (
   `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `ZONE_ID` bigint(20) unsigned NOT NULL,
-  `NAME` varchar(100) NOT NULL,
+  `KEY` varchar(100) NOT NULL,
   `VALUE` varchar(100) DEFAULT NULL,
+  `HASH` varchar(45) DEFAULT NULL,
   `CREATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NULL DEFAULT current_timestamp(),
   `DELETED_AT` timestamp NULL DEFAULT NULL,
