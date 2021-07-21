@@ -1,0 +1,6 @@
+version: '3'
+services: 
+   klevr-console:
+      image: klevry/klevr-console:latest
+      ports: 
+         - "8091:80"
