@@ -8,8 +8,8 @@ cd cmd/klevr-manager
 make build	
 cd ../..	
 
-cd console
-make build
-cd ..
+#cd console
+#make build
+#cd ..
 
 echo "Binary build complete"
