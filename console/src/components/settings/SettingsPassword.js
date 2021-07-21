@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { API_SERVER } from 'src/config';
 import {
   Box,
   Button,
@@ -9,13 +10,13 @@ import {
   Divider,
   TextField
 } from '@material-ui/core';
-
-import { API_SERVER } from 'src/config';
+import { Alert } from 'antd';
+import { x } from '@xstyled/emotion';
 
 const SettingsPassword = (props) => {
   const [pwValid, setPwValid] = useState(false);
   const [updated, setUpdated] = useState(false);
-
+  const [cancelResult, setCancelResult] = useState('');
   const [values, setValues] = useState({
     current: '',
     new: ''
@@ -31,10 +32,6 @@ const SettingsPassword = (props) => {
   };
 
   const updateHandler = async () => {
-    //비밀번호 업데이트가 401 에러가 납니다. 해결하기!
-    console.log(values.current);
-    console.log(values.new);
-
     const headers = {
       'Content-Type': 'multipart/form-data'
     };
@@ -52,7 +49,7 @@ const SettingsPassword = (props) => {
       );
 
       if (response.status === 200) {
-        setUpdated(true);
+        setCancelResult('success');
       }
     } catch (err) {
       setPwValid(true);
@@ -60,54 +57,74 @@ const SettingsPassword = (props) => {
   };
 
   return (
-    <form {...props}>
-      <Card>
-        <CardHeader subheader="Update password" title="Password" />
-        <Divider />
-        <CardContent>
-          <TextField
-            disabled
-            fullWidth
-            label="ID"
-            defaultValue="admin"
-            variant="outlined"
+    <>
+      <form {...props}>
+        <Card>
+          <CardHeader subheader="Update password" title="Password" />
+          <Divider />
+          <CardContent>
+            <TextField
+              disabled
+              fullWidth
+              label="ID"
+              defaultValue="admin"
+              variant="outlined"
+            />
+            <TextField
+              fullWidth
+              label="Current password"
+              margin="normal"
+              name="current"
+              onChange={handleChange}
+              type="password"
+              value={values.password}
+              variant="outlined"
+              error={pwValid}
+            />
+            <TextField
+              fullWidth
+              label="New password"
+              margin="normal"
+              name="new"
+              onChange={handleChange}
+              type="password"
+              value={values.confirm}
+              variant="outlined"
+            />
+          </CardContent>
+          <Divider />
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              p: 2
+            }}
+          >
+            <Button color="primary" variant="contained" onClick={updateHandler}>
+              Update
+            </Button>
+          </Box>
+        </Card>
+      </form>
+      <x.div
+        position="fixed"
+        bottom="20px"
+        right="20px"
+        zIndex="9999"
+        minWidth="400px"
+      >
+        {cancelResult === 'success' && (
+          <Alert
+            message="Success"
+            description="Password update successful."
+            type="success"
+            showIcon
+            closable
+            onClose={() => setCancelResult('')}
           />
-          <TextField
-            fullWidth
-            label="Current password"
-            margin="normal"
-            name="current"
-            onChange={handleChange}
-            type="password"
-            value={values.password}
-            variant="outlined"
-            error={pwValid}
-          />
-          <TextField
-            fullWidth
-            label="New password"
-            margin="normal"
-            name="new"
-            onChange={handleChange}
-            type="password"
-            value={values.confirm}
-            variant="outlined"
-          />
-        </CardContent>
-        <Divider />
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            p: 2
-          }}
-        >
-          <Button color="primary" variant="contained" onClick={updateHandler}>
-            Update
-          </Button>
-        </Box>
-      </Card>
-    </form>
+        )}
+      </x.div>
+    </>
   );
 };
 
