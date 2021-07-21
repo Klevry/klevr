@@ -11,12 +11,15 @@ import {
 import axios from 'axios';
 import { API_SERVER } from 'src/config';
 import { useEffect, useState } from 'react';
+import { getLoginStatus } from 'src/components/store/actions/klevrActions';
 // import { useHistory } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
 const Login = () => {
   const [pwValid, setPwValid] = useState(false);
   // const history = useHistory();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const SignupSchema = Yup.object().shape({
     userId: Yup.string().max(255).required('ID is required'),
     password: Yup.string().max(255).required('Password is required')
@@ -72,6 +75,7 @@ const Login = () => {
 
                 if (response.data.token) {
                   setPwValid(false);
+                  dispatch(getLoginStatus(true));
                   navigate('/app/overview', { replace: true });
                 }
               } catch (err) {
