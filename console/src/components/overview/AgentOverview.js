@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { x } from '@xstyled/emotion';
-import { API_SERVER, GROUP_ID } from '../../config';
+import { API_SERVER } from '../../config';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import {
   Box,

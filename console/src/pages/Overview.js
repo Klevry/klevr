@@ -1,13 +1,4 @@
-import {
-  Box,
-  Container,
-  Grid,
-  Card,
-  CardHeader,
-  Divider
-} from '@material-ui/core';
-
-import { x } from '@xstyled/emotion';
+import { Box, Container } from '@material-ui/core';
 
 import TaskOverview from 'src/components/overview/TaskOverview';
 import AgentOverview from 'src/components/overview/AgentOverview';

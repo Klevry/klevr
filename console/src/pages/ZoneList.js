@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Container, Grid } from '@material-ui/core';
-import AllZones from 'src/components/zones/AllZones';
+import { Box, Container } from '@material-ui/core';
 import 'antd/dist/antd.css';
+
 import ApiKey from 'src/components/zones/ApiKey';
+import AllZones from 'src/components/zones/AllZones';
 
 const Dashboard = () => {
   return (
