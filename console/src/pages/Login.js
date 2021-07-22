@@ -54,7 +54,7 @@ const Login = () => {
           <Formik
             initialValues={{
               userId: 'admin',
-              password: 'admin'
+              password: ''
             }}
             validationSchema={SignupSchema}
             onSubmit={async (touched) => {
