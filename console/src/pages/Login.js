@@ -12,7 +12,7 @@ import axios from 'axios';
 import { API_SERVER } from 'src/config';
 import { useEffect, useState } from 'react';
 import { getLoginStatus } from 'src/components/store/actions/klevrActions';
-// import { useHistory } from 'react-router-dom';
+
 import { useDispatch, useSelector } from 'react-redux';
 
 const Login = () => {
@@ -54,7 +54,7 @@ const Login = () => {
           <Formik
             initialValues={{
               userId: 'admin',
-              password: 'admin'
+              password: ''
             }}
             validationSchema={SignupSchema}
             onSubmit={async (touched) => {

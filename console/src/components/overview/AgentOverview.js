@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { x } from '@xstyled/emotion';
-import { API_SERVER, GROUP_ID } from '../../config';
+import { API_SERVER } from '../../config';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import {
   Box,
@@ -15,10 +15,9 @@ import {
   TableRow
 } from '@material-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
-import { Modal, Button, Form, Input, Select, Tag } from 'antd';
+import { Modal, Button, Form, Input, Select, Tag, Alert } from 'antd';
 import styled from '@emotion/styled/macro';
 import Copy from 'react-copy-to-clipboard';
-import { message } from 'antd';
 import { CopyOutlined as CopyOutlinedIcon } from '@ant-design/icons';
 import { getAgentList } from '../store/actions/klevrActions';
 import { Link as RouterLink } from 'react-router-dom';
@@ -115,6 +114,8 @@ const AddAgent = () => {
   const [key, setKey] = useState(undefined);
   const [platform, setPlatform] = useState(undefined);
   const [agentScript, setAgentScript] = useState(undefined);
+
+  const [copyResult, setCopyResult] = useState('');
 
   const Wrapper = styled.div`
     width: 100%;
@@ -216,6 +217,14 @@ const AddAgent = () => {
     setAgentScript(response.data);
   };
 
+  const handleMsg = () => {
+    setCopyResult('success');
+
+    setTimeout(function () {
+      setCopyResult('');
+    }, 1500);
+  };
+
   return (
     <>
       <Button size="small" onClick={showModal}>
@@ -280,19 +289,26 @@ const AddAgent = () => {
           </x.div>
         </Form>
         {agentScript && (
-          <Wrapper>
-            <Content>{agentScript}</Content>
-            <x.div position="absolute" top="5px" right="5px">
-              <Copy
-                text={agentScript}
-                onCopy={() => {
-                  message.success('Copied');
-                }}
-              >
-                <CopyOutlined />
-              </Copy>
-            </x.div>
-          </Wrapper>
+          <>
+            <Wrapper>
+              <Content>{agentScript}</Content>
+              <x.div position="absolute" top="5px" right="5px">
+                <Copy
+                  text={agentScript}
+                  onCopy={() => {
+                    handleMsg();
+                  }}
+                >
+                  <CopyOutlined />
+                </Copy>
+              </x.div>
+              <x.div position="absolute" top="10px" right="185px">
+                {copyResult === 'success' && (
+                  <Alert message="Copied" type="success" showIcon />
+                )}
+              </x.div>
+            </Wrapper>
+          </>
         )}
       </Modal>
     </>
