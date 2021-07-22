@@ -6,3 +6,6 @@ build:
 
 run:
 	npm run start
+
+pre:
+	cp -R . ../Dockerfile/console/
