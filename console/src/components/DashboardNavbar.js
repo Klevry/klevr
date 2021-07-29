@@ -12,22 +12,23 @@ import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
 import NativeSelect from '@material-ui/core/Select';
 import FormControl from '@material-ui/core/FormControl';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/styles';
 import { API_SERVER, GROUP_ID } from '../config';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   filterByZone,
+  getLoginStatus,
   getZoneList,
   getZoneName
 } from './store/actions/klevrActions';
 
 const useStyles = makeStyles((theme) => ({
   formControl: {
-    margin: theme.spacing(1),
+    margin: 8,
     width: 160
   },
   selectEmpty: {
-    marginTop: theme.spacing(2)
+    marginTop: 16
   }
 }));
 
@@ -71,7 +72,7 @@ const Zone = () => {
       {/* <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
         Zone
       </InputLabel> */}
-      <NativeSelect defaultValue={iz}>
+      <NativeSelect defaultValue={iz} variant="standard">
         {zoneList.map((item) => (
           <MenuItem
             value={item.Id}
@@ -88,6 +89,7 @@ const Zone = () => {
 
 const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const pageCheck = window.location.pathname !== '/login';
 
   const signOutHandler = () => {
@@ -95,6 +97,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
       const result = await axios.get(`${API_SERVER}/console/signout`);
 
       if (result.status === 200) {
+        dispatch(getLoginStatus(false));
         navigate('/login', { replace: true });
       }
     }

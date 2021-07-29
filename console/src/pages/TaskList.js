@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { x } from '@xstyled/emotion';
-import { Box, Container, Button } from '@material-ui/core';
+import { Box, Container } from '@material-ui/core';
+import { Button } from 'antd';
+
 import AllTasks from 'src/components/task/AllTasks';
 import OrderList from 'src/components/task/OrderList';
 import SchedulerList from 'src/components/task/SchedulerList';
+import ProvisioningList from 'src/components/task/ProvisioningList';
 
 import AddTask from 'src/components/task/AddTask';
 import Refresh from 'src/components/common/Refresh';
 import TaskLog from 'src/components/task/TaskLog';
-import ProvisioningList from 'src/components/task/ProvisioningList';
 
 const content = [
   {
@@ -39,6 +41,7 @@ const useTabs = (initialTabs, allTabs) => {
 
 const TaskList = () => {
   const { contentItem, contentChange } = useTabs(0, content);
+
   return (
     <>
       <Box
@@ -57,8 +60,23 @@ const TaskList = () => {
           >
             <div>
               {content.map((section, index) => (
-                <Button onClick={() => contentChange(index)} key={index}>
-                  {section.tab}
+                <Button
+                  onClick={() => contentChange(index)}
+                  key={index}
+                  type="text"
+                >
+                  <x.span
+                    color={
+                      section.tab === contentItem.tab
+                        ? 'rgb(25, 118, 210)'
+                        : 'black'
+                    }
+                    fontWeight="500"
+                    lineHeight="1.75"
+                    fontSize="0.875rem"
+                  >
+                    {section.tab.toUpperCase()}
+                  </x.span>
                 </Button>
               ))}
             </div>

@@ -58,6 +58,24 @@ const SettingsPassword = (props) => {
 
   return (
     <>
+      <Card
+        sx={{
+          marginBottom: '40px',
+          marginTop: '40px'
+        }}
+      >
+        <CardHeader title="Klevr Manager" />
+        <Divider />
+        <CardContent>
+          <TextField
+            disabled
+            fullWidth
+            label="URL"
+            defaultValue={API_SERVER}
+            variant="outlined"
+          />
+        </CardContent>
+      </Card>
       <form {...props}>
         <Card>
           <CardHeader subheader="Update password" title="Password" />

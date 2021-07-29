@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Container } from '@material-ui/core';
-import AllCredentials from 'src/components/credentials/AllCredentials';
 import 'antd/dist/antd.css';
+
+import AllCredentials from 'src/components/credentials/AllCredentials';
 
 const CredentialView = () => {
   return (
