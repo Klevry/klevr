@@ -1,5 +1,5 @@
 ![klevr_logo.png](https://raw.githubusercontent.com/Klevry/klevr/master/assets/klevr_logo.png)
- * https://opensource.klevr.dev
+<br><a href="https://opensource.klevr.dev">https://opensource.klevr.dev</a>
 
 # Klevr: Kloud-native everywhere
 ## Hyper-connected Cloud-native delivery solution for SaaS
