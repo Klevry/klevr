@@ -52,7 +52,9 @@
 
 ### 구조
  * Klevr는 React로 구현된 Web 기반의 관리 도구(console)을 갖고 있습니다.
+   * Console의 사용자 메뉴얼은 [여기](./console/Manual-KR.md)에서 볼 수 있습니다.
    * 사용자(admin) 인증을 제공하고 있으며, Task, Credential, Zone, Agent 그리고 API Key를 관리 할 수 있습니다.
+   * ".env" 파일에서 "REACT_APP_API_URL"를 설정함으로써 Console에서 연결되고자 하는 Manager를 지정할 수 있습니다.
  * Klevr는 Manager, Agent 그리고 DB로 구성되어 있습니다  
    ![Klevr Elements](https://raw.githubusercontent.com/Klevry/klevr/master/assets/klevr_elements.png)
  * Manager에서 Task와 Agent를 관리하기 위한 백그라운드 작업들
@@ -218,9 +220,28 @@
 ## Usage
 ### Swagger-UI API
 * API 대시보드 URL : http://localhost:8090/swagger/index.html
-### 1. 존 추가 
-* [POST] /inner/groups
-### 2. API KEY 등록 
-* [POST] /inner/groups/{groupID}/apikey
-### 3. TASK 입력 
-* [POST] /inner/tasks
+### 1. Zone 
+* 등록
+  * [POST] /inner/groups
+* 조회
+  * [GET] /inner/groups/{groupID}
+* 삭제
+  * [DELETE] /inner/groups/{groupID}
+### 2. API KEY
+* 등록 
+  * [POST] /inner/groups/{groupID}/apikey
+* 조회
+  * [GET] /inner/groups/{groupID}/apikey
+* 수정
+  * [PUT] /inner/groups/{groupID}/apikey
+### 3. TASK 
+* 등록
+  * [POST] /inner/tasks
+* 리스트
+  * [GET] /inner/tasks
+* 조회
+  * [GET] /inner/tasks/{taskID}
+* 취소
+  * [DELETE] /inner/tasks/{taskID}
+* 예약어 커맨드 정보
+  * [GET] /inner/commands
