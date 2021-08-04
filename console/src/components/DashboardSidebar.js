@@ -29,11 +29,6 @@ const items = [
     title: 'Credentials'
   },
   {
-    href: '/app/zones',
-    icon: ZoneIcon,
-    title: 'Zones'
-  },
-  {
     href: '/app/settings',
     icon: SettingsIcon,
     title: 'Settings'
