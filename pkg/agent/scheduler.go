@@ -25,6 +25,7 @@ func (agent *KlevrAgent) checkPrimary(prim string) bool {
 	}
 }
 
+// secondary 에이전트들에게 task 전달
 func (agent *KlevrAgent) primaryTaskSend(ip string, task []byte) {
 	serverAddr := net.JoinHostPort(ip, agent.grpcPort)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())

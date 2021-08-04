@@ -110,27 +110,27 @@
 │   ├── libvirt
 │   └── manager
 ├── LICENSE
-├── README.md                          // 지금 보고있는 화면입니다 :)
+├── README.md                            // 지금 보고있는 화면입니다 :)
 ├── assets
 │   ├── [Images & Contents]
 ├── build.sh
-├── cmd                                // 실제 아티팩트 fpr Klevr 에이전트 및 관리자 (웹 서버)
+├── cmd                                  // 실제 아티팩트 fpr Klevr 에이전트 및 관리자 (웹 서버)
 │   ├── klevr-agent
 │   │   ├── Makefile
 │   │   ├── README.md
-│   │   ├── agent_installer.sh         // Manager가 생성한 스크립트로 curl 명령을 통한 원격 설치 프로그램
-│   │   └── main.go                    // 에이전트의 main 소스 코드
+│   │   ├── agent_installer.sh           // Manager가 생성한 스크립트로 curl 명령을 통한 원격 설치 프로그램
+│   │   └── main.go                      // 에이전트의 main 소스 코드
 │   └── klevr-manager
-│       ├── Dockerfile                 // Docker 빌드를 위해 바이너리 아티팩트를 이 디렉토리로 전송
+│       ├── Dockerfile                   // Docker 빌드를 위해 바이너리 아티팩트를 이 디렉토리로 전송
 │       ├── Makefile
 │       ├── README.md
-│       └── main.go                    // 매니저의 main 소스 코드
+│       └── main.go                      // 매니저의 main 소스 코드
 ├── conf
-│   ├── klevr-manager-compose.yml      // Manager 실행을 위한 환경 설정 파일
-│   ├── klevr-manager-db.sql.create    // Manager 초기화 및 실행을 위한 데이터베이스
+│   ├── klevr-manager-compose.yml        // Manager 실행을 위한 환경 설정 파일
+│   ├── klevr-manager-db.sql.create      // Manager 초기화 및 실행을 위한 데이터베이스
 │   ├── klevr-manager-db.sql.modify
 │   └── klevr-manager-local.yml
-├── console                            // Klevr WebConsole
+├── console                              // Klevr WebConsole
 │   ├── Makefile
 │   ├── README.md
 │   ├── jsconfig.json
@@ -156,55 +156,54 @@
 ├── go.mod
 ├── go.sum
 ├── pkg
-│   ├── agent                           // agent 패키지 디렉토리
-│   │   ├── agent.go
-│   │   ├── common.go
-│   │   ├── handshake.go
-│   │   ├── primary_status_report.go
-│   │   ├── protobuf
-│   │   │   └── task.proto
-│   │   ├── scheduler.go
-│   │   ├── scheduler_primary.go
-│   │   ├── scheduler_secondary.go
-│   │   └── send_server.go
+│   ├── agent                            // agent 패키지 디렉토리
+│   │   ├── agent.go                     // agent 패키지의 진입점 (agent 스케줄러 실행)
+│   │   ├── common.go                    // 공통 사용을 위한 유틸성 함수 및 상수 
+│   │   ├── handshake.go                 // manager에게 handshake 요청
+│   │   ├── primary_status_report.go     // Primary 상태 이상 보고
+│   │   ├── protobuf                     // agent간 gRPC 통신 프로토콜 디렉토리
+│   │   ├── scheduler.go                 // Primary와 Secondary 에이전트 작업
+│   │   ├── scheduler_primary.go         // Primary 에이전트의 작업
+│   │   ├── scheduler_secondary.go       // Secondary 에이전트의 작업
+│   │   └── send_server.go               // gRPC 프로토콜 인터페이스 구현체
 │   ├── common                           // common 패키지 디렉토리
-│   │   ├── api_agent_model.go
-│   │   ├── commander.go
-│   │   ├── commands.go
+│   │   ├── api_agent_model.go           // api로 제공되는 모델들
+│   │   ├── commander.go                 // 예약된 커맨드(Task)를 관리
+│   │   ├── commands.go                  // 예약된 커맨드
 │   │   ├── const.go
-│   │   ├── context.go
-│   │   ├── credential_model.go
-│   │   ├── encrypt.go
-│   │   ├── error.go
-│   │   ├── http.go
-│   │   ├── json_time.go
-│   │   ├── jwt.go
-│   │   ├── log.go
-│   │   ├── md5.go
-│   │   ├── orm.go
-│   │   ├── queue.go
-│   │   ├── security.go
-│   │   ├── task_executor.go
-│   │   └── task_model.go
+│   │   ├── context.go                   // klevr에서 사용될 컨텍스트들을 관리
+│   │   ├── credential_model.go          // Credential 관리 API를 위한 모델
+│   │   ├── encrypt.go                   // 암복호화 함수들
+│   │   ├── error.go                     // 에러 및 예외처리
+│   │   ├── http.go                      // http 통신용 request/response 관리
+│   │   ├── json_time.go                 // json 전용 time 관리
+│   │   ├── jwt.go                       // jwt 관리
+│   │   ├── log.go                       // log에 장식을 추가 하기 위한 설정 
+│   │   ├── md5.go                       // hash 변환
+│   │   ├── orm.go                       // xorm 관리
+│   │   ├── queue.go                     // event 관리를 위한 큐
+│   │   ├── security.go                  // 암호화 키
+│   │   ├── task_executor.go             // Task 실행 관리
+│   │   └── task_model.go                // Task 관리 모델
 │   ├── communicator                     // http communicator 패키지 디렉토리
 │   │   ├── README.md
 │   │   └── communicator.go
 │   ├── manager                          // manager 패키지 디렉토리
-│   │   ├── api.go
-│   │   ├── api_agent.go
-│   │   ├── api_console.go
-│   │   ├── api_inner.go
-│   │   ├── api_inner_model.go
-│   │   ├── api_install.go
-│   │   ├── cache.go
-│   │   ├── context_constants.go
-│   │   ├── handler.go
-│   │   ├── persist_model.go
-│   │   ├── repository.go
-│   │   ├── server.go
+│   │   ├── api.go                       // http API 핸들러 등록 및 설정
+│   │   ├── api_agent.go                 // agent API 핸들러
+│   │   ├── api_console.go               // console API 핸들러
+│   │   ├── api_inner.go                 // inner API 핸들러
+│   │   ├── api_inner_model.go           // inner API 모델
+│   │   ├── api_install.go               // install API
+│   │   ├── cache.go                     // 캐쉬 관리
+│   │   ├── context_constants.go         // context에서 사용할 상수
+│   │   ├── handler.go                   // http 패키지에서 사용할 미들웨어
+│   │   ├── persist_model.go             // 데이터베이스 관리 모델
+│   │   ├── repository.go                // orm을 이용한 데이터베이스 관리
+│   │   ├── server.go                    // Manager 패키지의 진입점
 │   │   ├── server_test.go
-│   │   └── storage.go
-│   └── rabbitmq                        rabbitmq 패키지 디렉토리
+│   │   └── storage.go                   // 캐쉬와 데이터베이스 관리
+│   └── rabbitmq                         // rabbitmq 패키지 디렉토리
 │       └── rabbitmq.go
 ├── scripts
 │   ├── baremetal
