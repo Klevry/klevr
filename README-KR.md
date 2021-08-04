@@ -114,7 +114,7 @@
 ├── assets
 │   ├── [Images & Contents]
 ├── build.sh
-├── cmd                                  // 실제 아티팩트 fpr Klevr 에이전트 및 관리자 (웹 서버)
+├── cmd                                  // 실제 아티팩트, Klevr 에이전트 및 관리자 (웹 서버)
 │   ├── klevr-agent
 │   │   ├── Makefile
 │   │   ├── README.md
