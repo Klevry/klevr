@@ -39,6 +39,8 @@ import {
   FileText as TaskIcon,
   Grid as ZoneIcon,
   Key as CredentialIcon,
+  AlignLeft as LogIcon,
+  UserCheck as AgentIcon,
   Menu as MenuIcon
 } from 'react-feather';
 import { justifyContent, x } from '@xstyled/emotion';
@@ -60,6 +62,16 @@ const items = [
     title: 'Credentials'
   },
   {
+    href: '/app/agent',
+    icon: AgentIcon,
+    title: 'Agent'
+  },
+  {
+    href: '/app/logs',
+    icon: LogIcon,
+    title: 'Logs'
+  },
+  {
     href: '/app/settings',
     icon: SettingsIcon,
     title: 'Settings'
@@ -78,6 +90,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Zone = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const currentZone = useSelector((store) => store.zoneReducer);
   const zoneList = useSelector((store) => store.zoneListReducer);
   const [iz, setIz] = useState();
@@ -109,6 +122,7 @@ const Zone = () => {
   const selectZone = (id, groupName) => {
     dispatch(filterByZone(id));
     dispatch(getZoneName(groupName));
+    navigate('/app/overview', { replace: true });
   };
 
   return (
@@ -189,15 +203,45 @@ const MobileMenu = () => {
           }}
         >
           <List>
-            {items.map((item) => (
-              <NavItem
-                href={item.href}
-                key={item.title}
-                title={item.title}
-                icon={item.icon}
-                onClick={onClose}
-              />
-            ))}
+            {items.map((item) => {
+              if (item.title === 'Overview') {
+                return (
+                  <x.div>
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              } else if (item.title === 'Settings') {
+                return (
+                  <x.div>
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              } else {
+                return (
+                  <x.div ml="25px">
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              }
+            })}
           </List>
           <x.div position="absolute" bottom="30px">
             <IconButton color="inherit" onClick={signOutHandler}>
