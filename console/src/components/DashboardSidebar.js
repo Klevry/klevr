@@ -8,9 +8,12 @@ import {
   Settings as SettingsIcon,
   FileText as TaskIcon,
   Grid as ZoneIcon,
-  Key as CredentialIcon
+  Key as CredentialIcon,
+  AlignLeft as LogIcon,
+  UserCheck as AgentIcon
 } from 'react-feather';
 import NavItem from './NavItem';
+import { x } from '@xstyled/emotion';
 
 const items = [
   {
@@ -29,9 +32,14 @@ const items = [
     title: 'Credentials'
   },
   {
-    href: '/app/zones',
-    icon: ZoneIcon,
-    title: 'Zones'
+    href: '/app/agent',
+    icon: AgentIcon,
+    title: 'Agent'
+  },
+  {
+    href: '/app/logs',
+    icon: LogIcon,
+    title: 'Logs'
   },
   {
     href: '/app/settings',
@@ -60,14 +68,42 @@ const DashboardSidebar = ({ onMobileClose, openMobile }) => {
       <Divider />
       <Box sx={{ p: 2 }}>
         <List>
-          {items.map((item) => (
-            <NavItem
-              href={item.href}
-              key={item.title}
-              title={item.title}
-              icon={item.icon}
-            />
-          ))}
+          {items.map((item) => {
+            if (item.title === 'Overview') {
+              return (
+                <x.div>
+                  <NavItem
+                    href={item.href}
+                    key={item.title}
+                    title={item.title}
+                    icon={item.icon}
+                  />
+                </x.div>
+              );
+            } else if (item.title === 'Settings') {
+              return (
+                <x.div>
+                  <NavItem
+                    href={item.href}
+                    key={item.title}
+                    title={item.title}
+                    icon={item.icon}
+                  />
+                </x.div>
+              );
+            } else {
+              return (
+                <x.div ml="25px">
+                  <NavItem
+                    href={item.href}
+                    key={item.title}
+                    title={item.title}
+                    icon={item.icon}
+                  />
+                </x.div>
+              );
+            }
+          })}
         </List>
       </Box>
       <Box sx={{ flexGrow: 1 }} />

@@ -4,7 +4,16 @@ import axios from 'axios';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { AppBar, Box, Hidden, IconButton, Toolbar } from '@material-ui/core';
+import {
+  AppBar,
+  Box,
+  Hidden,
+  IconButton,
+  Toolbar,
+  Divider,
+  List
+} from '@material-ui/core';
+import { Drawer, Button } from 'antd';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import InputIcon from '@material-ui/icons/Input';
 import Logo from './Logo';
@@ -22,6 +31,53 @@ import {
   getZoneName
 } from './store/actions/klevrActions';
 
+import NavItem from './NavItem';
+
+import {
+  BarChart as BarChartIcon,
+  Settings as SettingsIcon,
+  FileText as TaskIcon,
+  Grid as ZoneIcon,
+  Key as CredentialIcon,
+  AlignLeft as LogIcon,
+  UserCheck as AgentIcon,
+  Menu as MenuIcon
+} from 'react-feather';
+import { justifyContent, x } from '@xstyled/emotion';
+
+const items = [
+  {
+    href: '/app/overview',
+    icon: BarChartIcon,
+    title: 'Overview'
+  },
+  {
+    href: '/app/tasks',
+    icon: TaskIcon,
+    title: 'Tasks'
+  },
+  {
+    href: '/app/credentials',
+    icon: CredentialIcon,
+    title: 'Credentials'
+  },
+  {
+    href: '/app/agent',
+    icon: AgentIcon,
+    title: 'Agent'
+  },
+  {
+    href: '/app/logs',
+    icon: LogIcon,
+    title: 'Logs'
+  },
+  {
+    href: '/app/settings',
+    icon: SettingsIcon,
+    title: 'Settings'
+  }
+];
+
 const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: 8,
@@ -34,6 +90,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Zone = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const currentZone = useSelector((store) => store.zoneReducer);
   const zoneList = useSelector((store) => store.zoneListReducer);
   const [iz, setIz] = useState();
@@ -65,25 +122,136 @@ const Zone = () => {
   const selectZone = (id, groupName) => {
     dispatch(filterByZone(id));
     dispatch(getZoneName(groupName));
+    navigate('/app/overview', { replace: true });
   };
 
   return (
-    <FormControl className={classes.formControl}>
-      {/* <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
-        Zone
-      </InputLabel> */}
-      <NativeSelect defaultValue={iz} variant="standard">
-        {zoneList.map((item) => (
-          <MenuItem
-            value={item.Id}
-            key={item.Id}
-            onClick={() => selectZone(item.Id, item.GroupName)}
-          >
-            {`${item.GroupName} (${item.Id})`}
-          </MenuItem>
-        ))}
-      </NativeSelect>
-    </FormControl>
+    <>
+      <x.div
+        w="100px"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        mr="10px"
+      >
+        <NavItem href="/app/zones" key="Zones" title="Zones" icon={ZoneIcon} />
+      </x.div>
+      <FormControl className={classes.formControl}>
+        {/* <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
+          Zone
+        </InputLabel> */}
+        <NativeSelect defaultValue={iz} variant="standard">
+          {zoneList.map((item) => (
+            <MenuItem
+              value={item.Id}
+              key={item.Id}
+              onClick={() => selectZone(item.Id, item.GroupName)}
+            >
+              {`${item.GroupName} (${item.Id})`}
+            </MenuItem>
+          ))}
+        </NativeSelect>
+      </FormControl>
+    </>
+  );
+};
+
+const MobileMenu = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [visible, setVisible] = useState(false);
+
+  const showDrawer = () => {
+    setVisible(true);
+  };
+
+  const onClose = () => {
+    setVisible(false);
+  };
+
+  const signOutHandler = () => {
+    async function signOut() {
+      const result = await axios.get(`${API_SERVER}/console/signout`);
+
+      if (result.status === 200) {
+        dispatch(getLoginStatus(false));
+        navigate('/login', { replace: true });
+      }
+    }
+    signOut();
+  };
+
+  return (
+    <>
+      <Button type="text" onClick={visible ? onClose : showDrawer}>
+        <x.div position="relative" top="-5px" left="-10px">
+          <MenuIcon color="#50A1D6" size="30px" />
+        </x.div>
+      </Button>
+      <Drawer
+        title="Basic Drawer"
+        placement="left"
+        closable={false}
+        onClose={onClose}
+        visible={visible}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%'
+          }}
+        >
+          <List>
+            {items.map((item) => {
+              if (item.title === 'Overview') {
+                return (
+                  <x.div>
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              } else if (item.title === 'Settings') {
+                return (
+                  <x.div>
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              } else {
+                return (
+                  <x.div ml="25px">
+                    <NavItem
+                      href={item.href}
+                      key={item.title}
+                      title={item.title}
+                      icon={item.icon}
+                      onClick={onClose}
+                    />
+                  </x.div>
+                );
+              }
+            })}
+          </List>
+          <x.div position="absolute" bottom="30px">
+            <IconButton color="inherit" onClick={signOutHandler}>
+              <InputIcon />
+            </IconButton>
+          </x.div>
+          <Box sx={{ flexGrow: 1 }} />
+        </Box>
+      </Drawer>
+    </>
   );
 };
 
@@ -107,6 +275,9 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
   return (
     <AppBar elevation={0} {...rest}>
       <Toolbar>
+        <Hidden lgUp>
+          <MobileMenu />
+        </Hidden>
         <RouterLink to={pageCheck ? '/app/overview' : '/'}>
           <Logo />
         </RouterLink>
