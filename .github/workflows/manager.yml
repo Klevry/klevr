@@ -36,5 +36,5 @@ jobs:
           file: ./Dockerfile.manager
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
+          tags: klevry/klevr:latest
           labels: ${{ steps.docker_meta.outputs.labels }}
