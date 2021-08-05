@@ -12,6 +12,8 @@ import Activate from 'src/pages/Activate';
 import NotFound from 'src/pages/NotFound';
 import Settings from 'src/pages/Settings';
 import Credentials from 'src/pages/Credentials';
+import Agent from 'src/pages/Agent';
+import Logs from 'src/pages/Logs';
 
 const App = () => {
   const isLoggedIn = useSelector((store) => store.loginReducer);
@@ -24,6 +26,8 @@ const App = () => {
         { path: 'overview', element: <Overview /> },
         { path: 'zones', element: <ZoneList /> },
         { path: 'credentials', element: <Credentials /> },
+        { path: 'agent', element: <Agent /> },
+        { path: 'logs', element: <Logs /> },
         { path: 'settings', element: <Settings /> },
         { path: '*', element: <Navigate to="/404" /> }
       ]

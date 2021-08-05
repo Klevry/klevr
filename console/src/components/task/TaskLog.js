@@ -67,11 +67,7 @@ const TaskLogList = () => {
 
 const TaskLog = ({ customers, ...rest }) => {
   return (
-    <Card
-      sx={{
-        marginTop: '25px'
-      }}
-    >
+    <Card>
       <x.div
         display="flex"
         alignItems="center"

@@ -87,9 +87,6 @@ const TaskList = () => {
           </x.div>
           {contentItem.content}
         </Container>
-        <Container maxWidth={false}>
-          <TaskLog />
-        </Container>
       </Box>
     </>
   );
