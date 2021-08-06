@@ -24,7 +24,7 @@ LABEL version=0.3
 
 RUN apk update && apk add curl bash vim
 
-COPY ./Dockerfile/manager/conf/* /conf/
+COPY ./conf/* /conf/
 COPY --from=builder /usr/src/klevr/Dockerfile/manager/klevr-manager /
 COPY ./Dockerfile/manager/wait-for-it.sh /
 COPY ./Dockerfile/manager/init-db.sh /
