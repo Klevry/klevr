@@ -1,0 +1,45 @@
+log:
+    level: info 
+    logPath: ./log/klevr-manager.log
+    maxSize: 1
+    maxBackups: 3
+    maxAge: 1
+    compress: false
+
+klevr:
+    server:
+        port: 8090
+        readTimeout: 10 #seconds
+        writeTimeout: 10 #seconds
+        encryptionKey: "F^C!s)J,Q'RnPO%QVcU[x6khQUpp5U)J"
+        transEncKey: "F^C!s)J,Q'RnPO%QVcU[2098QUpp5U)J"
+        statusUpdateCycle: 60 #seconds
+        eventHandler: "webhook"
+        webhook:
+            url: "http://nexclipper-server:8080/events/klevr"
+            hookTerm: 0 #seconds (0 : each event)
+            hookCount: 0 #(0: each event)
+        mq:
+            url: 
+              - "amqp://klevr:klevr@192.168.8.71:5672/nexclipper"
+            name: "klevr_events"
+            durable: true
+            autoDelete: false
+    agent:
+        callCycle: 5 #seconds
+        logLevel: INFO
+    db:
+        type: 'mysql'
+        url: 'klevr:klevr@tcp(klevr-db:3306)/klevr?charset=utf8mb4&parseTime=True&loc=Local'
+        maxOpenConns: 15
+        maxIdleConns: 5
+        maxConnLifeTime: 1
+        showSql: false
+        logLevel: warn
+        cache: false
+    cache:
+        type: 'redis'
+        address: '192.168.8.71'
+        port: 6379
+    console:
+        usage: true 

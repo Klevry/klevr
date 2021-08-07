@@ -33,7 +33,7 @@ services:
          - -c
          - |
             chmod +x /init-db.sh
-            /init-db.sh ${DB_MGMT_USER_NAME} ${DB_MGMT_USER_PASSWORD} klevr-db 3306 klevr /conf/klevr-manager-db.sql . ${DB_APP_USER} ${DB_APP_PASSWORD}
+            /init-db.sh $${DB_MGMT_USER_NAME} $${DB_MGMT_USER_PASSWORD} klevr-db 3306 klevr /conf/klevr-manager-db.sql . $${DB_APP_USER} $${DB_APP_PASSWORD}
             chmod +x /wait-for-it.sh
             /wait-for-it.sh klevr-db:3306 -t 10 -s -- echo "mariadb is up"
-            /klevr-manager -c ./conf/klevr-manager-compose.yml
+            /klevr-manager -c /conf/klevr-manager.yml
