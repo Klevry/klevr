@@ -18,17 +18,14 @@ RUN sh ./build.sh
 
 
 
-
 FROM alpine:3.13.2
-LABEL version=0.3
+LABEL version=0.4
 
-RUN apk update && apk add curl bash vim
+RUN apk update && apk add curl bash vim ##libc6-compat
 
 RUN mkdir /conf
 COPY ./conf/* /conf/
 COPY --from=builder /usr/src/klevr/Dockerfile/manager/klevr-manager /
-COPY ./Dockerfile/manager/wait-for-it.sh /
-COPY ./Dockerfile/manager/init-db.sh /
-CMD [ "./klevr-manager" ]
+COPY ./entrypoint.sh /
+ENTRYPOINT ./entrypoint.sh
 EXPOSE 8090
-
