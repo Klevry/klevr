@@ -12,8 +12,8 @@ RUN ${GOPATH}/bin/swag init -g server.go --parseDependency --parseInternal true
 
 WORKDIR /usr/src/klevr
 RUN go mod tidy 
-RUN chmod +x build.sh
-RUN sh ./build.sh
+RUN chmod +x build.manager.sh
+RUN sh ./build.manager.sh
 
 
 ## Main build
