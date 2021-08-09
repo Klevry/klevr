@@ -32,6 +32,6 @@ Check_db(){
         fi
 }
 
-Check_db
 Init_db
+Check_db
 App_run
