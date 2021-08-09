@@ -5,9 +5,12 @@ WORKDIR /usr/src/app
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
 
 COPY ./console/package.json /usr/src/app/package.json
+RUN pwd
 RUN npm install --silent
 
 COPY ./console/ /usr/src/app/
+RUN pwd
+RUN ls
 RUN npm run build
 
 
