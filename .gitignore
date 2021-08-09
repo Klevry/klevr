@@ -55,7 +55,7 @@ __debug_bin
 *.rar
 
 # MariaDB Database file
-data/*
+data/
 
 vendor/**
 
