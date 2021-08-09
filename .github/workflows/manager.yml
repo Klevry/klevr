@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    if: ${{ github.repository == 'Klevry/klevr' }}
     runs-on: ubuntu-latest
     steps:
       -
