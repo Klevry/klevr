@@ -8,7 +8,7 @@ COPY ./console/package.json /usr/src/app/package.json
 RUN npm install --silent
 
 COPY ./console/ /usr/src/app/
-RUN sed 's/{Your_API_URL}/http:\/\/localhost:8090/g' /usr/src/app/.env.prod.tmp > /usr/src/app/.env.prod
+RUN sed 's/{Your_API_URL}/http:\/\/localhost:8091/g' /usr/src/app/.env.prod.tmpl > /usr/src/app/.env.prod
 RUN npm run build
 
 
