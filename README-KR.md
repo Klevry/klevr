@@ -15,7 +15,7 @@
 * docker-compose 명령어
   ```
   git clone https://github.com/klevry/klevr.git
-  docker-compose -f docker-compose-demo.yml up -d
+  sudo docker-compose -f klevr/docker-compose-demo.yml up -d
   ```
 
 ## 다이어그램 개요
