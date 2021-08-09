@@ -2,9 +2,8 @@
 
 db_host="klevr-db"
 
-
 Init_db(){
-	/init-db.sh $${DB_MGMT_USER_NAME} $${DB_MGMT_USER_PASSWORD} klevr-db 3306 klevr /conf/klevr-manager-db.sql . $${DB_APP_USER} $${DB_APP_PASSWORD}
+	/init-db.sh $DB_MGMT_USER_NAME $DB_MGMT_USER_PASSWORD $db_host 3306 klevr /conf/klevr-manager-db.sql . $DB_APP_USER $DB_APP_PASSWORD
 }
 
 App_run(){
@@ -32,6 +31,6 @@ Check_db(){
         fi
 }
 
-Init_db
 Check_db
+Init_db
 App_run
