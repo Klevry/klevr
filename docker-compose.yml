@@ -1,0 +1,35 @@
+version: '3'
+services:
+   klevr-console:
+      image: klevry/klevr-console:latest
+      ports:
+         - "8091:80"
+      depends_on: 
+         - klevr-manager
+      environment:
+         - REACT_APP_API_URL="http:\\localhost:8090"
+   klevr-db:
+      image: mariadb
+      restart: always
+      volumes:
+         - ./data/mariadb:/var/lib/mysql
+      environment:
+         - MYSQL_ROOT_PASSWORD=root
+      healthcheck:
+         test: "/usr/bin/mysql --user=root --password=root --execute \"show databases;\""
+         interval: 3s
+         timeout: 1s
+         retries: 10
+      ports:
+         - "3306:3306"
+   klevr-manager:
+      image: klevry/klevr-manager:latest
+      ports: 
+         - "8090:8090"
+      depends_on: 
+         - klevr-db
+      environment: 
+         - DB_MGMT_USER_NAME=root
+         - DB_MGMT_USER_PASSWORD=root
+         - DB_APP_USER=klevr
+         - DB_APP_PASSWORD=klevr
