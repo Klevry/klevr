@@ -7,7 +7,7 @@ services:
       depends_on: 
          - klevr-manager
       environment:
-         - REACT_APP_API_URL="http:\\localhost:8090"
+         - REACT_APP_API_URL=http:\\localhost:8090
    klevr-db:
       image: mariadb
       restart: always

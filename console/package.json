@@ -5,8 +5,8 @@
   "version": "1.0.0",
   "private": false,
   "scripts": {
-    "start": "cp ./.env.dev ./.env && react-scripts start",
-    "build": "cp ./.env.prod ./.env && react-scripts build",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
