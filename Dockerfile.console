@@ -5,7 +5,8 @@ RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
 
-ENV REACT_APP_API_URL="http://klevr-manager:8090"
+#ENV REACT_APP_API_URL="http://klevr-manager:8090"
+ENV REACT_APP_API_URL="http://192.168.8.51:8090"
 
 COPY ./console/package.json /usr/src/app/package.json
 RUN npm install --silent
