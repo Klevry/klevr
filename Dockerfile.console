@@ -1,10 +1,11 @@
+## Build stage section from here
 FROM node as builder
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
 
-ENV REACT_APP_API_URL="Nada!"
+ENV REACT_APP_API_URL="http://192.168.8.71:8090"
 
 COPY ./console/package.json /usr/src/app/package.json
 RUN npm install --silent
@@ -12,6 +13,8 @@ RUN npm install --silent
 COPY ./console/ /usr/src/app/
 RUN npm run build
 
+
+## Runtime stage section from here
 FROM nginx:latest
 
 RUN mkdir /app
