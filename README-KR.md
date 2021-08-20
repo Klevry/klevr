@@ -15,8 +15,14 @@
 * docker-compose 명령어
   ```
   git clone https://github.com/klevry/klevr.git
-  sudo docker-compose -f klevr/docker-compose-demo.yml up -d
+  sudo docker-compose -f klevr/docker-compose.yml up -d
   ```
+* Lending page (default ID/PW = admin/admin)
+![image](https://user-images.githubusercontent.com/4043594/130207252-da0b5572-9f31-4a04-a55c-1f88b65a6c3d.png)
+
+* Main page
+![image](https://user-images.githubusercontent.com/4043594/130207444-8c49a724-fac9-4b5d-8a67-6d63c80fcda5.png)
+
 
 ## 다이어그램 개요
  * 이미지를 클릭 시 유튜브로 이동:
@@ -103,7 +109,7 @@
 ```
 .
 ├── CNAME
-├── Dockerfiles
+├── Dockerfiles                         // Docker image build를 위한 기반 디렉토리
 │   ├── README.md
 │   ├── agent
 │   ├── console
