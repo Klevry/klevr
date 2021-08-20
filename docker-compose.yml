@@ -7,7 +7,8 @@ services:
       depends_on: 
          - klevr-manager
       environment:
-         - REACT_APP_API_URL=http:\\localhost:8090
+         ## Please make a new .env file in same directory with docker-compose.yml for the Klevr manager server finding like this -> KLEVR_MANAGER_IP=192.168.0.1:8090
+         - KLEVR_MANAGER_IP=${KLEVR_MANAGER_IP}
    klevr-db:
       image: mariadb
       restart: always

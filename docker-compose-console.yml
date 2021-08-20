@@ -1,6 +1,10 @@
 version: '3'
-services: 
+services:
    klevr-console:
       image: klevry/klevr-console:latest
-      ports: 
+      ports:
          - "8091:80"
+      depends_on:
+         - klevr-manager
+      environment:
+         - KLEVR_MANAGER_IP=[IP_ADDRESS_HERE:PORTNUM_HERE]

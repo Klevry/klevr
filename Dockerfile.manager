@@ -24,7 +24,7 @@ RUN apk update && apk add curl bash vim ##libc6-compat
 
 RUN mkdir /conf
 COPY ./conf/* /conf/
-COPY --from=builder /usr/src/klevr/Dockerfile/manager/klevr-manager /
+COPY --from=builder /usr/src/klevr/Dockerfiles/manager/klevr-manager /
 COPY ./init-db.sh /
 COPY ./entrypoint.sh /
 ENTRYPOINT ./entrypoint.sh

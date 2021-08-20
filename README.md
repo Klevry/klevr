@@ -35,10 +35,10 @@ http://localhost:8090/swagger/index.html
    * Service catalog management(To be)
    * Service delivery to Dev./Stg./Prod.(To be)
  * **Docker images**
-   * [Agent](./Dockerfile/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
-   * [Manager](./Dockerfile/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
-   * ~~[Beacon](./Dockerfile/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
-   * ~~[Libvirt](./Dockerfile/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)~~
+   * [Agent](./Dockerfiles/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
+   * [Manager](./Dockerfiles/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
+   * ~~[Beacon](./Dockerfiles/beacon)(Primary agent health checker): [klevry/beacon:latest](https://hub.docker.com/repository/docker/klevry/beacon)~~
+   * ~~[Libvirt](./Dockerfiles/libvirt)(Hypervisor): [klevry/libvirt:latest](https://hub.docker.com/repository/docker/klevry/libvirt)~~
    * ~~Prometheus operator(Service discovery)~~
    * [ProvBee](https://github.com/NexClipper/provbee)(nexclipper/provbee)  
    * ~~Metric crawler~~
@@ -70,7 +70,7 @@ http://localhost:8090/swagger/index.html
 .
 ├── README.md                   // This Screen as you see. :)
 ├── docker-compose.yml          // Kickstarter: Bootstraping by docker-compose
-├── Dockerfile                  // Directory for docker image build
+├── Dockerfiles                  // Directory for docker image build
 │   ├── libvirt
 │   └── manager                 // Actual binary file of manager will be move to this link directory for the docker build
 ├── assets
@@ -82,7 +82,7 @@ http://localhost:8090/swagger/index.html
 │   │   ├── klevr               // Actual `Klevr` agent binary
 │   │   └── main.go             // main source code of the Agent
 │   └── klevr-manager
-│       ├── Docker -> ../../Dockerfile/manager  // Binary artifact send to this directory for Docker build  
+│       ├── Docker -> ../../Dockerfiles/manager  // Binary artifact send to this directory for Docker build  
 │       ├── Makefile
 │       └── main.go             // main source code of the Manager
 ├── conf

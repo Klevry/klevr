@@ -36,9 +36,9 @@
    * 서비스 카탈로그 관리
    * 개발/스테이징/프로덕션에 서비스 전달
  * **도커 이미지**
-   * [Agent](./Dockerfile/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
-   * [Manager](./Dockerfile/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
-   * [Console](./Dockerfile/console)(web console): [klevry/console:latest](https://hub.docker.com/repository/docker/klevry/klevr-console)
+   * [Agent](./Dockerfiles/agent)(user's infrastructure management agent): [klevry/agent:latest](https://hub.docker.com/repository/docker/klevry/klevr-agent)
+   * [Manager](./Dockerfiles/manager)(management console): [klevry/manager:latest](https://hub.docker.com/repository/docker/klevry/klevr-manager)
+   * [Console](./Dockerfiles/console)(web console): [klevry/console:latest](https://hub.docker.com/repository/docker/klevry/klevr-console)
 ## 아키텍쳐
 ### 데이터베이스 주요 스키마
  * AGENT_GROUPS: Agent들이 속해 있는 Zone(Group)의 정보. Zone(Group)을 기준으로 Task들이 Agent에 분배될 수 있습니다.
@@ -103,7 +103,7 @@
 ```
 .
 ├── CNAME
-├── Dockerfile
+├── Dockerfiles
 │   ├── README.md
 │   ├── agent
 │   ├── console
@@ -121,7 +121,7 @@
 │   │   ├── agent_installer.sh           // Manager가 생성한 스크립트로 curl 명령을 통한 원격 설치 프로그램
 │   │   └── main.go                      // 에이전트의 main 소스 코드
 │   └── klevr-manager
-│       ├── Dockerfile                   // Docker 빌드를 위해 바이너리 아티팩트를 이 디렉토리로 전송
+│       ├── Dockerfiles                   // Docker 빌드를 위해 바이너리 아티팩트를 이 디렉토리로 전송
 │       ├── Makefile
 │       ├── README.md
 │       └── main.go                      // 매니저의 main 소스 코드

@@ -17,8 +17,8 @@ LABEL version=0.1.4
 
 RUN apk update && apk add --no-cache openssh-client jq bash 
 
-COPY --from=builder /usr/src/klevr/Dockerfile/agent/klevr /
-COPY ./Dockerfile/agent/entrypoint.sh /
+COPY --from=builder /usr/src/klevr/Dockerfiles/agent/klevr /
+COPY ./Dockerfiles/agent/entrypoint.sh /
 
 ENV K_API_KEY ""
 ENV K_PLATFORM ""
