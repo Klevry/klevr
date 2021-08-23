@@ -22,9 +22,9 @@ const items = [
     title: 'Overview'
   },
   {
-    href: '/app/tasks',
-    icon: TaskIcon,
-    title: 'Tasks'
+    href: '/app/agent',
+    icon: AgentIcon,
+    title: 'Agent'
   },
   {
     href: '/app/credentials',
@@ -32,9 +32,9 @@ const items = [
     title: 'Credentials'
   },
   {
-    href: '/app/agent',
-    icon: AgentIcon,
-    title: 'Agent'
+    href: '/app/tasks',
+    icon: TaskIcon,
+    title: 'Tasks'
   },
   {
     href: '/app/logs',
