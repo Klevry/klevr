@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link as RouterLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import styled from '@emotion/styled/macro';
 import PropTypes from 'prop-types';
 import {
   AppBar,
@@ -88,22 +89,60 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
+const FirstZone = () => {
+  const zoneList = useSelector((store) => store.zoneListReducer);
+
+  const BlinkWrapper = styled.div`
+    width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+    animation: blink-effect 1.5s step-end infinite;
+
+    @keyframes blink-effect {
+      50% {
+        opacity: 0;
+      }
+    }
+  `;
+
+  if (zoneList) {
+    return null;
+  }
+
+  return (
+    <BlinkWrapper>
+      <NavItem
+        href="/app/zones"
+        key="Zones"
+        title="Please add a zone first."
+        icon={ZoneIcon}
+      />
+    </BlinkWrapper>
+  );
+};
+
 const Zone = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const currentZone = useSelector((store) => store.zoneReducer);
   const zoneList = useSelector((store) => store.zoneListReducer);
-  const [iz, setIz] = useState();
 
   const classes = useStyles();
   useEffect(() => {
     let completed = false;
     async function get() {
       const result = await axios.get(`${API_SERVER}/inner/groups`);
-      if (!completed) dispatch(getZoneList(result.data));
+
+      if (!completed)
+        if (result.data === null) {
+          dispatch(getZoneList(null));
+          return;
+        }
+      dispatch(getZoneList(result.data));
       dispatch(filterByZone(result.data[0].Id));
       dispatch(getZoneName(result.data[0].GroupName));
-      setIz(result.data[0].Id);
     }
     get();
     return () => {
@@ -112,10 +151,6 @@ const Zone = () => {
   }, []);
 
   if (!zoneList) {
-    return null;
-  }
-
-  if (!iz) {
     return null;
   }
 
@@ -137,10 +172,7 @@ const Zone = () => {
         <NavItem href="/app/zones" key="Zones" title="Zones" icon={ZoneIcon} />
       </x.div>
       <FormControl className={classes.formControl}>
-        {/* <InputLabel style={{ color: 'white', fontWeight: 'bold' }}>
-          Zone
-        </InputLabel> */}
-        <NativeSelect defaultValue={iz} variant="standard">
+        <NativeSelect value={currentZone} variant="standard">
           {zoneList.map((item) => (
             <MenuItem
               value={item.Id}
@@ -283,6 +315,7 @@ const DashboardNavbar = ({ onMobileNavOpen, ...rest }) => {
         </RouterLink>
         <Box sx={{ flexGrow: 1 }} />
         <Zone />
+        <FirstZone />
         <Hidden lgDown>
           <IconButton color="default">
             <a

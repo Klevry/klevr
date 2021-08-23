@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Modal, Button, Form, Input, Select } from 'antd';
 import { x } from '@xstyled/emotion';
 import { API_SERVER } from 'src/config';
-import { getZoneList } from '../store/actions/klevrActions';
+import {
+  filterByZone,
+  getZoneList,
+  getZoneName
+} from '../store/actions/klevrActions';
 import { Plus as AddIcon } from 'react-feather';
 
 const { Option } = Select;
@@ -24,6 +29,7 @@ const AddZone = () => {
   const [groupname, setGroupname] = useState('');
   const [platform, setPlatform] = useState('');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const onReset = () => {
     form.resetFields();
@@ -57,6 +63,10 @@ const AddZone = () => {
       async function get() {
         const result = await axios.get(`${API_SERVER}/inner/groups`);
         dispatch(getZoneList(result.data));
+        selectZone(
+          result.data[result.data.length - 1].Id,
+          result.data[result.data.length - 1].GroupName
+        );
       }
       get();
       setVisible(false);
@@ -64,6 +74,11 @@ const AddZone = () => {
     }
 
     onReset();
+  };
+
+  const selectZone = (id, groupName) => {
+    dispatch(filterByZone(id));
+    dispatch(getZoneName(groupName));
   };
 
   const handleCancel = () => {
