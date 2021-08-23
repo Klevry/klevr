@@ -66,7 +66,7 @@
  * TASK_STEPS: Manage the steps that perform the actual work of the task
  * TASK_LOGS: Task log
 
-### 구조
+### Structure
  * Klevr has a web-based management tool (console) implemented in React.
    * The user manual of the console can be viewed at [here] (./console/Manual-KR.md).
    * It provides user (admin) authentication and can manage Task, Credential, Zone, Agent, and API Key.
