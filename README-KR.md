@@ -50,7 +50,8 @@
  * AGENT_GROUPS: Agent들이 속해 있는 Zone(Group)의 정보. Zone(Group)을 기준으로 Task들이 Agent에 분배될 수 있습니다.
  * AGENTS: Manager에 접근이 허가된 Agents들의 상태 및 해당 Agent가 속해 있는 Zone의 정보등을 관리
  * API_AUTHENTICATIONS: Manager에서 제공하는 기능에 액세스 할 수 있도록 인증 과정을 거치기 위한 API key 관리
- * TASK_LOCK: Manager가 Task의 기능을 제공할 수 있음을 Lock을 선점함으로 알림
+ * TASK_LOCK: Manager가 Lock을 선점하여 작업의 기능을 제공할 수 있음을 알림
+ * Manager로 부터 Task 제공이 가능함을 알리는 Lock을 선점해서 확인 
  * TASKS: Task의 전반적인 사항과 상태 관리
  * TASK_DETAIL: 각 Task의 세부 설정 내용
  * TASK_STEPS: Task의 실제 작업을 수행하는 Step을 관리
