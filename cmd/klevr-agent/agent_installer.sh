@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo " Now, Downloading the klevr agent, Please wait..."
-curl -sL https://github.com/Klevry/klevr/raw/master/Dockerfile/agent/klevr -o ~/klevr
+curl -sL https://github.com/Klevry/klevr/raw/master/Dockerfiles/agent/klevr -o ~/klevr
 chmod 755 ~/klevr
 
 ## klevr -apiKey=${K_API_KEY} -platform=${K_PLATFORM} -manager=${K_MANAGER_URL} -zoneId=${K_ZONE_ID}
