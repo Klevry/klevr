@@ -34,3 +34,4 @@ services:
          - DB_MGMT_USER_PASSWORD=root
          - DB_APP_USER=klevr
          - DB_APP_PASSWORD=klevr
+         - KLEVR_SERVER_EVENTHANDLER=""
