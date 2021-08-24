@@ -15,13 +15,13 @@ require: ## Check go requirement
 	go get -u
 
 build: ##require ## Build main.go
-	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s -w' -o ../../Dockerfile/agent/klevr ./main.go
+	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-s -w' -o ../../Dockerfiles/agent/klevr ./main.go
 
 docker: build
 	docker stop -t 0 agent || true
 	docker rm agent || true
 	docker rmi agent
-	docker build -t agent ../../Dockerfile/agent
+	docker build -t agent ../../Dockerfiles/agent
 	docker run --name agent --add-host=host-docker-internal:172.17.0.1 -d -e K_API_KEY="751ad8ec4db84c889f4d58bd22be3953" -e K_PLATFORM="kubernetes" -e K_ZONE_ID=1 -e K_MANAGER_URL="http://192.168.15.150:8090" agent
 
 run: ## Run main.go with some args 
