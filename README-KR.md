@@ -26,7 +26,7 @@
 
 ## 다이어그램 개요
  * 이미지를 클릭 시 유튜브로 이동:
-   [![Diagram Overview](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
+   [![Diagram Overview](https://user-images.githubusercontent.com/4043594/130544379-ca032ecb-d1f7-468c-a289-3b3ab3c671d1.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## 특징
  * **[Agent](./agent/)**
