@@ -25,7 +25,7 @@
 
 ## Diagram Overview
  * Image click to Youtube:
- * [![Diagram Overview](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_diagram_overview.png)](https://youtu.be/xLkqm1vEmd0)
+ * [![Diagram Overview](https://user-images.githubusercontent.com/4043594/130544379-ca032ecb-d1f7-468c-a289-3b3ab3c671d1.png)](https://youtu.be/xLkqm1vEmd0)
 
 ## Features
  * **Agent**
@@ -93,10 +93,6 @@
     * The Agent who initially requested HandShake from the Manager is selected as Primary
     * After this, Agents requesting HandShake are selected as Secondary
     * Secondary Agents monitor the status of Primary Agent. The first secondary agent that detects an abnormality in the primary agent reports the status of the primary agent to the manager and is selected as the primary agent.
-
-## Simple logic of asynchronous task management - (Click to Youtube)
- * [![Primary election of agent](https://raw.githubusercontent.com/Klevry/klevr/master/assets/Klevr_Agent_primary_election_n_delivery_logic.png)](https://www.youtube.com/watch?v=hyMaVsCcgbA&t=2s)
-
 
 
 ## Usage
