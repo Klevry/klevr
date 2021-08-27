@@ -9,7 +9,8 @@ import {
   TableBody,
   TableCell,
   TableRow,
-  TableHead
+  TableHead,
+  TableSortLabel
 } from '@material-ui/core';
 import axios from 'axios';
 import PerfectScrollbar from 'react-perfect-scrollbar';
@@ -22,7 +23,7 @@ import AddCredential from './AddCredential';
 import { getCredential } from '../store/actions/klevrActions';
 import UpdateCredential from './UpdateCredential';
 
-const CredentialList = () => {
+const CredentialList = ({ sortedList }) => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const credentialList = useSelector((store) => store.credentialReducer);
@@ -88,7 +89,7 @@ const CredentialList = () => {
 
   return (
     <TableBody>
-      {credentialList.map((item) => (
+      {sortedList.map((item) => (
         <TableRow hover key={item.agentKey}>
           <TableCell>{`${item.key}`}</TableCell>
           <TableCell>{`${item.hash}`}</TableCell>
@@ -112,6 +113,63 @@ const CredentialList = () => {
 };
 
 const AllCredentials = ({ customers, ...rest }) => {
+  const credentialList = useSelector((store) => store.credentialReducer);
+  const [orderDirection, setOrderDirection] = useState('asc');
+  const [valueToOrderBy, setValueToOrderBy] = useState('');
+
+  const handleRequestSort = (e, property) => {
+    const isAscending = valueToOrderBy === property && orderDirection === 'asc';
+    setValueToOrderBy(property);
+    setOrderDirection(isAscending ? 'desc' : 'asc');
+  };
+
+  const createSortHandler = (property) => (e) => {
+    handleRequestSort(e, property);
+  };
+
+  function descendingComparator(a, b, orderBy) {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  }
+
+  function getComparator(order, orderBy) {
+    if (orderBy === 'update' || orderBy === 'create') {
+      return 'time';
+    }
+
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  }
+
+  function stableSort(array, comparator) {
+    if (comparator === 'time') {
+      switch (orderDirection) {
+        case 'asc':
+          return array;
+          break;
+
+        case 'desc':
+          return [...array].reverse();
+          break;
+        default:
+      }
+    }
+
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  }
+
   return (
     <Card>
       <x.div
@@ -132,14 +190,52 @@ const AllCredentials = ({ customers, ...rest }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Key</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'key'}
+                    direction={
+                      valueToOrderBy === 'key' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('key')}
+                  >
+                    Key
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Hash</TableCell>
-                <TableCell>Updated At</TableCell>
-                <TableCell>Created At</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'update'}
+                    direction={
+                      valueToOrderBy === 'update' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('update')}
+                  >
+                    Updated At
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'create'}
+                    direction={
+                      valueToOrderBy === 'create' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('create')}
+                  >
+                    Created At
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            <CredentialList />
+            <CredentialList
+              sortedList={
+                credentialList &&
+                stableSort(
+                  credentialList,
+                  getComparator(orderDirection, valueToOrderBy)
+                )
+              }
+            />
           </Table>
         </Box>
       </PerfectScrollbar>
