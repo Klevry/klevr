@@ -34,10 +34,23 @@ const Refresh = ({ from }) => {
     let completed = false;
 
     async function get() {
-      const result = await axios.get(
+      const agentResult = await axios.get(
         `${API_SERVER}/inner/groups/${currentZone}/agents`
       );
-      if (!completed) dispatch(getAgentList(result.data));
+      const primaryResult = await axios.get(
+        `${API_SERVER}/inner/groups/${currentZone}/primary`
+      );
+      if (!completed) {
+        const roleAddedData = agentResult.data.filter((el) => {
+          if (el.agentKey === primaryResult.data.agentKey) {
+            return (el.role = 'Primary');
+          } else {
+            return (el.role = 'Secondary');
+          }
+        });
+
+        dispatch(getAgentList(roleAddedData));
+      }
     }
     get();
     return () => {
