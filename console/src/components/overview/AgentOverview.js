@@ -12,7 +12,8 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow
+  TableRow,
+  TableSortLabel
 } from '@material-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, Button, Form, Input, Select, Tag, Alert } from 'antd';
@@ -22,38 +23,36 @@ import { CopyOutlined as CopyOutlinedIcon } from '@ant-design/icons';
 import { getAgentList } from '../store/actions/klevrActions';
 import { Link as RouterLink } from 'react-router-dom';
 import Refresh from '../common/Refresh';
+import { CatchingPokemonSharp } from '@material-ui/icons';
 
 const { Option } = Select;
 
-const AgentList = () => {
+const AgentList = ({ sortedAgentList }) => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const agentList = useSelector((store) => store.agentListReducer);
-  const [primary, setPrimary] = useState(undefined);
 
   const fetchAgent = () => {
     let completed = false;
 
     async function get() {
-      const result = await axios.get(
+      const agentResult = await axios.get(
         `${API_SERVER}/inner/groups/${currentZone}/agents`
       );
-      if (!completed) dispatch(getAgentList(result.data));
-    }
-    get();
-    return () => {
-      completed = true;
-    };
-  };
-
-  const fetchRole = () => {
-    let completed = false;
-
-    async function get() {
-      const result = await axios.get(
+      const primaryResult = await axios.get(
         `${API_SERVER}/inner/groups/${currentZone}/primary`
       );
-      if (!completed) setPrimary(result.data.agentKey);
+      if (!completed) {
+        const roleAddedData = agentResult.data.filter((el) => {
+          if (el.agentKey === primaryResult.data.agentKey) {
+            return (el.role = 'Primary');
+          } else {
+            return (el.role = 'Secondary');
+          }
+        });
+
+        dispatch(getAgentList(roleAddedData));
+      }
     }
     get();
     return () => {
@@ -63,12 +62,10 @@ const AgentList = () => {
 
   useEffect(() => {
     fetchAgent();
-    fetchRole();
   }, []);
 
   useEffect(() => {
     fetchAgent();
-    fetchRole();
   }, [currentZone]);
 
   if (!agentList) {
@@ -77,7 +74,7 @@ const AgentList = () => {
 
   return (
     <TableBody>
-      {agentList.map((item) => (
+      {sortedAgentList.map((item) => (
         <TableRow hover key={item.agentKey}>
           <TableCell>{item.agentKey}</TableCell>
           <TableCell>{item.ip}</TableCell>
@@ -87,7 +84,7 @@ const AgentList = () => {
           <TableCell>{item.memory}</TableCell>
           <TableCell>{item.isActive ? 'Active' : 'Inactive'}</TableCell>
           <TableCell>
-            {item.agentKey === primary ? (
+            {item.role === 'Primary' ? (
               <Tag color="blue">Primary</Tag>
             ) : (
               <Tag>Secondary</Tag>
@@ -316,6 +313,46 @@ const AddAgent = () => {
 };
 
 const AgentOverview = (props) => {
+  const agentList = useSelector((store) => store.agentListReducer);
+  const [orderDirection, setOrderDirection] = useState('asc');
+  const [valueToOrderBy, setValueToOrderBy] = useState('');
+
+  const handleRequestSort = (e, property) => {
+    const isAscending = valueToOrderBy === property && orderDirection === 'asc';
+    setValueToOrderBy(property);
+    setOrderDirection(isAscending ? 'desc' : 'asc');
+  };
+
+  const createSortHandler = (property) => (e) => {
+    handleRequestSort(e, property);
+  };
+
+  function descendingComparator(a, b, orderBy) {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  }
+
+  function getComparator(order, orderBy) {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  }
+
+  function stableSort(array, comparator) {
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  }
+
   return (
     <Card
       {...props}
@@ -342,16 +379,52 @@ const AgentOverview = (props) => {
             <TableHead>
               <TableRow>
                 <TableCell>Agent ID</TableCell>
-                <TableCell>IP</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'ip'}
+                    direction={valueToOrderBy === 'ip' ? orderDirection : 'asc'}
+                    onClick={createSortHandler('ip')}
+                  >
+                    IP
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Port</TableCell>
                 <TableCell>CPU</TableCell>
                 <TableCell>Disk</TableCell>
                 <TableCell>Memory</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Role</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'status'}
+                    direction={
+                      valueToOrderBy === 'status' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('status')}
+                  >
+                    Status
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'role'}
+                    direction={
+                      valueToOrderBy === 'role' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('role')}
+                  >
+                    Role
+                  </TableSortLabel>
+                </TableCell>
               </TableRow>
             </TableHead>
-            <AgentList />
+            <AgentList
+              sortedAgentList={
+                agentList &&
+                stableSort(
+                  agentList,
+                  getComparator(orderDirection, valueToOrderBy)
+                )
+              }
+            />
           </Table>
         </Box>
       </PerfectScrollbar>
