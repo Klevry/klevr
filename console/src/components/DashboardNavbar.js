@@ -58,14 +58,14 @@ const items = [
     title: 'Tasks'
   },
   {
-    href: '/app/credentials',
-    icon: CredentialIcon,
-    title: 'Credentials'
-  },
-  {
     href: '/app/agent',
     icon: AgentIcon,
     title: 'Agent'
+  },
+  {
+    href: '/app/credentials',
+    icon: CredentialIcon,
+    title: 'Credentials'
   },
   {
     href: '/app/logs',
