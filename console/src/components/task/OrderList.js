@@ -9,7 +9,8 @@ import {
   TableBody,
   TableCell,
   TableRow,
-  TableHead
+  TableHead,
+  TableSortLabel
 } from '@material-ui/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { getTaskList } from '../store/actions/klevrActions';
@@ -17,7 +18,7 @@ import { Button, Modal, Alert } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { x } from '@xstyled/emotion';
 
-const TaskList = () => {
+const TaskList = ({ sortedTaskList }) => {
   const dispatch = useDispatch();
   const currentZone = useSelector((store) => store.zoneReducer);
   const taskList = useSelector((store) => store.taskListReducer);
@@ -87,8 +88,8 @@ const TaskList = () => {
   return (
     <>
       <TableBody>
-        {taskList.map((item) => (
-          <TableRow hover key={item.agentKey}>
+        {sortedTaskList.map((item) => (
+          <TableRow hover key={item.id}>
             {item.taskType === 'atOnce' && (
               <>
                 <TableCell>{`${item.id}`}</TableCell>
@@ -149,6 +150,46 @@ const TaskList = () => {
 };
 
 const OrderList = ({ customers, ...rest }) => {
+  const taskList = useSelector((store) => store.taskListReducer);
+  const [orderDirection, setOrderDirection] = useState('asc');
+  const [valueToOrderBy, setValueToOrderBy] = useState('');
+
+  const handleRequestSort = (e, property) => {
+    const isAscending = valueToOrderBy === property && orderDirection === 'asc';
+    setValueToOrderBy(property);
+    setOrderDirection(isAscending ? 'desc' : 'asc');
+  };
+
+  const createSortHandler = (property) => (e) => {
+    handleRequestSort(e, property);
+  };
+
+  function descendingComparator(a, b, orderBy) {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+    return 0;
+  }
+
+  function getComparator(order, orderBy) {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  }
+
+  function stableSort(array, comparator) {
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  }
+
   return (
     <Card>
       <PerfectScrollbar>
@@ -156,16 +197,82 @@ const OrderList = ({ customers, ...rest }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>ExeAgent</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Task Type</TableCell>
-                <TableCell>Created At</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'id'}
+                    direction={valueToOrderBy === 'id' ? orderDirection : 'asc'}
+                    onClick={createSortHandler('id')}
+                  >
+                    ID
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'name'}
+                    direction={
+                      valueToOrderBy === 'name' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('name')}
+                  >
+                    Name
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'exeAgentKey'}
+                    direction={
+                      valueToOrderBy === 'exeAgentKey' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('exeAgentKey')}
+                  >
+                    ExeAgent
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'status'}
+                    direction={
+                      valueToOrderBy === 'status' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('status')}
+                  >
+                    Status
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'taskType'}
+                    direction={
+                      valueToOrderBy === 'taskType' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('taskType')}
+                  >
+                    Task Type
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'createdAt'}
+                    direction={
+                      valueToOrderBy === 'createdAt' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('createdAt')}
+                  >
+                    Created At
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            <TaskList />
+            <TaskList
+              sortedTaskList={
+                taskList &&
+                stableSort(
+                  taskList,
+                  getComparator(orderDirection, valueToOrderBy)
+                )
+              }
+            />
           </Table>
         </Box>
       </PerfectScrollbar>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_SERVER } from '../../config';
 import PerfectScrollbar from 'react-perfect-scrollbar';
@@ -12,7 +12,8 @@ import {
   TableBody,
   TableCell,
   TableRow,
-  TableHead
+  TableHead,
+  TableSortLabel
 } from '@material-ui/core';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -22,7 +23,7 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 import AddZone from './AddZone';
 import Refresh from '../common/Refresh';
 
-const ZoneList = () => {
+const ZoneList = ({ sortedZoneList }) => {
   const dispatch = useDispatch();
   const zoneList = useSelector((store) => store.zoneListReducer);
   const currentZone = useSelector((store) => store.zoneReducer);
@@ -74,8 +75,8 @@ const ZoneList = () => {
   }
   return (
     <TableBody>
-      {zoneList.map((item) => (
-        <TableRow hover key={item.agentKey}>
+      {sortedZoneList.map((item) => (
+        <TableRow hover key={item.Id}>
           <TableCell>{`${item.Id}`}</TableCell>
           <TableCell>{`${item.GroupName}`}</TableCell>
           <TableCell>{`${item.CreatedAt}`}</TableCell>
@@ -95,7 +96,48 @@ const ZoneList = () => {
   );
 };
 
-const Alltasks = ({ customers, ...rest }) => {
+const AllZones = ({ customers, ...rest }) => {
+  const zoneList = useSelector((store) => store.zoneListReducer);
+  const [orderDirection, setOrderDirection] = useState('asc');
+  const [valueToOrderBy, setValueToOrderBy] = useState('');
+
+  const handleRequestSort = (e, property) => {
+    const isAscending = valueToOrderBy === property && orderDirection === 'asc';
+    setValueToOrderBy(property);
+    setOrderDirection(isAscending ? 'desc' : 'asc');
+  };
+
+  const createSortHandler = (property) => (e) => {
+    handleRequestSort(e, property);
+  };
+
+  function descendingComparator(a, b, orderBy) {
+    if (b[orderBy] < a[orderBy]) {
+      return -1;
+    }
+    if (b[orderBy] > a[orderBy]) {
+      return 1;
+    }
+
+    return 0;
+  }
+
+  function getComparator(order, orderBy) {
+    return order === 'desc'
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  }
+
+  function stableSort(array, comparator) {
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  }
+
   return (
     <Card>
       <x.div
@@ -116,14 +158,60 @@ const Alltasks = ({ customers, ...rest }) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>GroupName</TableCell>
-                <TableCell>Created At</TableCell>
-                <TableCell>Platform</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'Id'}
+                    direction={valueToOrderBy === 'Id' ? orderDirection : 'asc'}
+                    onClick={createSortHandler('Id')}
+                  >
+                    ID
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'GroupName'}
+                    direction={
+                      valueToOrderBy === 'GroupName' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('GroupName')}
+                  >
+                    GroupName
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'CreatedAt'}
+                    direction={
+                      valueToOrderBy === 'CreatedAt' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('CreatedAt')}
+                  >
+                    Created At
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'Platform'}
+                    direction={
+                      valueToOrderBy === 'Platform' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('Platform')}
+                  >
+                    Platform
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-            <ZoneList />
+            <ZoneList
+              sortedZoneList={
+                zoneList &&
+                stableSort(
+                  zoneList,
+                  getComparator(orderDirection, valueToOrderBy)
+                )
+              }
+            />
           </Table>
         </Box>
       </PerfectScrollbar>
@@ -131,4 +219,4 @@ const Alltasks = ({ customers, ...rest }) => {
   );
 };
 
-export default Alltasks;
+export default AllZones;
