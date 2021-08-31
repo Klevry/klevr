@@ -378,7 +378,17 @@ const AgentOverview = (props) => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Agent ID</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={valueToOrderBy === 'agentKey'}
+                    direction={
+                      valueToOrderBy === 'agentKey' ? orderDirection : 'asc'
+                    }
+                    onClick={createSortHandler('agentKey')}
+                  >
+                    Agent ID
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={valueToOrderBy === 'ip'}
@@ -394,11 +404,11 @@ const AgentOverview = (props) => {
                 <TableCell>Memory</TableCell>
                 <TableCell>
                   <TableSortLabel
-                    active={valueToOrderBy === 'status'}
+                    active={valueToOrderBy === 'isActive'}
                     direction={
-                      valueToOrderBy === 'status' ? orderDirection : 'asc'
+                      valueToOrderBy === 'isActive' ? orderDirection : 'asc'
                     }
-                    onClick={createSortHandler('status')}
+                    onClick={createSortHandler('isActive')}
                   >
                     Status
                   </TableSortLabel>

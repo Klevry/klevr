@@ -57,7 +57,7 @@ const CredentialList = ({ sortedList }) => {
   return (
     <TableBody>
       {sortedList.slice(0, 5).map((item) => (
-        <TableRow hover key={item.agentKey}>
+        <TableRow hover key={item.id}>
           <TableCell>{`${item.key}`}</TableCell>
           <TableCell>{`${item.hash}`}</TableCell>
           <TableCell>{`${item.updatedAt}`}</TableCell>
@@ -94,29 +94,12 @@ const CredentialOverview = (props) => {
   }
 
   function getComparator(order, orderBy) {
-    if (orderBy === 'update' || orderBy === 'create') {
-      return 'time';
-    }
-
     return order === 'desc'
       ? (a, b) => descendingComparator(a, b, orderBy)
       : (a, b) => -descendingComparator(a, b, orderBy);
   }
 
   function stableSort(array, comparator) {
-    if (comparator === 'time') {
-      switch (orderDirection) {
-        case 'asc':
-          return array;
-          break;
-
-        case 'desc':
-          return [...array].reverse();
-          break;
-        default:
-      }
-    }
-
     const stabilizedThis = array.map((el, index) => [el, index]);
     stabilizedThis.sort((a, b) => {
       const order = comparator(a[0], b[0]);
@@ -162,22 +145,22 @@ const CredentialOverview = (props) => {
                 <TableCell>Hash</TableCell>
                 <TableCell>
                   <TableSortLabel
-                    active={valueToOrderBy === 'update'}
+                    active={valueToOrderBy === 'updatedAt'}
                     direction={
-                      valueToOrderBy === 'update' ? orderDirection : 'asc'
+                      valueToOrderBy === 'updatedAt' ? orderDirection : 'asc'
                     }
-                    onClick={createSortHandler('update')}
+                    onClick={createSortHandler('updatedAt')}
                   >
                     Updated At
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>
                   <TableSortLabel
-                    active={valueToOrderBy === 'create'}
+                    active={valueToOrderBy === 'createdAt'}
                     direction={
-                      valueToOrderBy === 'create' ? orderDirection : 'asc'
+                      valueToOrderBy === 'createdAt' ? orderDirection : 'asc'
                     }
-                    onClick={createSortHandler('create')}
+                    onClick={createSortHandler('createdAt')}
                   >
                     Created At
                   </TableSortLabel>

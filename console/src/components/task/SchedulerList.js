@@ -89,7 +89,7 @@ const TaskList = ({ sortedTaskList }) => {
     <>
       <TableBody>
         {sortedTaskList.map((item) => (
-          <TableRow hover key={item.agentKey}>
+          <TableRow hover key={item.id}>
             {item.taskType === 'iteration' && (
               <>
                 <TableCell>{`${item.id}`}</TableCell>
@@ -219,11 +219,11 @@ const SchedulerList = ({ customers, ...rest }) => {
                 </TableCell>
                 <TableCell>
                   <TableSortLabel
-                    active={valueToOrderBy === 'exe'}
+                    active={valueToOrderBy === 'exeAgentKey'}
                     direction={
-                      valueToOrderBy === 'exe' ? orderDirection : 'asc'
+                      valueToOrderBy === 'exeAgentKey' ? orderDirection : 'asc'
                     }
-                    onClick={createSortHandler('exe')}
+                    onClick={createSortHandler('exeAgentKey')}
                   >
                     ExeAgent
                   </TableSortLabel>

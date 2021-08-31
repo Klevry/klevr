@@ -61,10 +61,11 @@ const TaskList = ({ sortedTaskList }) => {
   if (!taskList) {
     return null;
   }
+
   return (
     <TableBody>
       {sortedTaskList.slice(0, 5).map((item) => (
-        <TableRow hover key={item.agentKey}>
+        <TableRow hover key={item.id}>
           <TableCell>{`${item.id}`}</TableCell>
           <TableCell>{`${item.name}`}</TableCell>
           <TableCell>{`${item.status}`}</TableCell>
