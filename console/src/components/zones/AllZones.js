@@ -75,7 +75,7 @@ const ZoneList = () => {
   return (
     <TableBody>
       {zoneList.map((item) => (
-        <TableRow hover key={item.agentKey}>
+        <TableRow hover key={item.Id}>
           <TableCell>{`${item.Id}`}</TableCell>
           <TableCell>{`${item.GroupName}`}</TableCell>
           <TableCell>{`${item.CreatedAt}`}</TableCell>
@@ -95,7 +95,7 @@ const ZoneList = () => {
   );
 };
 
-const Alltasks = ({ customers, ...rest }) => {
+const AllZones = ({ customers, ...rest }) => {
   return (
     <Card>
       <x.div
@@ -131,4 +131,4 @@ const Alltasks = ({ customers, ...rest }) => {
   );
 };
 
-export default Alltasks;
+export default AllZones;
