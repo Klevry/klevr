@@ -19,6 +19,7 @@
   git clone https://github.com/klevry/klevr.git
   sudo docker-compose -f klevr/docker-compose.yml up -d
   ```
+* http://localhost:8091의 console을 방문 할 수 있음
 * Lending page (default ID/PW = admin/admin)
 ![image](https://user-images.githubusercontent.com/4043594/130207252-da0b5572-9f31-4a04-a55c-1f88b65a6c3d.png)
 
