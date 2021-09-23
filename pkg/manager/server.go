@@ -142,7 +142,19 @@ func (manager *KlevrManager) Run() error {
 	ctx.Put(CtxServer, manager)
 	ctx.Put(CtxDbConn, db)
 	ctx.Put(CtxPrimary, &sync.Mutex{})
-	ctx.Put(CtxCache, &sync.Mutex{})
+
+	if manager.Config.DB.Cache == true {
+		ctx.Put(CtxCacheLock, &sync.Mutex{})
+	}
+
+	cache := NewAgentStorage(manager.Config.Cache.Address, manager.Config.Cache.Port, manager.Config.Cache.Password)
+	if cache == nil {
+		logger.Fatal("Cache connect failed: address(%s:%d)", manager.Config.Cache.Address, manager.Config.Cache.Port)
+	}
+
+	defer cache.Close()
+
+	ctx.Put(CtxCacheConn, cache)
 
 	if serverConfig.EventHandler == "mq" {
 		mqConfig := serverConfig.Mq
@@ -618,7 +630,7 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 					current := time.Now().UTC()
 					before := current.Add(-time.Duration(manager.Config.Server.StatusUpdateCycle) * time.Second)
 
-					txManager := NewAgentStorage()
+					txManager := CtxGetCacheConn(ctx)
 					cnt, agents := txManager.GetAgentsForInactive(ctx, tx, before)
 
 					if cnt > 0 {
@@ -664,7 +676,6 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 					}
 
 					tx.Commit()
-					txManager.Close()
 				},
 				Catch: func(e error) {
 					if !tx.IsClosed() {

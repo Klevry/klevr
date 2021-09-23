@@ -220,9 +220,8 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 
 	if exist {
 		//a := tx.getAgentByID(primary.AgentId)
-		txManager := NewAgentStorage()
+		txManager := CtxGetCacheConn(ctx)
 		a := txManager.GetAgentByID(ctx, tx, groupID, primary.AgentId)
-		txManager.Close()
 
 		agent = common.Agent{
 			AgentKey:           a.AgentKey,
@@ -388,9 +387,8 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//cnt, agents := tx.getAgentsByGroupId(groupID)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	cnt, agents := txManager.GetAgentsByZoneID(ctx, tx, groupID)
-	txManager.Close()
 
 	nodes := make([]Agent, cnt)
 
@@ -1044,10 +1042,9 @@ func (api *serversAPI) deletegroup(ctx *common.Context, tx *Tx, id uint64) error
 
 	//tx.deleteAgent(id)
 	//cnt, _ = tx.getAgentsByGroupId(id)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	txManager.DeleteAgent(ctx, tx, id)
 	cnt, _ = txManager.GetAgentsByZoneID(ctx, tx, id)
-	txManager.Close()
 	if cnt > 0 {
 		return fmt.Errorf("It cannot remove the zone of the zoneid: %d", id)
 	}

@@ -183,7 +183,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	agent := txManager.GetAgentByAgentKey(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
@@ -192,7 +192,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	tx.updateRetryScheduledTask(ch.AgentKey)
 
 	tx.Commit()
-	txManager.Close()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -334,9 +333,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		//tx.updateZoneStatus(&arrAgent)
 		//logger.Debugf("########## %d, %v", len(arrAgent), arrAgent)
-		txManager := NewAgentStorage()
+		txManager := CtxGetCacheConn(ctx)
 		txManager.UpdateZoneStatus(ctx, tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
 		if len(inactiveAgentKeys) > 0 {
@@ -346,7 +344,6 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
-		txManager.Close()
 
 		// 수행한 task 상태 정보 업데이트
 		var taskLength = len(param.Task)
@@ -564,11 +561,10 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access에 대한 이벤트 발생
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	curTime := time.Now().UTC()
 	txManager.UpdateAccessAgent(ctx, tx, ch.ZoneID, ch.AgentKey, curTime)
 	tx.Commit()
-	txManager.Close()
 
 	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 
@@ -650,9 +646,8 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	//cnt, agents := tx.getAgentsByGroupId(zoneID)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	cnt, agents := txManager.GetAgentsByZoneID(ctx, tx, zoneID)
-	txManager.Close()
 
 	nodes := make([]common.Agent, cnt)
 
@@ -690,9 +685,8 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 }
 
 func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *Agents {
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	agent := txManager.GetAgentByAgentKey(ctx, tx, agentKey, zoneID)
-	txManager.Close()
 
 	oldStatus := agent.IsActive
 	curTime := time.Now().UTC()
@@ -726,9 +720,8 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
 		//primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
-		txManager := NewAgentStorage()
+		txManager := CtxGetCacheConn(ctx)
 		primaryAgent = txManager.GetAgentByID(ctx, tx, zoneID, groupPrimary.AgentId)
-		txManager.Close()
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
@@ -784,7 +777,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			//agent = tx.getAgentByID(pa.AgentId)
-			txManager := NewAgentStorage()
+			txManager := CtxGetCacheConn(ctx)
 			agent = txManager.GetAgentByID(ctx, tx, zoneID, pa.AgentId)
 
 			if agent.Id == 0 {
@@ -793,7 +786,6 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			tx.Commit()
-			txManager.Close()
 		},
 		Catch: func(e error) {
 			if tx != nil {
@@ -816,7 +808,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
@@ -852,7 +844,6 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		txManager.UpdateAgent(ctx, tx, agent)
 	}
 
-	txManager.Close()
 }
 
 func byteToBool(b byte) bool {

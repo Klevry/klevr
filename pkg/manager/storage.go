@@ -7,28 +7,25 @@ import (
 )
 
 type AgentStorage struct {
-	agentCache ICache
+	agentCache *Cache
 }
 
-func NewAgentStorage() *AgentStorage {
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
+func NewAgentStorage(address string, port int, password string) *AgentStorage {
 	s := &AgentStorage{}
-	if manager.Config.DB.Cache == true {
-		s.agentCache = NewCache(manager.Config.Cache.Address,
-			manager.Config.Cache.Port,
-			manager.Config.Cache.Password)
+	lock := ctx.Get(CtxCacheLock)
+	if lock != nil {
+		s.agentCache = NewCache(address, port, password)
 	}
 
 	return s
 }
 
 func (a *AgentStorage) AddAgent(ctx *common.Context, tx *Tx, agent *Agents) error {
+	agent.CreatedAt = time.Now().UTC()
 	err := tx.addAgent(agent)
 
 	if err == nil && a.agentCache != nil {
-		_, agents := tx.getAgentsByGroupId(agent.GroupId)
-		a.agentCache.SyncAgent(ctx, agent.GroupId, agents)
+		a.agentCache.UpdateAgent(ctx, agent.GroupId, agent)
 	}
 
 	if err != nil {
@@ -39,11 +36,12 @@ func (a *AgentStorage) AddAgent(ctx *common.Context, tx *Tx, agent *Agents) erro
 }
 
 func (a *AgentStorage) UpdateAgent(ctx *common.Context, tx *Tx, agent *Agents) {
+	agent.UpdatedAt = time.Now().UTC()
 	tx.updateAgent(agent)
 
 	if a.agentCache != nil {
-		_, agents := tx.getAgentsByGroupId(agent.GroupId)
-		a.agentCache.SyncAgent(ctx, agent.GroupId, agents)
+		//logger.Debugf("##### AgentStorage::UpdateAgent(grouID:%d", agent.GroupId)
+		a.agentCache.UpdateAgent(ctx, agent.GroupId, agent)
 	}
 }
 

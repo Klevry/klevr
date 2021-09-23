@@ -61,6 +61,8 @@ func (tx *Tx) getAgentByID(id uint64) *Agents {
 func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 	var agents []Agents
 
+	tx.Engine().ClearCache(&Agents{})
+
 	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&agents)
 	if err != nil {
 		panic(err)
@@ -200,7 +202,7 @@ func (tx *Tx) addAgent(a *Agents) error {
 }
 
 func (tx *Tx) updateAgent(a *Agents) {
-	_, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
+	cnt, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
 		"CPU":                   a.Cpu,
 		"DISK":                  a.Disk,
 		"FREE_DISK":             a.FreeDisk,
@@ -214,10 +216,11 @@ func (tx *Tx) updateAgent(a *Agents) {
 		"FREE_MEMORY":           a.FreeMemory,
 		"PORT":                  a.Port,
 		"VERSION":               a.Version,
-		"UPDATED_AT":            time.Now().UTC(),
+		"UPDATED_AT":            a.UpdatedAt,
 	})
 	// cnt, err := tx.Where("id = ?", a.Id).Update(a)
 	logger.Debugf("Updated Agent - id : [%d], agentKey : [%s], isActive : [%v], lastAccessTime : [%v]", a.Id, a.AgentKey, a.IsActive, a.LastAccessTime)
+	logger.Debugf("##### updateAgent: cnt(%d)", cnt)
 	// logger.Debugf("Updated Agent(%d) : %v", cnt, a)
 
 	if err != nil {

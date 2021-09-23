@@ -11,24 +11,11 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type ICache interface {
-	SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) error
-	UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Agents) error
-	DeleteAllAgent(ctx *common.Context, zoneID uint64) error
-	UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey string, accessTime time.Time) error
-	UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]Agents) error
-	GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]Agents)
-	GetAgentsByZoneID(ctx *common.Context, zoniID uint64) (int64, *[]Agents)
-	GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agents
-	GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *Agents
-	Close() error
-}
-
 type Cache struct {
 	client *redis.Client
 }
 
-func NewCache(address string, port int, password string) ICache {
+func NewCache(address string, port int, password string) *Cache {
 	cache := &Cache{}
 	a := fmt.Sprintf("%s:%d", address, port)
 	cache.client = redis.NewClient(&redis.Options{
@@ -37,6 +24,12 @@ func NewCache(address string, port int, password string) ICache {
 		DB:       0,
 	})
 
+	err := cache.client.Ping().Err()
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
 	return cache
 }
 
@@ -44,16 +37,10 @@ func (c *Cache) Close() error {
 	return c.client.Close()
 }
 
-func (c *Cache) SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) error {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+func (c *Cache) UpdateAgent(ctx *common.Context, zoneID uint64, agent *Agents) error {
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
-
-	/*
-		logger.Debug("######### syncAgent start ##########")
-		defer logger.Debug("######### syncAgent end ##########") //*/
-
-	logger.Debugf("AddAgent: %v", agents)
 
 	key := fmt.Sprintf("Agents.%d", zoneID)
 
@@ -63,29 +50,29 @@ func (c *Cache) SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) 
 		return err
 	}
 
-	for _, agent := range *agents {
-		for _, member := range members {
-			var buf Agents
-			json.Unmarshal([]byte(member), &buf)
-			if buf.AgentKey == agent.AgentKey {
-				cnt, err := c.client.SRem(key, member).Result()
-				if err != nil {
-					logger.Debug(err)
-				}
-				if cnt == 0 {
-					logger.Debug("there are no members of the deleted cache")
-				}
-
+	for _, member := range members {
+		var buf Agents
+		json.Unmarshal([]byte(member), &buf)
+		if buf.AgentKey == agent.AgentKey {
+			cnt, err := c.client.SRem(key, member).Result()
+			if err != nil {
+				logger.Debug(err)
 			}
-		}
+			if cnt == 0 {
+				logger.Debug("there are no members of the deleted cache")
+			}
 
-		buf, err := json.Marshal(agent)
-		if err != nil {
-			logger.Debug(err)
 		}
-		if err := c.client.SAdd(key, buf).Err(); err != nil {
-			logger.Debug(err)
-		}
+	}
+
+	buf, err := json.Marshal(agent)
+	if err != nil {
+		logger.Debug(err)
+	}
+
+	logger.Debugf("##### UpdateAgent: SADD(%s): %s", key, string(buf))
+	if err := c.client.SAdd(key, buf).Err(); err != nil {
+		logger.Debug(err)
 	}
 
 	return nil
@@ -94,7 +81,7 @@ func (c *Cache) SyncAgent(ctx *common.Context, zoneID uint64, agents *[]Agents) 
 // UpdateZoneStatus에 전달된 agents의 정보는 Agents의 모든 필드를 채우고 있지 않음
 // cache에 등록되어 있던 agent의 정보에 변경된 내역만 변경해서 다시 등록
 func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Agents) error {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -155,7 +142,7 @@ func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Ag
 }
 
 func (c *Cache) DeleteAllAgent(ctx *common.Context, zoneID uint64) error {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -186,7 +173,7 @@ func (c *Cache) DeleteAllAgent(ctx *common.Context, zoneID uint64) error {
 }
 
 func (c *Cache) UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey string, accessTime time.Time) error {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -244,7 +231,7 @@ func (c *Cache) UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey s
 
 // agent들을 inactive 상태로 변경
 func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]Agents) error {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -286,7 +273,7 @@ func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[
 // GetAgentsForInactive는 LastAccessTime이 before보다 이전에 접속했던 agent이거나
 // IsActive가 false 상태인 agent를 찾아준다.
 func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]Agents) {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -325,7 +312,7 @@ func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int
 }
 
 func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[]Agents) {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -352,7 +339,7 @@ func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[
 }
 
 func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agents {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -379,7 +366,7 @@ func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agent
 }
 
 func (c *Cache) GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *Agents {
-	mtx := ctx.Get(CtxCache).(*sync.Mutex)
+	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
 
