@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { x } from '@xstyled/emotion';
-import { Modal, Form, Input, Select, Radio, Divider, Button } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  Radio,
+  Divider,
+  Button,
+  Tooltip
+} from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { API_SERVER } from 'src/config';
 import { getAgentList, getTaskList } from '../store/actions/klevrActions';
@@ -27,7 +36,8 @@ const AddTask = () => {
     taskType: '',
     steps: [],
     totalStepCount: 1,
-    zoneId: 0
+    zoneId: 0,
+    showLog: false
   });
 
   const [values, setValues] = useState({
@@ -130,6 +140,13 @@ const AddTask = () => {
       ...taskValues,
       agentKey: value,
       exeAgentChangeable: false
+    });
+  };
+
+  const onShowLogChange = (value) => {
+    setTaskValues({
+      ...taskValues,
+      showLog: value
     });
   };
 
@@ -271,6 +288,22 @@ const AddTask = () => {
           </Form.Item>
           <Form.Item label="Parameter" name="parameter">
             <Input onChange={ontaskChange} name="parameter" />
+          </Form.Item>
+          <Form.Item label="Show Log" required name="showLog">
+            <Tooltip
+              placement="topLeft"
+              title="If true is selected, the stdout log is activated."
+            >
+              <Select
+                defaultValue={false}
+                onChange={onShowLogChange}
+                allowClear
+                name="agentKey"
+              >
+                <Option value={false}>false</Option>
+                <Option value={true}>true</Option>
+              </Select>
+            </Tooltip>
           </Form.Item>
           <Divider />
           <x.div border="1px solid #e4e4e4" pt="15px" pb="15px" mb="20px">
