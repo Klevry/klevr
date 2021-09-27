@@ -25,14 +25,18 @@ func (agent *KlevrAgent) checkPrimary(prim string) bool {
 	}
 }
 
-// secondary 에이전트들에게 task 전달
-func (agent *KlevrAgent) primaryTaskSend(ip string, task []byte) {
+/*func (agent *KlevrAgent) primaryTaskSend(ip string, task []byte) *common.KlevrTask {
 	serverAddr := net.JoinHostPort(ip, agent.grpcPort)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		logger.Errorf("did not connect :%v", err)
+		return nil
 	}
 
+	defer conn.Close()
+
+	state := conn.GetState()
+	logger.Debug(state.String())
 	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 	c := pb.NewTaskSendClient(conn)
 
@@ -40,13 +44,24 @@ func (agent *KlevrAgent) primaryTaskSend(ip string, task []byte) {
 	r, resErr := c.SendTask(ctx, &pb.Message{Task: task})
 	if resErr != nil {
 		logger.Errorf("could not response: %v", resErr)
+		return nil
 	}
 
 	logger.Debugf("this is response: %v", r)
-}
+
+	var t common.KlevrTask
+
+	err = json.Unmarshal(r.Task, &t)
+	if err != nil {
+		logger.Debugf("%v", string(r.Task))
+		logger.Error(err)
+	}
+
+	return &t
+}*/
 
 // ZoneStatusCheck는 현재 소속된 zone의 agent들의 상태 정보를 확인
-func (agent *KlevrAgent) zoneStatusCheck() {
+func (agent *KlevrAgent) checkZoneStatus() {
 	for i, n := range agent.Agents {
 		if (agent.Primary.IP == n.IP) && (agent.Primary.AgentKey == n.AgentKey) {
 			agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}

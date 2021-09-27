@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type TaskSendClient interface {
 	SendTask(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
 	StatusCheck(ctx context.Context, in *Status, opts ...grpc.CallOption) (*Status, error)
+	GetUpdatedTasks(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
 }
 
 type taskSendClient struct {
@@ -48,12 +49,22 @@ func (c *taskSendClient) StatusCheck(ctx context.Context, in *Status, opts ...gr
 	return out, nil
 }
 
+func (c *taskSendClient) GetUpdatedTasks(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error) {
+	out := new(Message)
+	err := c.cc.Invoke(ctx, "/agent.TaskSend/GetUpdatedTasks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskSendServer is the server API for TaskSend service.
 // All implementations must embed UnimplementedTaskSendServer
 // for forward compatibility
 type TaskSendServer interface {
 	SendTask(context.Context, *Message) (*Message, error)
 	StatusCheck(context.Context, *Status) (*Status, error)
+	GetUpdatedTasks(context.Context, *Message) (*Message, error)
 	//mustEmbedUnimplementedTaskSendServer()
 }
 
@@ -66,6 +77,9 @@ func (UnimplementedTaskSendServer) SendTask(context.Context, *Message) (*Message
 }
 func (UnimplementedTaskSendServer) StatusCheck(context.Context, *Status) (*Status, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StatusCheck not implemented")
+}
+func (UnimplementedTaskSendServer) GetUpdatedTasks(context.Context, *Message) (*Message, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUpdatedTasks not implemented")
 }
 
 //func (UnimplementedTaskSendServer) mustEmbedUnimplementedTaskSendServer() {}
@@ -117,6 +131,24 @@ func _TaskSend_StatusCheck_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskSend_GetUpdatedTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Message)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskSendServer).GetUpdatedTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/agent.TaskSend/GetUpdatedTasks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskSendServer).GetUpdatedTasks(ctx, req.(*Message))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskSend_ServiceDesc is the grpc.ServiceDesc for TaskSend service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -132,7 +164,11 @@ var TaskSend_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "StatusCheck",
 			Handler:    _TaskSend_StatusCheck_Handler,
 		},
+		{
+			MethodName: "GetUpdatedTasks",
+			Handler:    _TaskSend_GetUpdatedTasks_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "protobuf/task.proto",
+	Metadata: "pkg/agent/protobuf/task.proto",
 }

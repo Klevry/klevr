@@ -2,9 +2,11 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +19,9 @@ import (
 	"github.com/NexClipper/logger"
 	"github.com/gorhill/cronexpr"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 
+	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
 	"github.com/fanliao/go-promise"
 	concurrent "github.com/orcaman/concurrent-map"
 )
@@ -83,8 +87,12 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 	return tasks, size
 }
 
+/*func (executor *taskExecutor) GetUpdatedTasksInRemote() (updated []KlevrTask, count int) {
+
+}*/
+
 // RunTask Run the task.
-func (executor *taskExecutor) RunTask(agentKey string, task *KlevrTask) error {
+func (executor *taskExecutor) RunTaskInLocal(task *KlevrTask) error {
 	if executor.closed {
 		return errors.New("Task executor was closed")
 	}
@@ -103,6 +111,46 @@ func (executor *taskExecutor) RunTask(agentKey string, task *KlevrTask) error {
 	}
 
 	return errors.New(fmt.Sprintf("TaskID : [%s] is already running.", key))
+}
+
+func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) error {
+	serverAddr := net.JoinHostPort(ip, port)
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	if err != nil {
+		logger.Errorf("did not connect :%v", err)
+		return err
+	}
+
+	defer conn.Close()
+
+	state := conn.GetState()
+	logger.Debug(state.String())
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	c := pb.NewTaskSendClient(conn)
+
+	// send to secondary
+	b := JsonMarshal(task)
+	r, resErr := c.SendTask(ctx, &pb.Message{Task: b})
+	if resErr != nil {
+		logger.Errorf("could not response: %v", resErr)
+		return resErr
+	}
+
+	logger.Debugf("this is response: %v", r)
+
+	var respTask KlevrTask
+
+	err = json.Unmarshal(r.Task, &respTask)
+	if err != nil {
+		logger.Debugf("%v", string(r.Task))
+		logger.Error(err)
+		return err
+	}
+
+	logger.Debugf("%+v", respTask)
+	executor.updatedTasks.Push(respTask)
+
+	return nil
 }
 
 func (executor *taskExecutor) execute(tw *TaskWrapper) {

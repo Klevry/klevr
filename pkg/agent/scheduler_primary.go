@@ -23,7 +23,7 @@ func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.Kl
 
 		if task[i].ExeAgentChangeable {
 			task[i].ExeAgentKey = agent.AgentKey
-			executor.RunTask(agent.AgentKey, &task[i])
+			executor.RunTaskInLocal(&task[i])
 		} else {
 			logger.Debugf("%v", &task[i])
 
@@ -34,12 +34,13 @@ func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.Kl
 						task[i].ExeAgentKey = v.AgentKey
 
 						if v.AgentKey == primaryAgentKey {
-							executor.RunTask(agent.AgentKey, &task[i])
+							executor.RunTaskInLocal(&task[i])
 						} else {
 							ip := v.IP
-							t := jsonMarshal(&task[i])
+							//t := common.JsonMarshal(&task[i])
 							logger.Debugf("%v", task[i])
-							agent.primaryTaskSend(ip, t)
+							//res := agent.primaryTaskSend(ip, t)
+							executor.RunTaskInRemote(ip, agent.grpcPort, &task[i])
 						}
 
 						sendCompleted = true
@@ -48,11 +49,11 @@ func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.Kl
 				}
 				if sendCompleted == false {
 					task[i].ExeAgentKey = agent.AgentKey
-					executor.RunTask(agent.AgentKey, &task[i])
+					executor.RunTaskInLocal(&task[i])
 				}
 			} else {
 				task[i].ExeAgentKey = agent.AgentKey
-				executor.RunTask(agent.AgentKey, &task[i])
+				executor.RunTaskInLocal(&task[i])
 			}
 
 		}
@@ -71,7 +72,7 @@ func (agent *KlevrAgent) polling() {
 	rb := &common.Body{}
 	agent.setBodyMeInfo(rb)
 
-	agent.zoneStatusCheck()
+	agent.checkZoneStatus()
 
 	var updateMap = make(map[uint64]common.KlevrTask)
 
@@ -109,7 +110,7 @@ func (agent *KlevrAgent) polling() {
 	*/
 
 	// body marshal
-	b := jsonMarshal(rb)
+	b := common.JsonMarshal(rb)
 
 	// polling API 호출
 	// polling은 5초마다 시도되는 작업으로 요청이 실패하면 다음 작업을 기다린다.(retryCount가 0인 이유)
