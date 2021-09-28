@@ -138,7 +138,7 @@ func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) 
 
 	logger.Debugf("this is response: %v", r)
 
-	var respTask KlevrTask
+	respTask := make([]KlevrTask, 0)
 
 	err = json.Unmarshal(r.Task, &respTask)
 	if err != nil {
@@ -148,7 +148,9 @@ func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) 
 	}
 
 	logger.Debugf("%+v", respTask)
-	executor.updatedTasks.Push(respTask)
+	for _, t := range respTask {
+		executor.updatedTasks.Push(t)
+	}
 
 	return nil
 }
