@@ -84,6 +84,11 @@ func (agent *KlevrAgent) polling() {
 
 	rb.Agent.Nodes = agent.Agents
 
+	remoteTasks := agent.getRemoteUpdatedTasks()
+	for _, t := range remoteTasks {
+		updateMap[t.ID] = t
+	}
+
 	// update task status
 	tasks, _ := executor.GetUpdatedTasks()
 
