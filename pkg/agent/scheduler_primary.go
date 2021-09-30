@@ -11,10 +11,12 @@ import (
 var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
 var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
 
+// agentkey가 지정되었지만 실행하지 못한 Task는 실패로 처리
 func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.KlevrTask) {
 	executor := common.GetTaskExecutor()
 
 	for i := 0; i < len(task); i++ {
+		beforeStatus := task[i].Status
 		if task[i].Status == common.WaitPolling || task[i].Status == common.HandOver {
 			task[i].Status = common.WaitExec
 		}
@@ -28,28 +30,22 @@ func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.Kl
 			logger.Debugf("%v", &task[i])
 
 			if len(task[i].AgentKey) > 0 {
-				sendCompleted := false
 				for _, v := range agent.Agents {
 					if v.AgentKey == task[i].AgentKey {
 						task[i].ExeAgentKey = v.AgentKey
-
 						if v.AgentKey == primaryAgentKey {
 							executor.RunTaskInLocal(&task[i])
 						} else {
 							ip := v.IP
-							//t := common.JsonMarshal(&task[i])
 							logger.Debugf("%v", task[i])
-							//res := agent.primaryTaskSend(ip, t)
-							executor.RunTaskInRemote(ip, agent.grpcPort, &task[i])
+							if err := executor.RunTaskInRemote(ip, agent.grpcPort, &task[i]); err != nil {
+								task[i].ExeAgentKey = ""
+								task[i].Status = common.TaskStatus(beforeStatus)
+							}
 						}
 
-						sendCompleted = true
 						break
 					}
-				}
-				if sendCompleted == false {
-					task[i].ExeAgentKey = agent.AgentKey
-					executor.RunTaskInLocal(&task[i])
 				}
 			} else {
 				task[i].ExeAgentKey = agent.AgentKey

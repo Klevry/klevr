@@ -20,6 +20,7 @@ import (
 	"github.com/gorhill/cronexpr"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 
 	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
 	"github.com/fanliao/go-promise"
@@ -117,14 +118,19 @@ func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) 
 	serverAddr := net.JoinHostPort(ip, port)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
-		logger.Errorf("did not connect :%v", err)
+		logger.Errorf("secondary agent did not connect :%v", err)
 		return err
 	}
 
 	defer conn.Close()
 
 	state := conn.GetState()
-	logger.Debug(state.String())
+	//logger.Debug(state.String())
+	if !(state == connectivity.Ready || state == connectivity.Idle) {
+		logger.Errorf("secondary agent is not available: %s", state.String())
+		return fmt.Errorf("secondary agent is not available: %s", state.String())
+	}
+
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	c := pb.NewTaskSendClient(conn)
 
