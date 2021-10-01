@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
 	"github.com/NexClipper/logger"
 )
@@ -27,7 +28,7 @@ func (agent *KlevrAgent) primaryStatusReport() {
 		return
 	}
 
-	body, err := jsonUnmarshal(result)
+	body, err := common.JsonUnmarshal(result)
 	if err != nil {
 		logger.Debugf("PrimaryStatusReport url:%s, agent:%s, api:%s, zone:%s", uri, agent.AgentKey, agent.ApiKey, agent.Zone)
 		logger.Errorf("The content of payload passed after primarystatusreport is unknown (%v)", err)

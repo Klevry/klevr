@@ -3,7 +3,6 @@ package agent
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
 	"github.com/shirou/gopsutil/disk"
 	netutil "k8s.io/apimachinery/pkg/util/net"
@@ -88,27 +86,6 @@ func diskUsage(path string) (d DiskStatus) {
 	d.Used = u.Used
 
 	return
-}
-
-func jsonMarshal(a interface{}) []byte {
-	b, err := json.Marshal(a)
-	if err != nil {
-		logger.Debugf("%v", string(b))
-		logger.Error(err)
-	}
-
-	return b
-}
-
-func jsonUnmarshal(a []byte) (*common.Body, error) {
-	var body common.Body
-
-	err := json.Unmarshal(a, &body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &body, nil
 }
 
 func readFile(path string) []byte {

@@ -18,7 +18,7 @@ func (agent *KlevrAgent) handShake() *common.Primary {
 	rb := &common.Body{}
 	agent.setBodyMeInfo(rb)
 	logger.Debugf("%v", rb)
-	b := jsonMarshal(rb)
+	b := common.JsonMarshal(rb)
 	// put in & get out
 	httpHandler := communicator.Http{
 		URL:        uri,
@@ -38,7 +38,7 @@ func (agent *KlevrAgent) handShake() *common.Primary {
 
 	logger.Debugf("%s", string(result))
 
-	body, unmarshalError := jsonUnmarshal(result)
+	body, unmarshalError := common.JsonUnmarshal(result)
 	if unmarshalError != nil {
 		logger.Debugf("Handshake url:%s, agent:%s, api:%s, zone:%s",
 			uri, agent.AgentKey, agent.ApiKey, agent.Zone)

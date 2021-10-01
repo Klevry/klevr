@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"runtime"
 
-	"github.com/Klevry/klevr/pkg/common"
-	"github.com/mackerelio/go-osstat/memory"
-
 	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
+	"github.com/Klevry/klevr/pkg/common"
 	"github.com/NexClipper/logger"
+	"github.com/mackerelio/go-osstat/memory"
 )
 
 type sendServer struct {
@@ -28,11 +27,11 @@ func (s sendServer) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, 
 	}
 
 	executor := common.GetTaskExecutor()
-	executor.RunTask(s.agentKey, &t)
+	executor.RunTaskInLocal(&t)
 
 	result, _ := executor.GetUpdatedTasks()
 
-	b := jsonMarshal(result)
+	b := common.JsonMarshal(result)
 
 	return &pb.Message{Task: b}, nil
 }
@@ -54,7 +53,16 @@ func (s sendServer) StatusCheck(ctx context.Context, in *pb.Status) (*pb.Status,
 		},
 	}
 
-	b := jsonMarshal(agentStatus)
+	b := common.JsonMarshal(agentStatus)
 
 	return &pb.Status{Status: b}, nil
+}
+
+func (s sendServer) GetUpdatedTasks(ctx context.Context, in *pb.Message) (*pb.Message, error) {
+	executor := common.GetTaskExecutor()
+	result, _ := executor.GetUpdatedTasks()
+
+	b := common.JsonMarshal(result)
+
+	return &pb.Message{Task: b}, nil
 }
