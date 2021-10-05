@@ -6,7 +6,6 @@ require (
 	github.com/NexClipper/logger v1.1.6
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/fanliao/go-promise v0.0.0-20141029170127-1890db352a72
 	github.com/go-co-op/gocron v1.5.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
