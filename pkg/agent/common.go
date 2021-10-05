@@ -1,13 +1,17 @@
 package agent
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/NexClipper/logger"
-	"github.com/denisbrodbeck/machineid"
 	"github.com/shirou/gopsutil/disk"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 )
@@ -96,28 +100,19 @@ func readFile(path string) []byte {
 // generate agent key
 func agentKeyGen() (string, error) {
 
-	/*
-		nowTime := strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	nowTime := strconv.FormatInt(time.Now().UTC().Unix(), 10)
 
-		uuid := make([]byte, 16)
-		n, err := io.ReadFull(rand.Reader, uuid)
-		if n != len(uuid) || err != nil {
-			return "", err
-		}
-		// variant bits; see section 4.1.1
-		uuid[8] = uuid[8]&^0xc0 | 0x80
-		// version 4 (pseudo-random); see section 4.1.3
-		uuid[6] = uuid[6]&^0xf0 | 0x40
-
-		key := hex.EncodeToString(uuid) + nowTime
-	*/
-
-	// machineid.ID(): key => len(32)
-	// machineid.ProtectedID(): key => len(64)
-	key, err := machineid.ID()
-	if err != nil {
+	uuid := make([]byte, 16)
+	n, err := io.ReadFull(rand.Reader, uuid)
+	if n != len(uuid) || err != nil {
 		return "", err
 	}
+	// variant bits; see section 4.1.1
+	uuid[8] = uuid[8]&^0xc0 | 0x80
+	// version 4 (pseudo-random); see section 4.1.3
+	uuid[6] = uuid[6]&^0xf0 | 0x40
+
+	key := hex.EncodeToString(uuid) + nowTime
 
 	return key, nil
 }
