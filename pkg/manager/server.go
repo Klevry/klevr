@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/queue"
 	"github.com/Klevry/klevr/pkg/rabbitmq"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/handlers"
@@ -33,8 +34,8 @@ type KlevrManager struct {
 	RootRouter        *mux.Router
 	InstanceID        string
 	HasLock           bool
-	EventQueue        *common.Queue
-	HandOverTaskQueue *common.Queue
+	EventQueue        queue.Queue
+	HandOverTaskQueue queue.Queue
 	ShutdownTasks     concurrent.ConcurrentMap
 	Mq                *ManagerMQ
 }
@@ -115,8 +116,8 @@ func NewKlevrManager() (*KlevrManager, error) {
 
 	instance := &KlevrManager{
 		RootRouter:        router,
-		EventQueue:        common.NewMutexQueue(),
-		HandOverTaskQueue: common.NewMutexQueue(),
+		EventQueue:        queue.NewMutexQueue(),
+		HandOverTaskQueue: queue.NewMutexQueue(),
 		ShutdownTasks:     concurrent.New(),
 		HasLock:           false,
 	}
@@ -220,11 +221,11 @@ func (manager *KlevrManager) Run() error {
 
 func (manager *KlevrManager) startTaskHandoverUpdater(ctx *common.Context) {
 	db := CtxGetDbConn(ctx)
-	q := *manager.HandOverTaskQueue
+	q := manager.HandOverTaskQueue
 
-	q.AddListener(1, func(q *common.Queue, args ...interface{}) {
+	q.AddListener(1, func(q queue.Queue, args ...interface{}) {
 		var ids []uint64
-		var iq = *q
+		var iq = q
 
 		logger.Debugf("hand-over task queue count : %d", iq.Length())
 
@@ -362,16 +363,16 @@ func (manager *KlevrManager) startEventHandler() {
 	webhookConf := manager.Config.Server.Webhook
 	url := webhookConf.Url
 
-	q := *manager.EventQueue
+	q := manager.EventQueue
 
 	if url != "" {
 		var nilTime time.Time = time.Time{}
 		var cntExecutedTime time.Time
 
 		if webhookConf.HookCount > 0 {
-			q.AddListener(uint32(webhookConf.HookCount), func(q *common.Queue, args ...interface{}) {
+			q.AddListener(uint32(webhookConf.HookCount), func(q queue.Queue, args ...interface{}) {
 				var items []KlevrEvent
-				var iq = *q
+				var iq = q
 
 				logger.Debugf("event queue count : %d", iq.Length())
 
@@ -425,7 +426,7 @@ func (manager *KlevrManager) startEventHandler() {
 func AddHandOverTasks(tasks *[]Tasks) {
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
 
-	q := *manager.HandOverTaskQueue
+	q := manager.HandOverTaskQueue
 	q.BulkPush(*tasks)
 }
 
@@ -481,7 +482,7 @@ func AddEvent(event *KlevrEvent) {
 		if hookConfig.HookCount <= 1 && hookConfig.HookTerm < 1 {
 			go sendSingleEventWebHook(hookConfig.Url, event)
 		} else {
-			q := *manager.EventQueue
+			q := manager.EventQueue
 			q.Push(event)
 		}
 	}

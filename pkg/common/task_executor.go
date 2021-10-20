@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
+	"github.com/Klevry/klevr/pkg/queue"
 	"github.com/fanliao/go-promise"
 	concurrent "github.com/orcaman/concurrent-map"
 )
@@ -34,7 +35,7 @@ var tExecutor taskExecutor
 type taskExecutor struct {
 	sync.RWMutex
 	runningTasks concurrent.ConcurrentMap // 실행중인 TASK map
-	updatedTasks Queue                    // 업데이트된 TASK map
+	updatedTasks queue.Queue              // 업데이트된 TASK map
 	closed       bool
 }
 
@@ -50,8 +51,8 @@ type TaskWrapper struct {
 func GetTaskExecutor() *taskExecutor {
 	once.Do(func() {
 		tExecutor = taskExecutor{
-			runningTasks: concurrent.New(), // *TaskWrapper
-			updatedTasks: *NewMutexQueue(), // KlevrTask
+			runningTasks: concurrent.New(),      // *TaskWrapper
+			updatedTasks: queue.NewMutexQueue(), // KlevrTask
 		}
 	})
 
