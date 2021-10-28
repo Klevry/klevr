@@ -1,5 +1,5 @@
 ## Build stage section from here
-FROM node as builder
+FROM node:12 as builder
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
