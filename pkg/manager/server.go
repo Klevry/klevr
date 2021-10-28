@@ -1,17 +1,18 @@
 package manager
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/event"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/Klevry/klevr/pkg/queue"
 	"github.com/Klevry/klevr/pkg/rabbitmq"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -29,15 +30,16 @@ const AgentStatusUpdateTask = "AGENT_STATUS_UPDATE"
 
 // KlevrManager klevr manager struct
 type KlevrManager struct {
-	ServerName        string
-	Config            Config
-	RootRouter        *mux.Router
-	InstanceID        string
-	HasLock           bool
-	EventQueue        queue.Queue
+	ServerName string
+	Config     Config
+	RootRouter *mux.Router
+	InstanceID string
+	HasLock    bool
+	//EventQueue        queue.Queue
 	HandOverTaskQueue queue.Queue
 	ShutdownTasks     concurrent.ConcurrentMap
-	Mq                *ManagerMQ
+	//Mq                *ManagerMQ
+	Event event.EventManager
 }
 
 type ManagerMQ struct {
@@ -115,8 +117,8 @@ func NewKlevrManager() (*KlevrManager, error) {
 	router := mux.NewRouter()
 
 	instance := &KlevrManager{
-		RootRouter:        router,
-		EventQueue:        queue.NewMutexQueue(),
+		RootRouter: router,
+		//EventQueue:        queue.NewMutexQueue(),
 		HandOverTaskQueue: queue.NewMutexQueue(),
 		ShutdownTasks:     concurrent.New(),
 		HasLock:           false,
@@ -150,14 +152,26 @@ func (manager *KlevrManager) Run() error {
 
 	cache := NewAgentStorage(manager.Config.Cache.Address, manager.Config.Cache.Port, manager.Config.Cache.Password)
 	if cache == nil {
-		logger.Fatal("Cache connect failed: address(%s:%d)", manager.Config.Cache.Address, manager.Config.Cache.Port)
+		logger.Fatalf("Cache connect failed: address(%s:%d)", manager.Config.Cache.Address, manager.Config.Cache.Port)
 	}
 
 	defer cache.Close()
 
 	ctx.Put(CtxCacheConn, cache)
 
-	if serverConfig.EventHandler == "mq" {
+	if strings.ToLower(serverConfig.EventHandler) == "mq" {
+		mqConfig := serverConfig.Mq
+		eventOpt := event.KlevrEventOption{URL: mqConfig.Url, MQ_Name: mqConfig.Name, MQ_Durable: mqConfig.Durable, MQ_AutoDelete: mqConfig.AutoDelete}
+		manager.Event = event.NewEventMQ(eventOpt)
+	} else {
+		webConfig := serverConfig.Webhook
+		eventOpt := event.KlevrEventOption{URL: []string{webConfig.Url}, Web_HookCount: webConfig.HookCount, Web_HookTerm: webConfig.HookTerm}
+		manager.Event = event.NewEventWeb(eventOpt)
+	}
+
+	defer manager.Event.Close()
+
+	/*if serverConfig.EventHandler == "mq" {
 		mqConfig := serverConfig.Mq
 
 		mqConn, err := rabbitmq.DialCluster(mqConfig.Url)
@@ -186,7 +200,7 @@ func (manager *KlevrManager) Run() error {
 			Connection: mqConn,
 			Queue:      &queue,
 		}
-	}
+	}*/
 
 	headerOk := handlers.AllowedHeaders([]string{"*"})
 	//originOk := handlers.AllowedOrigins([]string{"http://localhost:3000"})
@@ -204,9 +218,9 @@ func (manager *KlevrManager) Run() error {
 
 	go manager.getLock(common.FromContext(ctx))
 	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
-	if serverConfig.EventHandler != "mq" {
+	/*if serverConfig.EventHandler != "mq" {
 		go manager.startEventHandler()
-	}
+	}*/
 	// klevr 에이전트 상태 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
 	go manager.updateAgentStatus(common.FromContext(ctx), manager.Config.Server.StatusUpdateCycle)
 	// klevr task 스케쥴 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
@@ -240,9 +254,9 @@ func (manager *KlevrManager) startTaskHandoverUpdater(ctx *common.Context) {
 				}
 
 				for iq.Length() > 0 {
-					t := iq.Pop().(Tasks)
+					t := iq.Pop().(model.Tasks)
 
-					if t.Status != common.HandOver {
+					if t.Status != model.HandOver {
 						ids = append(ids, t.Id)
 					}
 				}
@@ -359,7 +373,7 @@ func (manager *KlevrManager) updateScheduledTask(ctx *common.Context, cycle int)
 	}
 }
 
-func (manager *KlevrManager) startEventHandler() {
+/*func (manager *KlevrManager) startEventHandler() {
 	webhookConf := manager.Config.Server.Webhook
 	url := webhookConf.Url
 
@@ -421,16 +435,16 @@ func (manager *KlevrManager) startEventHandler() {
 			}
 		}
 	}
-}
+}*/
 
-func AddHandOverTasks(tasks *[]Tasks) {
+func AddHandOverTasks(tasks *[]model.Tasks) {
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
 
 	q := manager.HandOverTaskQueue
 	q.BulkPush(*tasks)
 }
 
-func AddShutdownTask(task *Tasks) bool {
+func AddShutdownTask(task *model.Tasks) bool {
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
 
 	if !manager.ShutdownTasks.Has(task.AgentKey) {
@@ -446,7 +460,7 @@ func CheckShutdownTask(agentKey string) (uint64, bool) {
 
 	v, ok := manager.ShutdownTasks.Get(agentKey)
 	if ok {
-		t := v.(*Tasks)
+		t := v.(*model.Tasks)
 		return t.Id, ok
 	}
 	return 0, ok
@@ -461,7 +475,7 @@ func RemoveShutdownTask(agentKeys []string) {
 }
 
 // AddEvent add klevr event for webhook
-func AddEvent(event *KlevrEvent) {
+/*func AddEvent(event *KlevrEvent) {
 	logger.Debugf("add event : [%+v]", *event)
 
 	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
@@ -601,7 +615,7 @@ func sendBulkEventMQ(events *[]KlevrEvent) {
 // TODO: event 발송 실패 재처리 구현
 func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
 
-}
+}*/
 
 func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 	st := cycle / 2
@@ -641,8 +655,9 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						forceShutdownAgentKeys := make([]string, 0)
 						taskIDs := make([]uint64, 0)
 
-						var events = make([]KlevrEvent, len)
-						var eventTime = &common.JSONTime{Time: time.Now().UTC()}
+						//var events = make([]KlevrEvent, len)
+						var events = make([]event.KlevrEvent, len)
+						var eventTime = &serialize.JSONTime{Time: time.Now().UTC()}
 
 						for i := 0; i < len; i++ {
 							agent := (*agents)[i]
@@ -655,8 +670,15 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 								taskIDs = append(taskIDs, tid)
 							}
 
-							events[i] = KlevrEvent{
-								EventType: AgentDisconnect,
+							// events[i] = KlevrEvent{
+							// 	EventType: AgentDisconnect,
+							// 	AgentKey:  agent.AgentKey,
+							// 	GroupID:   agent.GroupId,
+							// 	Result:    "",
+							// 	EventTime: eventTime,
+							// }
+							events[i] = event.KlevrEvent{
+								EventType: event.AgentDisconnect,
 								AgentKey:  agent.AgentKey,
 								GroupID:   agent.GroupId,
 								Result:    "",
@@ -673,7 +695,8 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 
 						RemoveShutdownTask(forceShutdownAgentKeys)
 
-						AddEvents(&events)
+						//AddEvents(&events)
+						manager.Event.AddEvents(&events)
 					}
 
 					tx.Commit()

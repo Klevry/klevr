@@ -1,5 +1,10 @@
 package common
 
+import (
+	"github.com/Klevry/klevr/pkg/model"
+	"github.com/Klevry/klevr/pkg/serialize"
+)
+
 // CustomHeaderName custom header name
 const CustomHeaderName = "CTX-CUSTOM-HEADER"
 
@@ -16,9 +21,9 @@ type CustomHeader struct {
 
 // Body body for message
 type Body struct {
-	Me    Me          `json:"me"`
-	Agent BodyAgent   `json:"agent"`
-	Task  []KlevrTask `json:"task"`
+	Me    Me                `json:"me"`
+	Agent BodyAgent         `json:"agent"`
+	Task  []model.KlevrTask `json:"task"`
 }
 
 // Me requester
@@ -51,12 +56,12 @@ type Primary struct {
 
 // Agent agent info
 type Agent struct {
-	AgentKey           string    `json:"agentKey"`
-	IsActive           bool      `json:"isActive"`
-	LastAliveCheckTime *JSONTime `json:"lastAliveCheckTime"`
-	IP                 string    `json:"ip"`
-	Port               int       `json:"port"`
-	Version            string    `json:"version"`
+	AgentKey           string              `json:"agentKey"`
+	IsActive           bool                `json:"isActive"`
+	LastAliveCheckTime *serialize.JSONTime `json:"lastAliveCheckTime"`
+	IP                 string              `json:"ip"`
+	Port               int                 `json:"port"`
+	Version            string              `json:"version"`
 	*Resource
 }
 

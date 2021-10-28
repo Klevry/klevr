@@ -1,9 +1,7 @@
-package manager
+package model
 
 import (
 	"time"
-
-	"github.com/Klevry/klevr/pkg/common"
 )
 
 // AgentGroups model for AGENT_GROUPS
@@ -77,11 +75,11 @@ type Tasks struct {
 	Id          uint64 `xorm:"PK"`
 	ZoneId      uint64
 	Name        string
-	TaskType    common.TaskType
+	TaskType    TaskType
 	Schedule    time.Time
 	AgentKey    string
 	ExeAgentKey string
-	Status      common.TaskStatus
+	Status      TaskStatus
 	TaskDetail  *TaskDetail  `xorm:"-"`
 	TaskSteps   *[]TaskSteps `xorm:"-"`
 	Logs        *TaskLogs    `xorm:"-"`
@@ -100,7 +98,7 @@ type TaskSteps struct {
 	Seq             int
 	TaskId          uint64
 	CommandName     string
-	CommandType     common.CommandType
+	CommandType     CommandType
 	ReservedCommand string
 	InlineScript    string
 	IsRecover       bool

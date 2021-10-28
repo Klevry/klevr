@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 	"github.com/mackerelio/go-osstat/memory"
 )
@@ -18,7 +19,7 @@ type sendServer struct {
 func (s sendServer) SendTask(ctx context.Context, in *pb.Message) (*pb.Message, error) {
 	logger.Debugf("Receive message body from client: %v", string(in.Task))
 
-	var t common.KlevrTask
+	var t model.KlevrTask
 
 	err := json.Unmarshal(in.Task, &t)
 	if err != nil {

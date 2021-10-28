@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 )
 
@@ -17,8 +18,8 @@ type Tx struct {
 	*common.Session
 }
 
-func (tx *Tx) getPrimaryAgent(zoneID uint64) (primary *PrimaryAgents, exist bool) {
-	var pa PrimaryAgents
+func (tx *Tx) getPrimaryAgent(zoneID uint64) (primary *model.PrimaryAgents, exist bool) {
+	var pa model.PrimaryAgents
 
 	ok := common.CheckGetQuery(tx.Where("group_id = ?", zoneID).Get(&pa))
 	logger.Debugf("Selected PrimaryAgent : %v", pa)
@@ -26,7 +27,7 @@ func (tx *Tx) getPrimaryAgent(zoneID uint64) (primary *PrimaryAgents, exist bool
 	return &pa, ok
 }
 
-func (tx *Tx) insertPrimaryAgent(pa *PrimaryAgents) (int64, error) {
+func (tx *Tx) insertPrimaryAgent(pa *model.PrimaryAgents) (int64, error) {
 	return tx.Insert(pa)
 }
 
@@ -41,16 +42,16 @@ func (tx *Tx) deletePrimaryAgent(zoneID uint64) {
 	logger.Debug(res)
 }
 
-func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *Agents {
-	var a Agents
+func (tx *Tx) getAgentByAgentKey(agentKey string, groupID uint64) *model.Agents {
+	var a model.Agents
 
 	common.CheckGetQuery(tx.Where("agent_key = ?", agentKey).And("group_id = ?", groupID).Get(&a))
 	logger.Debugf("selected Agent - id : [%d], agentKey : [%s], isActive : [%v], lastAccessTime : [%v]", a.Id, a.AgentKey, a.IsActive, a.LastAccessTime)
 	return &a
 }
 
-func (tx *Tx) getAgentByID(id uint64) *Agents {
-	var a Agents
+func (tx *Tx) getAgentByID(id uint64) *model.Agents {
+	var a model.Agents
 
 	common.CheckGetQuery(tx.ID(id).Get(&a))
 	logger.Debugf("Selected Agent : %+v", a)
@@ -58,10 +59,10 @@ func (tx *Tx) getAgentByID(id uint64) *Agents {
 	return &a
 }
 
-func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
-	var agents []Agents
+func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]model.Agents) {
+	var agents []model.Agents
 
-	tx.Engine().ClearCache(&Agents{})
+	tx.Engine().ClearCache(&model.Agents{})
 
 	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&agents)
 	if err != nil {
@@ -71,8 +72,8 @@ func (tx *Tx) getAgentsByGroupId(groupID uint64) (int64, *[]Agents) {
 	return cnt, &agents
 }
 
-func (tx *Tx) getTotalAgents() (int64, *[]Agents) {
-	var agents []Agents
+func (tx *Tx) getTotalAgents() (int64, *[]model.Agents) {
+	var agents []model.Agents
 
 	cnt, err := tx.FindAndCount(&agents)
 	if err != nil {
@@ -83,8 +84,8 @@ func (tx *Tx) getTotalAgents() (int64, *[]Agents) {
 
 }
 
-func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
-	var agents []Agents
+func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]model.Agents) {
+	var agents []model.Agents
 
 	err := tx.Where("IS_ACTIVE = ?", true).And("LAST_ALIVE_CHECK_TIME < ?", before).Cols("ID", "AGENT_KEY, GROUP_ID").Find(&agents)
 	if err != nil {
@@ -106,7 +107,7 @@ func (tx *Tx) getAgentsForInactive(before time.Time) (int64, *[]Agents) {
 }
 
 func (tx *Tx) updateAgentStatus(ids []uint64) {
-	cnt, err := tx.Table(new(Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": 0})
+	cnt, err := tx.Table(new(model.Agents)).In("id", ids).Update(map[string]interface{}{"IS_ACTIVE": 0})
 	logger.Debugf("Status updated Agent(%d) : [%+v]", cnt, ids)
 
 	if err != nil {
@@ -140,7 +141,7 @@ func (tx *Tx) deleteAgent(zoneID uint64) {
 	logger.Debug(res)
 }
 
-func (tx *Tx) updateZoneStatus(arrAgent []Agents) {
+func (tx *Tx) updateZoneStatus(arrAgent []model.Agents) {
 	for _, a := range arrAgent {
 		_, err := tx.Where("AGENT_KEY = ?", a.AgentKey).
 			Cols("LAST_ALIVE_CHECK_TIME", "IS_ACTIVE", "CPU", "MEMORY", "DISK").
@@ -152,8 +153,8 @@ func (tx *Tx) updateZoneStatus(arrAgent []Agents) {
 	}
 }
 
-func (tx *Tx) getAgentGroups() *[]AgentGroups {
-	var ags []AgentGroups
+func (tx *Tx) getAgentGroups() *[]model.AgentGroups {
+	var ags []model.AgentGroups
 
 	err := tx.Find(&ags)
 	if err != nil {
@@ -163,8 +164,8 @@ func (tx *Tx) getAgentGroups() *[]AgentGroups {
 	return &ags
 }
 
-func (tx *Tx) getAgentGroup(zoneID uint64) (*AgentGroups, bool) {
-	var ag AgentGroups
+func (tx *Tx) getAgentGroup(zoneID uint64) (*model.AgentGroups, bool) {
+	var ag model.AgentGroups
 
 	exist := common.CheckGetQuery(tx.ID(zoneID).Get(&ag))
 	logger.Debugf("Selected AgentGroup : %v", ag)
@@ -172,7 +173,7 @@ func (tx *Tx) getAgentGroup(zoneID uint64) (*AgentGroups, bool) {
 	return &ag, exist
 }
 
-func (tx *Tx) addAgentGroup(ag *AgentGroups) {
+func (tx *Tx) addAgentGroup(ag *model.AgentGroups) {
 	cnt, err := tx.Insert(ag)
 
 	logger.Debugf("Inserted AgentGroup(%d) : %v", cnt, ag)
@@ -183,13 +184,13 @@ func (tx *Tx) addAgentGroup(ag *AgentGroups) {
 }
 
 func (tx *Tx) deleteAgentGroup(groupID uint64) {
-	_, err := tx.Where("ID = ?", groupID).Delete(&AgentGroups{})
+	_, err := tx.Where("ID = ?", groupID).Delete(&model.AgentGroups{})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (tx *Tx) addAgent(a *Agents) error {
+func (tx *Tx) addAgent(a *model.Agents) error {
 	cnt, err := tx.Insert(a)
 	logger.Debugf("Inserted Agent(%d) : %v", cnt, a)
 
@@ -201,8 +202,8 @@ func (tx *Tx) addAgent(a *Agents) error {
 	return nil
 }
 
-func (tx *Tx) updateAgent(a *Agents) {
-	cnt, err := tx.Table(new(Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
+func (tx *Tx) updateAgent(a *model.Agents) {
+	cnt, err := tx.Table(new(model.Agents)).Where("id = ?", a.Id).Update(map[string]interface{}{
 		"CPU":                   a.Cpu,
 		"DISK":                  a.Disk,
 		"FREE_DISK":             a.FreeDisk,
@@ -228,14 +229,14 @@ func (tx *Tx) updateAgent(a *Agents) {
 	}
 }
 
-func (tx *Tx) addAPIKey(auth *ApiAuthentications) {
+func (tx *Tx) addAPIKey(auth *model.ApiAuthentications) {
 	_, err := tx.Insert(auth)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (tx *Tx) updateAPIKey(auth *ApiAuthentications) {
+func (tx *Tx) updateAPIKey(auth *model.ApiAuthentications) {
 	cnt, err := tx.Where("group_id = ?", auth.GroupId).Update(auth)
 	logger.Debugf("Updated APIKey(%d) : %v", cnt, auth)
 
@@ -244,8 +245,8 @@ func (tx *Tx) updateAPIKey(auth *ApiAuthentications) {
 	}
 }
 
-func (tx *Tx) getAPIKey(groupID uint64) (*ApiAuthentications, bool) {
-	var auth ApiAuthentications
+func (tx *Tx) getAPIKey(groupID uint64) (*model.ApiAuthentications, bool) {
+	var auth model.ApiAuthentications
 	exist := common.CheckGetQuery(tx.Where("group_id = ?", groupID).Get(&auth))
 	qry, args := tx.LastSQL()
 	logger.Debugf("query: %s, args: %v", qry, args)
@@ -255,7 +256,7 @@ func (tx *Tx) getAPIKey(groupID uint64) (*ApiAuthentications, bool) {
 }
 
 func (tx *Tx) existAPIKey(apiKey string, zoneID uint64) bool {
-	cnt, err := tx.Where("api_key = ?", apiKey).And("group_id = ?", zoneID).Count(&ApiAuthentications{})
+	cnt, err := tx.Where("api_key = ?", apiKey).And("group_id = ?", zoneID).Count(&model.ApiAuthentications{})
 	logger.Debugf("Selected API_KEY count : %d", cnt)
 
 	if err != nil {
@@ -265,15 +266,15 @@ func (tx *Tx) existAPIKey(apiKey string, zoneID uint64) bool {
 	return cnt > 0
 }
 
-func (tx *Tx) getLock(task string) (*TaskLock, bool) {
-	var tl TaskLock
+func (tx *Tx) getLock(task string) (*model.TaskLock, bool) {
+	var tl model.TaskLock
 	exist := common.CheckGetQuery(tx.Where("task = ?", task).ForUpdate().Get(&tl))
 	logger.Debugf("Selected TaskLock : %v", tl)
 
 	return &tl, exist
 }
 
-func (tx *Tx) insertLock(tl *TaskLock) {
+func (tx *Tx) insertLock(tl *model.TaskLock) {
 	_, err := tx.Insert(tl)
 
 	if err != nil {
@@ -281,7 +282,7 @@ func (tx *Tx) insertLock(tl *TaskLock) {
 	}
 }
 
-func (tx *Tx) updateLock(tl *TaskLock) {
+func (tx *Tx) updateLock(tl *model.TaskLock) {
 	cnt, err := tx.Where("task = ?", tl.Task).Update(tl)
 	logger.Debugf("Updated TaskLock(%d) : %+v", cnt, tl)
 
@@ -290,7 +291,7 @@ func (tx *Tx) updateLock(tl *TaskLock) {
 	}
 }
 
-func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
+func (tx *Tx) insertTask(manager *KlevrManager, t *model.Tasks) *model.Tasks {
 	result, err := tx.Exec("INSERT INTO `TASKS` (`zone_id`,`name`,`task_type`,`schedule`,`agent_key`,`exe_agent_key`,`status`) VALUES (?,?,?,?,?,?,?)",
 		t.ZoneId, t.Name, t.TaskType, t.Schedule, t.AgentKey, t.ExeAgentKey, t.Status)
 
@@ -321,7 +322,7 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 	taskStepLen := int64(len(*t.TaskSteps))
 
 	if t.TaskSteps != nil && taskStepLen > 0 {
-		steps := make([]*TaskSteps, 0)
+		steps := make([]*model.TaskSteps, 0)
 		for i, ts := range *t.TaskSteps {
 			(*t.TaskSteps)[i].TaskId = t.Id
 			(*t.TaskSteps)[i].ReservedCommand = manager.encrypt(ts.ReservedCommand)
@@ -330,7 +331,7 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 			logger.Debugf("TaskStep %d : [%+v]", i, ts)
 			logger.Debugf("%v, %v", ((*t.TaskSteps)[i]), ts)
 
-			step := &TaskSteps{
+			step := &model.TaskSteps{
 				Id:              (*t.TaskSteps)[i].Id,
 				Seq:             (*t.TaskSteps)[i].Seq,
 				TaskId:          (*t.TaskSteps)[i].TaskId,
@@ -354,17 +355,17 @@ func (tx *Tx) insertTask(manager *KlevrManager, t *Tasks) *Tasks {
 }
 
 func (tx *Tx) updateHandoverTasks(ids []uint64) {
-	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.HandOver})
+	_, err := tx.Table(new(model.Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": model.HandOver})
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (tx *Tx) updateInitIterationTasks(agentKeys []string) {
-	stmt := tx.Table(new(Tasks)).Where("TASK_TYPE = ?", string(common.Iteration))
+	stmt := tx.Table(new(model.Tasks)).Where("TASK_TYPE = ?", string(model.Iteration))
 	stmt = stmt.And("AGENT_KEY = ?", "")
 	stmt = stmt.And(builder.In("EXE_AGENT_KEY", agentKeys))
-	_, err := stmt.Update(map[string]interface{}{"STATUS": common.WaitPolling})
+	_, err := stmt.Update(map[string]interface{}{"STATUS": model.WaitPolling})
 	if err != nil {
 		panic(err)
 	}
@@ -372,7 +373,7 @@ func (tx *Tx) updateInitIterationTasks(agentKeys []string) {
 
 func (tx *Tx) updateRetryScheduledTask(agentKey string) {
 	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE TASK_TYPE = ? AND AGENT_KEY = ? AND EXE_AGENT_KEY = ?",
-		string(common.WaitPolling), string(common.Iteration), agentKey, agentKey)
+		string(model.WaitPolling), string(model.Iteration), agentKey, agentKey)
 	if err != nil {
 		panic(err)
 	}
@@ -388,13 +389,13 @@ func (tx *Tx) updateRetryScheduledTask(agentKey string) {
 // task중에서 shutdownagent 요청을 하기 위한 task가 존재하면 해당 task를 완료 처리 한다.
 func (tx *Tx) updateShutdownTasks(ids []uint64) {
 
-	_, err := tx.Table(new(Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": common.Complete})
+	_, err := tx.Table(new(model.Tasks)).In("ID", ids).Update(map[string]interface{}{"STATUS": model.Complete})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
+func (tx *Tx) updateTask(manager *KlevrManager, t *model.Tasks) {
 	cnt, err := tx.Where("ID = ?", t.Id).
 		Cols("EXE_AGENT_KEY", "STATUS").
 		Update(t)
@@ -435,9 +436,9 @@ func (tx *Tx) updateTask(manager *KlevrManager, t *Tasks) {
 	}
 }
 
-func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
-	var rTask RetriveTask
-	var task Tasks
+func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*model.Tasks, bool) {
+	var rTask model.RetriveTask
+	var task model.Tasks
 
 	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
 	stmt = stmt.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
@@ -445,7 +446,7 @@ func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 	exist := common.CheckGetQuery(stmt.Where("TASKS.ID = ?", id).Get(&rTask))
 	logger.Debugf("Selected Task : %v", rTask)
 
-	var steps []TaskSteps
+	var steps []model.TaskSteps
 
 	err := tx.Where("TASK_ID = ?", id).Find(&steps)
 	if err != nil {
@@ -479,8 +480,8 @@ func (tx *Tx) getTask(manager *KlevrManager, id uint64) (*Tasks, bool) {
 	return &task, exist
 }
 
-func (tx *Tx) getTasksByIds(manager *KlevrManager, ids []uint64) (*[]Tasks, int64) {
-	var rts []RetriveTask
+func (tx *Tx) getTasksByIds(manager *KlevrManager, ids []uint64) (*[]model.Tasks, int64) {
+	var rts []model.RetriveTask
 	inqCnt := len(ids)
 
 	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
@@ -502,10 +503,10 @@ func (tx *Tx) getTasksByIds(manager *KlevrManager, ids []uint64) (*[]Tasks, int6
 	return toTasks(manager, &rts), cnt
 }
 
-func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses []string) (*[]Tasks, int64) {
-	var tasks *[]Tasks
+func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses []string) (*[]model.Tasks, int64) {
+	var tasks *[]model.Tasks
 
-	var rts []RetriveTask
+	var rts []model.RetriveTask
 
 	stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
 	stmt = stmt.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
@@ -521,7 +522,7 @@ func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses 
 	tasks = toTasks(manager, &rts)
 
 	for i, t := range *tasks {
-		var steps []TaskSteps
+		var steps []model.TaskSteps
 
 		cnt, err := tx.Where("TASK_ID = ?", t.Id).OrderBy("SEQ ASC").FindAndCount(&steps)
 		if err != nil {
@@ -547,8 +548,8 @@ func (tx *Tx) getTasksWithSteps(manager *KlevrManager, groupID uint64, statuses 
 	return tasks, cnt
 }
 
-func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
-	var tasks = make([]Tasks, 0, len(*rts))
+func toTasks(manager *KlevrManager, rts *[]model.RetriveTask) *[]model.Tasks {
+	var tasks = make([]model.Tasks, 0, len(*rts))
 
 	for _, rt := range *rts {
 		rt.Tasks.TaskDetail = rt.TaskDetail
@@ -571,8 +572,8 @@ func toTasks(manager *KlevrManager, rts *[]RetriveTask) *[]Tasks {
 	return &tasks
 }
 
-func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string, taskNames []string) (*[]Tasks, bool) {
-	var tasks []Tasks
+func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string, taskNames []string) (*[]model.Tasks, bool) {
+	var tasks []model.Tasks
 
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
 
@@ -599,9 +600,9 @@ func (tx *Tx) getTasks(groupIDs []uint64, statuses []string, agentKeys []string,
 	return &tasks, cnt > 0
 }
 
-func (tx *Tx) getLogs(manager *KlevrManager, zoneID uint64) (*[]Tasks, int64) {
-	var tasks *[]Tasks
-	var rts []RetriveTask
+func (tx *Tx) getLogs(manager *KlevrManager, zoneID uint64) (*[]model.Tasks, int64) {
+	var tasks *[]model.Tasks
+	var rts []model.RetriveTask
 
 	//stmt := tx.Join("LEFT OUTER", "TASK_DETAIL", "TASK_DETAIL.TASK_ID = TASKS.ID")
 	stmt := tx.Join("LEFT OUTER", "TASK_LOGS", "TASK_LOGS.TASK_ID = TASKS.ID")
@@ -619,7 +620,7 @@ func (tx *Tx) getLogs(manager *KlevrManager, zoneID uint64) (*[]Tasks, int64) {
 
 func (tx *Tx) updateScheduledTask() int64 {
 	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE STATUS = ? AND SCHEDULE < CURRENT_TIMESTAMP() AND DELETED_AT IS NULL",
-		common.WaitPolling, common.Scheduled)
+		model.WaitPolling, model.Scheduled)
 	if err != nil {
 		panic(err)
 	}
@@ -634,7 +635,7 @@ func (tx *Tx) updateScheduledTask() int64 {
 
 func (tx *Tx) cancelTask(id uint64) bool {
 	result, err := tx.Exec("UPDATE TASKS SET STATUS = ? WHERE ID = ? AND STATUS IN (?, ?)",
-		common.Canceled, id, common.Scheduled, common.WaitPolling)
+		model.Canceled, id, model.Scheduled, model.WaitPolling)
 	if err != nil {
 		panic(err)
 	}
@@ -653,24 +654,24 @@ func (tx *Tx) cancelTask(id uint64) bool {
 
 // Task 부가 데이터 삭제
 func (tx *Tx) purgeTask(id uint64) {
-	_, err := tx.Where("TASK_ID = ?", id).Delete(&TaskDetail{})
+	_, err := tx.Where("TASK_ID = ?", id).Delete(&model.TaskDetail{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskLogs{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&model.TaskLogs{})
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = tx.Where("TASK_ID = ?", id).Delete(&TaskSteps{})
+	_, err = tx.Where("TASK_ID = ?", id).Delete(&model.TaskSteps{})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (tx *Tx) getConsoleMember(userID string) (int64, *[]PageMembers) {
-	var members []PageMembers
+func (tx *Tx) getConsoleMember(userID string) (int64, *[]model.PageMembers) {
+	var members []model.PageMembers
 
 	cnt, err := tx.Where("USER_ID = ?", userID).FindAndCount(&members)
 	if err != nil {
@@ -680,7 +681,7 @@ func (tx *Tx) getConsoleMember(userID string) (int64, *[]PageMembers) {
 	return cnt, &members
 }
 
-func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
+func (tx *Tx) insertConsoleMember(p *model.PageMembers) *model.PageMembers {
 	result, err := tx.Exec("INSERT INTO `PAGE_MEMBERS` (`user_id`,`user_password`, `activated`, `api_key`) VALUES (?,?,?,?)", p.UserId, p.UserPassword, p.Activated, p.ApiKey)
 	if err != nil {
 		panic(err)
@@ -697,7 +698,7 @@ func (tx *Tx) insertConsoleMember(p *PageMembers) *PageMembers {
 	return p
 }
 
-func (tx *Tx) updateConsoleMember(p *PageMembers) bool {
+func (tx *Tx) updateConsoleMember(p *model.PageMembers) bool {
 	result, err := tx.Exec("UPDATE PAGE_MEMBERS SET USER_PASSWORD = ?, ACTIVATED = ? WHERE USER_ID = ?",
 		p.UserPassword, p.Activated, p.UserId)
 	if err != nil {
@@ -727,8 +728,8 @@ func (tx *Tx) deleteApiAuthentication(zoneID uint64) {
 	logger.Debug(res)
 }
 
-func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthentications) {
-	var apiAuths []ApiAuthentications
+func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]model.ApiAuthentications) {
+	var apiAuths []model.ApiAuthentications
 
 	cnt, err := tx.Where("GROUP_ID = ?", groupID).FindAndCount(&apiAuths)
 	if err != nil {
@@ -738,7 +739,7 @@ func (tx *Tx) getApiAuthenticationsByGroupId(groupID uint64) (int64, *[]ApiAuthe
 	return cnt, &apiAuths
 }
 
-func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentials {
+func (tx *Tx) insertCredential(manager *KlevrManager, c *model.Credentials) *model.Credentials {
 	c.Value = manager.encrypt(c.Value)
 
 	result, err := tx.Exec("INSERT INTO `CREDENTIALS` (`zone_id`,`key`,`value`, `hash`) VALUES (?,?,?,?)",
@@ -759,7 +760,7 @@ func (tx *Tx) insertCredential(manager *KlevrManager, c *Credentials) *Credentia
 	return c
 }
 
-func (tx *Tx) updateCredential(manager *KlevrManager, c *Credentials) int64 {
+func (tx *Tx) updateCredential(manager *KlevrManager, c *model.Credentials) int64 {
 	c.Value = manager.encrypt(c.Value)
 
 	result, err := tx.Exec("UPDATE `CREDENTIALS` SET `VALUE` = ?, `HASH` = ? WHERE `ID` = ?",
@@ -776,8 +777,8 @@ func (tx *Tx) updateCredential(manager *KlevrManager, c *Credentials) int64 {
 	return cnt
 }
 
-func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, bool) {
-	var credential Credentials
+func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*model.Credentials, bool) {
+	var credential model.Credentials
 
 	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ID = ?", id).Get(&credential))
 	logger.Debugf("Selected Credential : %v", credential)
@@ -785,8 +786,8 @@ func (tx *Tx) getCredential(manager *KlevrManager, id uint64) (*Credentials, boo
 	return &credential, exist
 }
 
-func (tx *Tx) getCredentialByName(zoneID uint64, credentialName string) *Credentials {
-	var credential Credentials
+func (tx *Tx) getCredentialByName(zoneID uint64, credentialName string) *model.Credentials {
+	var credential model.Credentials
 
 	exist := common.CheckGetQuery(tx.Where("CREDENTIALS.ZONE_ID = ?", zoneID).And("CREDENTIALS.KEY = ?", credentialName).Get(&credential))
 	logger.Debugf("Selected Credentials : exist[%v], id[%d], key[%s]", exist, credential.Id, credential.Key)
@@ -798,8 +799,8 @@ func (tx *Tx) getCredentialByName(zoneID uint64, credentialName string) *Credent
 	return &credential
 }
 
-func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]Credentials, bool) {
-	var credentials []Credentials
+func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string) (*[]model.Credentials, bool) {
+	var credentials []model.Credentials
 
 	stmt := tx.Where(builder.In("ZONE_ID", groupIDs))
 
@@ -820,8 +821,8 @@ func (tx *Tx) getCredentialsByNames(groupIDs []uint64, credentialNames []string)
 	return &credentials, cnt > 0
 }
 
-func (tx *Tx) getCredentials(groupID uint64) (*[]Credentials, int64) {
-	var credentials []Credentials
+func (tx *Tx) getCredentials(groupID uint64) (*[]model.Credentials, int64) {
+	var credentials []model.Credentials
 
 	cnt, err := tx.Where("ZONE_ID = ?", groupID).FindAndCount(&credentials)
 	if err != nil {
@@ -832,19 +833,19 @@ func (tx *Tx) getCredentials(groupID uint64) (*[]Credentials, int64) {
 }
 
 func (tx *Tx) deleteCredential(id uint64) {
-	_, err := tx.Where("ID = ?", id).Delete(&Credentials{})
+	_, err := tx.Where("ID = ?", id).Delete(&model.Credentials{})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (tx *Tx) getScheduledIterationTasks(zoneID uint64) (*[]Tasks, bool) {
-	var tasks []Tasks
+func (tx *Tx) getScheduledIterationTasks(zoneID uint64) (*[]model.Tasks, bool) {
+	var tasks []model.Tasks
 
 	stmt := tx.Where(builder.In("ZONE_ID", zoneID))
 
 	// condition 추가
-	stmt = stmt.And(builder.In("TASK_TYPE", string(common.Iteration)))
+	stmt = stmt.And(builder.In("TASK_TYPE", string(model.Iteration)))
 
 	//tx.Engine().ShowSQL(true)
 

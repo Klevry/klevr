@@ -23,7 +23,9 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	pb "github.com/Klevry/klevr/pkg/agent/protobuf"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/Klevry/klevr/pkg/queue"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/fanliao/go-promise"
 	concurrent "github.com/orcaman/concurrent-map"
 )
@@ -41,9 +43,9 @@ type taskExecutor struct {
 
 // TaskWrapper for running task management
 type TaskWrapper struct {
-	*KlevrTask
+	*model.KlevrTask
 	future       *promise.Future
-	recover      *KlevrTaskStep
+	recover      *model.KlevrTaskStep
 	iterationCnt int64
 }
 
@@ -71,18 +73,18 @@ func (executor *taskExecutor) GetRunningTaskCount() int {
 }
 
 // GetUpdatedTasks 진행 상태가 변경된 task 조회
-func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int) {
+func (executor *taskExecutor) GetUpdatedTasks() (updated []model.KlevrTask, count int) {
 	executor.Lock()
 	defer executor.Unlock()
 
 	updates := executor.updatedTasks.PopAll()
 
 	size := len(updates)
-	tasks := make([]KlevrTask, 0, size)
+	tasks := make([]model.KlevrTask, 0, size)
 
 	if size > 0 {
 		for _, v := range updates {
-			tasks = append(tasks, v.(KlevrTask))
+			tasks = append(tasks, v.(model.KlevrTask))
 		}
 	}
 
@@ -94,13 +96,13 @@ func (executor *taskExecutor) GetUpdatedTasks() (updated []KlevrTask, count int)
 }*/
 
 // RunTask Run the task.
-func (executor *taskExecutor) RunTaskInLocal(task *KlevrTask) error {
+func (executor *taskExecutor) RunTaskInLocal(task *model.KlevrTask) error {
 	if executor.closed {
 		return errors.New("Task executor was closed")
 	}
 
 	tw := &TaskWrapper{KlevrTask: task}
-	tw.Status = Started
+	tw.Status = model.Started
 
 	key := strconv.FormatUint(task.ID, 10)
 
@@ -115,7 +117,7 @@ func (executor *taskExecutor) RunTaskInLocal(task *KlevrTask) error {
 	return errors.New(fmt.Sprintf("TaskID : [%s] is already running.", key))
 }
 
-func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) error {
+func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *model.KlevrTask) error {
 	serverAddr := net.JoinHostPort(ip, port)
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
@@ -145,7 +147,7 @@ func (executor *taskExecutor) RunTaskInRemote(ip, port string, task *KlevrTask) 
 
 	logger.Debugf("this is response: %v", r)
 
-	respTask := make([]KlevrTask, 0)
+	respTask := make([]model.KlevrTask, 0)
 
 	err = json.Unmarshal(r.Task, &respTask)
 	if err != nil {
@@ -224,9 +226,9 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				preResult = result
 
 				// task step 실행
-				if RESERVED == step.CommandType {
+				if model.RESERVED == step.CommandType {
 					result, err = runReservedCommand(result, tw.KlevrTask, step)
-				} else if INLINE == step.CommandType {
+				} else if model.INLINE == step.CommandType {
 					result, err = runInlineCommand(result, tw.KlevrTask, step)
 				} else {
 					return tw, errors.New(fmt.Sprintf("%d Task invalid command type - %s", tw.ID, step.CommandType))
@@ -234,7 +236,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 				// task result 갱신 - task result는 최종 step의 result로 갱신된다.
 				tw.Result = result
-				tw.UpdatedAt = JSONTime{time.Now()}
+				tw.UpdatedAt = serialize.JSONTime{time.Now()}
 
 				if result != preResult {
 					tw.IsChangedResult = true
@@ -250,7 +252,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				// 마지막 step이 아니면 task 진행상황 업데이트
 				if i < regularCnt-1 {
 					tw.CurrentStep++
-					tw.Status = Running
+					tw.Status = model.Running
 
 					executor.updatedTasks.Push(*tw.KlevrTask)
 				}
@@ -259,7 +261,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 			}
 
 			// Iteration task 반복 수행
-			if Iteration == tw.TaskType {
+			if model.Iteration == tw.TaskType {
 				expr, err := cronexpr.Parse(tw.Cron)
 
 				if err != nil {
@@ -271,14 +273,14 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 				nextTime := expr.Next(curTime)
 
 				if tw.UntilRun.IsZero() || tw.UntilRun.After(nextTime) {
-					tw.Status = WaitInterationSchedule
+					tw.Status = model.WaitInterationSchedule
 					tw.iterationCnt = tw.iterationCnt + 1
 
 					executor.updatedTasks.Push(*tw.KlevrTask)
 
 					time.Sleep(nextTime.Sub(curTime))
 
-					tw.Status = Started
+					tw.Status = model.Started
 					tw.Log = ""
 
 					logger.Debugf("iteration re-run [%d] : [%+v]", tw.iterationCnt, tw.KlevrTask)
@@ -294,7 +296,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 	// Promise function 실행 및 handler 정의
 	future := promise.Start(f).OnSuccess(func(v interface{}) {
-		tw.Status = Complete
+		tw.Status = model.Complete
 		logger.Debugf("task execution onSuccess : [%+v]", tw.KlevrTask)
 
 		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
@@ -307,35 +309,35 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 			var err error
 
 			tw.CurrentStep = uint(tw.recover.Seq)
-			tw.Status = Recovering
+			tw.Status = model.Recovering
 			executor.updatedTasks.Push(*tw.KlevrTask)
 
 			defer func(err error) {
 				v := recover()
 
 				if v != nil {
-					tw.Status = FailedRecover
+					tw.Status = model.FailedRecover
 					tw.IsFailedRecover = true
 
 					tw.Log += fmt.Sprintf(logFormat, v)
 				} else if err != nil {
-					tw.Status = FailedRecover
+					tw.Status = model.FailedRecover
 					tw.IsFailedRecover = true
 
 					tw.Log += fmt.Sprintf(logFormat, err)
 				}
 			}(err)
 
-			if RESERVED == tw.recover.CommandType {
+			if model.RESERVED == tw.recover.CommandType {
 				result, err = runReservedCommand(tw.Result, tw.KlevrTask, tw.recover)
-			} else if INLINE == tw.recover.CommandType {
+			} else if model.INLINE == tw.recover.CommandType {
 				result, err = runInlineCommand(tw.Result, tw.KlevrTask, tw.recover)
 			}
 
 			tw.Result = result
-			tw.Status = Failed
+			tw.Status = model.Failed
 		} else {
-			tw.Status = Failed
+			tw.Status = model.Failed
 		}
 
 		logger.Debugf("task execution onFailure : [%+v]", tw.KlevrTask)
@@ -343,7 +345,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		executor.runningTasks.Remove(strconv.FormatUint(tw.ID, 10))
 		executor.updatedTasks.Push(*tw.KlevrTask)
 	}).OnCancel(func() {
-		tw.Status = Stopped
+		tw.Status = model.Stopped
 
 		logger.Debugf("task execution onCancel : [%+v]", tw.KlevrTask)
 
@@ -360,7 +362,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 		if timeout {
 			// Cancel()을 호출하지 않으면 future blocking만 해제되고 백그라운드에서 future goroutine은 계속 수행된다.
 			future.Cancel()
-			tw.Status = Timeout
+			tw.Status = model.Timeout
 		}
 
 		logger.Debugf("execution complete with timeout : [%+v]", tw.KlevrTask)
@@ -381,7 +383,7 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 
 	// CallbackURL 이 존재하는 경우 비동기 callback 처리
 	if tw.CallbackURL != "" {
-		d := KlevrTaskCallback{
+		d := model.KlevrTaskCallback{
 			ID:     tw.ID,
 			Name:   tw.Name,
 			Status: tw.Status,
@@ -393,12 +395,12 @@ func (executor *taskExecutor) execute(tw *TaskWrapper) {
 }
 
 // 예약 커맨드(golang function) 실행
-func runReservedCommand(preResult string, task *KlevrTask, command *KlevrTaskStep) (result string, err error) {
+func runReservedCommand(preResult string, task *model.KlevrTask, command *model.KlevrTaskStep) (result string, err error) {
 	return RunCommand(preResult, task, command)
 }
 
 // inline shell script 커맨드 실행
-func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep) (result string, err error) {
+func runInlineCommand(preResult string, task *model.KlevrTask, command *model.KlevrTaskStep) (result string, err error) {
 	var wrapper string
 	var path = "/tmp/" + strconv.FormatUint(task.ID, 10)
 
@@ -420,12 +422,12 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 		os.Remove(resultFile)
 	}()
 
-	wrapper += InlineCommandOriginalParamVarName + "=\"" + strings.ReplaceAll(task.Parameter, "\"", "\\\"") + "\"\n"
-	wrapper += InlineCommandTaskResultVarName + "=\"" + strings.ReplaceAll(preResult, "\"", "\\\"") + "\"\n\n"
+	wrapper += model.InlineCommandOriginalParamVarName + "=\"" + strings.ReplaceAll(task.Parameter, "\"", "\\\"") + "\"\n"
+	wrapper += model.InlineCommandTaskResultVarName + "=\"" + strings.ReplaceAll(preResult, "\"", "\\\"") + "\"\n\n"
 
 	wrapper += ". " + scriptFile + "\n\n"
 
-	wrapper += "\necho \"${" + InlineCommandTaskResultVarName + "}\" > " + resultFile
+	wrapper += "\necho \"${" + model.InlineCommandTaskResultVarName + "}\" > " + resultFile
 
 	// command wrapper 스크립트 파일 생성
 	wrapperFile := path + "/wrapper.sh"
@@ -476,7 +478,7 @@ func runInlineCommand(preResult string, task *KlevrTask, command *KlevrTaskStep)
 	return string(b), nil
 }
 
-func callback(url string, data KlevrTaskCallback) {
+func callback(url string, data model.KlevrTaskCallback) {
 	logger.Debugf("task completed & callback : [%+v]", data)
 
 	b, err := json.Marshal(data)
@@ -498,4 +500,22 @@ func callback(url string, data KlevrTaskCallback) {
 		logger.Debugf("%+v", errors.WithStack(err))
 		return
 	}
+}
+
+func TaskStatusAdd(task *model.KlevrTask) *model.KlevrTask {
+	if task.Schedule.IsZero() {
+		task.Status = model.WaitPolling
+	} else {
+		compare := time.Now().UTC()
+
+		if task.Schedule.After(compare) {
+			task.Status = model.Scheduled
+		} else {
+			task.Status = model.WaitPolling
+		}
+
+		logger.Debugf("schedule : [%+v], current : [%+v], task status : [%+v]", task.Schedule, compare, task.Status)
+	}
+
+	return task
 }

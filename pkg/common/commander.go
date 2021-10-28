@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 	"github.com/pkg/errors"
 )
@@ -44,7 +45,7 @@ func GetCommands() map[string]Command {
 }
 
 // RunCommand 커맨드를 실행
-func RunCommand(jsonPreResult string, task *KlevrTask, command *KlevrTaskStep) (result string, err error) {
+func RunCommand(jsonPreResult string, task *model.KlevrTask, command *model.KlevrTaskStep) (result string, err error) {
 	// 커맨드 구현체 function 획득
 	c, ok := commands[command.Command]
 	if !ok {

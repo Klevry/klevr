@@ -5,20 +5,21 @@ import (
 
 	"github.com/Klevry/klevr/pkg/common"
 	"github.com/Klevry/klevr/pkg/communicator"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 )
 
-var receivedTasks []common.KlevrTask = make([]common.KlevrTask, 0)
-var notSentTasks map[uint64]common.KlevrTask = make(map[uint64]common.KlevrTask)
+var receivedTasks []model.KlevrTask = make([]model.KlevrTask, 0)
+var notSentTasks map[uint64]model.KlevrTask = make(map[uint64]model.KlevrTask)
 
 // agentkey가 지정되었지만 실행하지 못한 Task는 실패로 처리
-func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.KlevrTask) {
+func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []model.KlevrTask) {
 	executor := common.GetTaskExecutor()
 
 	for i := 0; i < len(task); i++ {
 		beforeStatus := task[i].Status
-		if task[i].Status == common.WaitPolling || task[i].Status == common.HandOver {
-			task[i].Status = common.WaitExec
+		if task[i].Status == model.WaitPolling || task[i].Status == model.HandOver {
+			task[i].Status = model.WaitExec
 		}
 
 		logger.Debugf("%v", task[i].ExeAgentChangeable)
@@ -40,7 +41,7 @@ func (agent *KlevrAgent) assignmentTask(primaryAgentKey string, task []common.Kl
 							logger.Debugf("%v", task[i])
 							if err := executor.RunTaskInRemote(ip, agent.grpcPort, &task[i]); err != nil {
 								task[i].ExeAgentKey = ""
-								task[i].Status = common.TaskStatus(beforeStatus)
+								task[i].Status = model.TaskStatus(beforeStatus)
 							}
 						}
 
@@ -70,7 +71,7 @@ func (agent *KlevrAgent) polling() {
 
 	agent.checkZoneStatus()
 
-	var updateMap = make(map[uint64]common.KlevrTask)
+	var updateMap = make(map[uint64]model.KlevrTask)
 
 	for _, t := range receivedTasks {
 		updateMap[t.ID] = t
@@ -96,7 +97,7 @@ func (agent *KlevrAgent) polling() {
 		updateMap[t.ID] = t
 	}
 
-	updateTasks := []common.KlevrTask{}
+	updateTasks := []model.KlevrTask{}
 	for _, value := range updateMap {
 		logger.Debugf("polling updated task [%+v]", value)
 		updateTasks = append(updateTasks, value)

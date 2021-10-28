@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/NexClipper/logger"
 	"github.com/gorhill/cronexpr"
 	"github.com/gorilla/mux"
@@ -60,7 +62,7 @@ func (api *API) InitInner(inner *mux.Router) {
 // @Router /inner/tasks/{groupID}/simple/reserved [post]
 // @Param groupID path uint64 true "ZONE ID"
 // @Param b body manager.SimpleReservedCommand true "TASK"
-// @Success 200 {object} common.KlevrTask
+// @Success 200 {object} model.KlevrTask
 func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -83,20 +85,20 @@ func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	t := common.KlevrTask{
+	t := model.KlevrTask{
 		ZoneID:         groupID,
 		Name:           "simple",
-		TaskType:       common.AtOnce,
+		TaskType:       model.AtOnce,
 		TotalStepCount: 1,
 		Parameter:      rc.Parameter,
-		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+		Steps: []*model.KlevrTaskStep{&model.KlevrTaskStep{
 			Seq:         1,
 			CommandName: "simple",
-			CommandType: common.RESERVED,
+			CommandType: model.RESERVED,
 			Command:     rc.Command,
 			IsRecover:   false,
 		}},
-		EventHookSendingType: common.EventHookWithAll,
+		EventHookSendingType: model.EventHookWithAll,
 	}
 
 	// Task 상태 설정
@@ -134,7 +136,7 @@ func (api *serversAPI) addSimpleReservedTask(w http.ResponseWriter, r *http.Requ
 // @Router /inner/tasks/{groupID}/simple/inline [post]
 // @Param groupID path uint64 true "ZONE ID"
 // @Param b body string true "inline script"
-// @Success 200 {object} common.KlevrTask
+// @Success 200 {object} model.KlevrTask
 func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
@@ -151,19 +153,19 @@ func (api *serversAPI) addSimpleInlineTask(w http.ResponseWriter, r *http.Reques
 
 	nr := &common.Request{Request: r}
 
-	t := common.KlevrTask{
+	t := model.KlevrTask{
 		ZoneID:         groupID,
 		Name:           "simple",
-		TaskType:       common.AtOnce,
+		TaskType:       model.AtOnce,
 		TotalStepCount: 1,
-		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+		Steps: []*model.KlevrTaskStep{&model.KlevrTaskStep{
 			Seq:         1,
 			CommandName: "simple",
-			CommandType: common.INLINE,
+			CommandType: model.INLINE,
 			Command:     nr.BodyToString(),
 			IsRecover:   false,
 		}},
-		EventHookSendingType: common.EventHookWithAll,
+		EventHookSendingType: model.EventHookWithAll,
 	}
 
 	// Task 상태 설정
@@ -226,7 +228,7 @@ func (api *serversAPI) getPrimaryAgent(w http.ResponseWriter, r *http.Request) {
 		agent = common.Agent{
 			AgentKey:           a.AgentKey,
 			IsActive:           byteToBool(a.IsActive),
-			LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
+			LastAliveCheckTime: &serialize.JSONTime{a.LastAliveCheckTime},
 			IP:                 a.Ip,
 			Port:               a.Port,
 			Version:            a.Version,
@@ -399,8 +401,8 @@ func (api *serversAPI) getAgents(w http.ResponseWriter, r *http.Request) {
 			nodes[i] = Agent{
 				AgentKey:           a.AgentKey,
 				IsActive:           byteToBool(a.IsActive),
-				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
-				LastAccessTime:     &common.JSONTime{a.LastAccessTime},
+				LastAliveCheckTime: &serialize.JSONTime{a.LastAliveCheckTime},
+				LastAccessTime:     &serialize.JSONTime{a.LastAccessTime},
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
@@ -455,8 +457,8 @@ func (api *serversAPI) getTotalAgents(w http.ResponseWriter, r *http.Request) {
 			nodes[i] = Agent{
 				AgentKey:           a.AgentKey,
 				IsActive:           byteToBool(a.IsActive),
-				LastAliveCheckTime: &common.JSONTime{a.LastAliveCheckTime},
-				LastAccessTime:     &common.JSONTime{a.LastAccessTime},
+				LastAliveCheckTime: &serialize.JSONTime{a.LastAliveCheckTime},
+				LastAccessTime:     &serialize.JSONTime{a.LastAccessTime},
 				IP:                 a.Ip,
 				Port:               a.Port,
 				Version:            a.Version,
@@ -496,12 +498,12 @@ func (api *serversAPI) getTotalAgents(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Router /inner/tasks [post]
-// @Param b body common.KlevrTask true "TASK"
-// @Success 200 {object} common.KlevrTask
+// @Param b body model.KlevrTask true "TASK"
+// @Success 200 {object} model.KlevrTask
 func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
-	var t common.KlevrTask
+	var t model.KlevrTask
 
 	err := json.NewDecoder(r.Body).Decode(&t)
 	if err != nil {
@@ -515,7 +517,7 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	t = *common.TaskStatusAdd(&t)
 
 	// Task validation
-	if common.Iteration == t.TaskType {
+	if model.Iteration == t.TaskType {
 		_, err := cronexpr.Parse(t.Cron)
 
 		if err != nil {
@@ -524,7 +526,7 @@ func (api *serversAPI) addTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if t.EventHookSendingType == "" {
-		t.EventHookSendingType = common.EventHookWithAll
+		t.EventHookSendingType = model.EventHookWithAll
 	}
 
 	// DTO -> entity
@@ -591,7 +593,7 @@ func (api *serversAPI) cancelTask(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Router /inner/tasks/{zoneID}/logs [get]
 // @Param zoneID path uint64 true "zone id"
-// @Success 200 {object} common.KlevrTaskLog
+// @Success 200 {object} model.KlevrTaskLog
 func (api *serversAPI) getZoneLogs(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -611,7 +613,7 @@ func (api *serversAPI) getZoneLogs(w http.ResponseWriter, r *http.Request) {
 	var b []byte
 
 	if exist > 0 {
-		var dtos []common.KlevrTaskLog = make([]common.KlevrTaskLog, len(*tasks))
+		var dtos []model.KlevrTaskLog = make([]model.KlevrTaskLog, len(*tasks))
 
 		for i, t := range *tasks {
 			dtos[i] = *TaskPersistToKlevrTaskLog(&t)
@@ -643,7 +645,7 @@ func (api *serversAPI) getZoneLogs(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Router /inner/tasks/{taskID} [get]
 // @Param taskID path uint64 true "task id"
-// @Success 200 {object} common.KlevrTask
+// @Success 200 {object} model.KlevrTask
 func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -688,7 +690,7 @@ func (api *serversAPI) getTask(w http.ResponseWriter, r *http.Request) {
 // @Param status query []string false "STATUS 배열"
 // @Param agentKey query []string false "AGENT KEY 배열"
 // @Param name query []string false "TASK NAME 배열"
-// @Success 200 {object} []common.KlevrTask
+// @Success 200 {object} []model.KlevrTask
 func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -730,7 +732,7 @@ func (api *serversAPI) getTasks(w http.ResponseWriter, r *http.Request) {
 	var b []byte
 
 	if exist {
-		var dtos []common.KlevrTask = make([]common.KlevrTask, len(*tasks))
+		var dtos []model.KlevrTask = make([]model.KlevrTask, len(*tasks))
 
 		for i, t := range *tasks {
 			dtos[i] = *TaskPersistToDto(&t)
@@ -813,7 +815,7 @@ func (api *serversAPI) addAPIKey(w http.ResponseWriter, r *http.Request) {
 
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
-	auth := &ApiAuthentications{
+	auth := &model.ApiAuthentications{
 		ApiKey:  manager.encrypt(nr.BodyToString()),
 		GroupId: groupID,
 	}
@@ -849,7 +851,7 @@ func (api *serversAPI) updateAPIKey(w http.ResponseWriter, r *http.Request) {
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 	apiKey := nr.BodyToString()
 
-	auth := &ApiAuthentications{
+	auth := &model.ApiAuthentications{
 		ApiKey:  manager.encrypt(apiKey),
 		GroupId: groupID,
 	}
@@ -901,12 +903,12 @@ func (api *serversAPI) getAPIKey(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Router /inner/groups [post]
-// @Param b body AgentGroups true "AgentGroups model"
-// @Success 200 {object} AgentGroups
+// @Param b body model.AgentGroups true "AgentGroups model"
+// @Success 200 {object} model.AgentGroups
 func (api *serversAPI) addGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	tx := GetDBConn(ctx)
-	var ag AgentGroups
+	var ag model.AgentGroups
 
 	err := json.NewDecoder(r.Body).Decode(&ag)
 	if err != nil {
@@ -937,7 +939,7 @@ func (api *serversAPI) addGroup(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Router /inner/groups [get]
-// @Success 200 {object} []AgentGroups
+// @Success 200 {object} []model.AgentGroups
 func (api *serversAPI) getGroups(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -961,7 +963,7 @@ func (api *serversAPI) getGroups(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Router /inner/groups/{groupID} [get]
 // @Param groupID path uint64 true "ZONE ID"
-// @Success 200 {object} AgentGroups
+// @Success 200 {object} model.AgentGroups
 func (api *serversAPI) getGroup(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	var tx = GetDBConn(ctx)
@@ -1054,8 +1056,8 @@ func (api *serversAPI) deletegroup(ctx *common.Context, tx *Tx, id uint64) error
 	return nil
 }
 
-func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
-	persist := &Tasks{
+func TaskDtoToPerist(dto *model.KlevrTask) *model.Tasks {
+	persist := &model.Tasks{
 		Id:          dto.ID,
 		ZoneId:      dto.ZoneID,
 		Name:        dto.Name,
@@ -1064,7 +1066,7 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 		AgentKey:    dto.AgentKey,
 		ExeAgentKey: dto.ExeAgentKey,
 		Status:      dto.Status,
-		TaskDetail: &TaskDetail{
+		TaskDetail: &model.TaskDetail{
 			TaskId:             dto.ID,
 			Cron:               dto.Cron,
 			UntilRun:           dto.UntilRun.Time,
@@ -1085,10 +1087,10 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	stepLen := len(dto.Steps)
 
 	if stepLen > 0 {
-		steps := make([]TaskSteps, stepLen)
+		steps := make([]model.TaskSteps, stepLen)
 
 		for i, dtoStep := range dto.Steps {
-			steps[i] = TaskSteps{
+			steps[i] = model.TaskSteps{
 				Id:          dtoStep.ID,
 				Seq:         dtoStep.Seq,
 				TaskId:      dto.ID,
@@ -1097,9 +1099,9 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 				IsRecover:   dtoStep.IsRecover,
 			}
 
-			if dtoStep.CommandType == common.RESERVED {
+			if dtoStep.CommandType == model.RESERVED {
 				steps[i].ReservedCommand = dtoStep.Command
-			} else if dtoStep.CommandType == common.INLINE {
+			} else if dtoStep.CommandType == model.INLINE {
 				steps[i].InlineScript = dtoStep.Command
 			} else {
 				panic(fmt.Sprintf("Invalid Task Step CommandType : [%s]", dtoStep.CommandType))
@@ -1110,7 +1112,7 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	}
 
 	if dto.Log != "" {
-		persist.Logs = &TaskLogs{
+		persist.Logs = &model.TaskLogs{
 			TaskId: persist.Id,
 			Logs:   dto.Log,
 		}
@@ -1121,19 +1123,19 @@ func TaskDtoToPerist(dto *common.KlevrTask) *Tasks {
 	return persist
 }
 
-func TaskPersistToKlevrTaskLog(persist *Tasks) *common.KlevrTaskLog {
+func TaskPersistToKlevrTaskLog(persist *model.Tasks) *model.KlevrTaskLog {
 	detail := persist.TaskDetail
 
 	logger.Debugf("detail [%+v]", detail)
 
-	dto := &common.KlevrTaskLog{
+	dto := &model.KlevrTaskLog{
 		ID:          persist.Id,
 		ZoneID:      persist.ZoneId,
 		Name:        persist.Name,
 		ExeAgentKey: persist.ExeAgentKey,
 		Status:      persist.Status,
-		CreatedAt:   common.JSONTime{Time: persist.CreatedAt},
-		UpdatedAt:   common.JSONTime{Time: persist.UpdatedAt},
+		CreatedAt:   serialize.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt:   serialize.JSONTime{Time: persist.UpdatedAt},
 	}
 
 	if persist.Logs != nil {
@@ -1145,27 +1147,27 @@ func TaskPersistToKlevrTaskLog(persist *Tasks) *common.KlevrTaskLog {
 	return dto
 }
 
-func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
+func TaskPersistToDto(persist *model.Tasks) *model.KlevrTask {
 	detail := persist.TaskDetail
 
 	logger.Debugf("detail [%+v]", detail)
 
-	dto := &common.KlevrTask{
+	dto := &model.KlevrTask{
 		ID:          persist.Id,
 		ZoneID:      persist.ZoneId,
 		Name:        persist.Name,
 		TaskType:    persist.TaskType,
-		Schedule:    common.JSONTime{Time: persist.Schedule},
+		Schedule:    serialize.JSONTime{Time: persist.Schedule},
 		AgentKey:    persist.AgentKey,
 		ExeAgentKey: persist.ExeAgentKey,
 		Status:      persist.Status,
-		CreatedAt:   common.JSONTime{Time: persist.CreatedAt},
-		UpdatedAt:   common.JSONTime{Time: persist.UpdatedAt},
+		CreatedAt:   serialize.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt:   serialize.JSONTime{Time: persist.UpdatedAt},
 	}
 
 	if detail != nil {
 		dto.Cron = detail.Cron
-		dto.UntilRun = common.JSONTime{Time: detail.UntilRun}
+		dto.UntilRun = serialize.JSONTime{Time: detail.UntilRun}
 		dto.Timeout = detail.Timeout
 		dto.ExeAgentChangeable = detail.ExeAgentChangeable
 		dto.TotalStepCount = detail.TotalStepCount
@@ -1187,10 +1189,10 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	}
 
 	if stepLen > 0 {
-		steps := make([]*common.KlevrTaskStep, stepLen)
+		steps := make([]*model.KlevrTaskStep, stepLen)
 
 		for i, step := range *persist.TaskSteps {
-			steps[i] = &common.KlevrTaskStep{
+			steps[i] = &model.KlevrTaskStep{
 				ID:          step.Id,
 				Seq:         step.Seq,
 				CommandName: step.CommandName,
@@ -1198,9 +1200,9 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 				IsRecover:   step.IsRecover,
 			}
 
-			if step.CommandType == common.RESERVED {
+			if step.CommandType == model.RESERVED {
 				steps[i].Command = step.ReservedCommand
-			} else if step.CommandType == common.INLINE {
+			} else if step.CommandType == model.INLINE {
 				steps[i].Command = step.InlineScript
 			} else {
 				panic(fmt.Sprintf("Invalid Task Step CommandType : [%s]", step.CommandType))
@@ -1219,7 +1221,7 @@ func TaskPersistToDto(persist *Tasks) *common.KlevrTask {
 	return dto
 }
 
-func TaskMatchingCredential(manager *KlevrManager, task Tasks, credential *[]Credentials) Tasks {
+func TaskMatchingCredential(manager *KlevrManager, task model.Tasks, credential *[]model.Credentials) model.Tasks {
 	if len(*credential) == 0 {
 		return task
 	}
@@ -1465,8 +1467,8 @@ func (api *serversAPI) deleteCredential(w http.ResponseWriter, r *http.Request) 
 	fmt.Fprint(w, "{\"deleted\": true}")
 }
 
-func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
-	persist := &Credentials{
+func CredentialDtoToPerist(dto *common.KlevrCredential) *model.Credentials {
+	persist := &model.Credentials{
 		Id:     dto.ID,
 		ZoneId: dto.ZoneID,
 		Key:    dto.Key,
@@ -1479,15 +1481,15 @@ func CredentialDtoToPerist(dto *common.KlevrCredential) *Credentials {
 	return persist
 }
 
-func CredentialPersistToDto(persist *Credentials) *common.KlevrCredential {
+func CredentialPersistToDto(persist *model.Credentials) *common.KlevrCredential {
 	dto := &common.KlevrCredential{
 		ID:     persist.Id,
 		ZoneID: persist.ZoneId,
 		Key:    persist.Key,
 		//Value:     persist.Value,
 		Hash:      persist.Hash,
-		CreatedAt: common.JSONTime{Time: persist.CreatedAt},
-		UpdatedAt: common.JSONTime{Time: persist.UpdatedAt},
+		CreatedAt: serialize.JSONTime{Time: persist.CreatedAt},
+		UpdatedAt: serialize.JSONTime{Time: persist.UpdatedAt},
 	}
 
 	logger.Debugf("CredentialPersistToDto \npersist : [%+v]\ndto : [%+v]", persist, dto)

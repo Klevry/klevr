@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/NexClipper/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -30,7 +32,7 @@ func (agent *KlevrAgent) checkPrimary(prim string) bool {
 func (agent *KlevrAgent) checkZoneStatus() {
 	for i, n := range agent.Agents {
 		if (agent.Primary.IP == n.IP) && (agent.Primary.AgentKey == n.AgentKey) {
-			agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
+			agent.Agents[i].LastAliveCheckTime = &serialize.JSONTime{Time: time.Now().UTC()}
 			agent.Agents[i].IsActive = true
 		} else {
 			serverAddr := net.JoinHostPort(n.IP, agent.grpcPort)
@@ -61,7 +63,7 @@ func (agent *KlevrAgent) checkZoneStatus() {
 						agent.Agents[i].Disk = agentStatus.Disk
 						agent.Agents[i].FreeMemory = agentStatus.FreeMemory
 						agent.Agents[i].FreeDisk = agentStatus.FreeDisk
-						agent.Agents[i].LastAliveCheckTime = &common.JSONTime{Time: time.Now().UTC()}
+						agent.Agents[i].LastAliveCheckTime = &serialize.JSONTime{Time: time.Now().UTC()}
 						agent.Agents[i].IsActive = true
 					} else {
 						agent.Agents[i].IsActive = false
@@ -77,8 +79,8 @@ func (agent *KlevrAgent) checkZoneStatus() {
 	}
 }
 
-func (agent *KlevrAgent) getRemoteUpdatedTasks() []common.KlevrTask {
-	remoteTasks := make([]common.KlevrTask, 0)
+func (agent *KlevrAgent) getRemoteUpdatedTasks() []model.KlevrTask {
+	remoteTasks := make([]model.KlevrTask, 0)
 
 	for _, n := range agent.Agents {
 		if !((agent.Primary.IP == n.IP) && (agent.Primary.AgentKey == n.AgentKey)) {
@@ -98,7 +100,7 @@ func (agent *KlevrAgent) getRemoteUpdatedTasks() []common.KlevrTask {
 
 				s, resErr := c.GetUpdatedTasks(ctx, &pb.Message{})
 				if resErr == nil {
-					tasks := make([]common.KlevrTask, 0)
+					tasks := make([]model.KlevrTask, 0)
 					json.Unmarshal(s.Task, &tasks)
 
 					logger.Debugf("tasks: %v", tasks)

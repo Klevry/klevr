@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 	"github.com/go-redis/redis"
 )
@@ -37,7 +38,7 @@ func (c *Cache) Close() error {
 	return c.client.Close()
 }
 
-func (c *Cache) UpdateAgent(ctx *common.Context, zoneID uint64, agent *Agents) error {
+func (c *Cache) UpdateAgent(ctx *common.Context, zoneID uint64, agent *model.Agents) error {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -51,7 +52,7 @@ func (c *Cache) UpdateAgent(ctx *common.Context, zoneID uint64, agent *Agents) e
 	}
 
 	for _, member := range members {
-		var buf Agents
+		var buf model.Agents
 		json.Unmarshal([]byte(member), &buf)
 		if buf.AgentKey == agent.AgentKey {
 			cnt, err := c.client.SRem(key, member).Result()
@@ -80,7 +81,7 @@ func (c *Cache) UpdateAgent(ctx *common.Context, zoneID uint64, agent *Agents) e
 
 // UpdateZoneStatus에 전달된 agents의 정보는 Agents의 모든 필드를 채우고 있지 않음
 // cache에 등록되어 있던 agent의 정보에 변경된 내역만 변경해서 다시 등록
-func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Agents) error {
+func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []model.Agents) error {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -96,9 +97,9 @@ func (c *Cache) UpdateZoneStatus(ctx *common.Context, zoneID uint64, agents []Ag
 		return err
 	}
 
-	agentBuf := make([]Agents, 0)
+	agentBuf := make([]model.Agents, 0)
 	for _, member := range members {
-		var buf Agents
+		var buf model.Agents
 		json.Unmarshal([]byte(member), &buf)
 		agentBuf = append(agentBuf, buf)
 
@@ -189,13 +190,13 @@ func (c *Cache) UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey s
 		return err
 	}
 
-	var findAgent Agents
+	var findAgent model.Agents
 	originLength := len(members)
 	//logger.Debugf("### UpdateAccessAgent originLenght: %d", originLength)
 
 	if originLength > 0 {
 		for _, member := range members {
-			var buf Agents
+			var buf model.Agents
 			json.Unmarshal([]byte(member), &buf)
 			if buf.AgentKey == agentKey {
 				//logger.Debugf("######### UpdateAccessAgent(SREM): %v", buf)
@@ -230,7 +231,7 @@ func (c *Cache) UpdateAccessAgent(ctx *common.Context, zoneID uint64, agentKey s
 }
 
 // agent들을 inactive 상태로 변경
-func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]Agents) error {
+func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[]model.Agents) error {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -248,7 +249,7 @@ func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[
 		}
 
 		for _, member := range members {
-			var buf Agents
+			var buf model.Agents
 			json.Unmarshal([]byte(member), &buf)
 			if buf.AgentKey == a.AgentKey {
 				cnt, err := c.client.SRem(key, member).Result()
@@ -272,7 +273,7 @@ func (c *Cache) UpdateAgentDisabledStatus(ctx *common.Context, inactiveAgents *[
 
 // GetAgentsForInactive는 LastAccessTime이 before보다 이전에 접속했던 agent이거나
 // IsActive가 false 상태인 agent를 찾아준다.
-func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]Agents) {
+func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int64, *[]model.Agents) {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -287,7 +288,7 @@ func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int
 		return 0, nil
 	}
 
-	inactivedAgents := make([]Agents, 0)
+	inactivedAgents := make([]model.Agents, 0)
 	for _, k := range keys {
 		members, err := c.client.SMembers(k).Result()
 		if err != nil {
@@ -296,7 +297,7 @@ func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int
 		}
 
 		for _, member := range members {
-			var buf Agents
+			var buf model.Agents
 			json.Unmarshal([]byte(member), &buf)
 
 			if byteToBool(buf.IsActive) == true {
@@ -311,7 +312,7 @@ func (c *Cache) GetAgentsForInactive(ctx *common.Context, before time.Time) (int
 	return int64(len(inactivedAgents)), &inactivedAgents
 }
 
-func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[]Agents) {
+func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[]model.Agents) {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -328,9 +329,9 @@ func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[
 		return 0, nil
 	}
 
-	agents := make([]Agents, 0)
+	agents := make([]model.Agents, 0)
 	for _, member := range members {
-		var buf Agents
+		var buf model.Agents
 		json.Unmarshal([]byte(member), &buf)
 		agents = append(agents, buf)
 	}
@@ -338,7 +339,7 @@ func (c *Cache) GetAgentsByZoneID(ctx *common.Context, zoneID uint64) (int64, *[
 	return int64(len(agents)), &agents
 }
 
-func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agents {
+func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *model.Agents {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -355,7 +356,7 @@ func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agent
 	}
 
 	for _, member := range members {
-		var buf Agents
+		var buf model.Agents
 		json.Unmarshal([]byte(member), &buf)
 		if buf.Id == agentID {
 			return &buf
@@ -365,7 +366,7 @@ func (c *Cache) GetAgentByID(ctx *common.Context, zoneID, agentID uint64) *Agent
 	return nil
 }
 
-func (c *Cache) GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *Agents {
+func (c *Cache) GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey string) *model.Agents {
 	mtx := ctx.Get(CtxCacheLock).(*sync.Mutex)
 	mtx.Lock()
 	defer mtx.Unlock()
@@ -383,7 +384,7 @@ func (c *Cache) GetAgentByAgentKey(ctx *common.Context, zoneID uint64, agentKey 
 	}
 
 	for _, member := range members {
-		var buf Agents
+		var buf model.Agents
 		json.Unmarshal([]byte(member), &buf)
 		if buf.AgentKey == agentKey {
 			return &buf
