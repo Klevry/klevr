@@ -17,12 +17,13 @@ const (
 	CtxServer    = CtxPrefix + "SERVER"
 	CtxAPI       = CtxPrefix + "API"
 	CtxDbConn    = CtxPrefix + "DB"
+	CtxCacheConn = CtxPrefix + "CACHE"
 	CtxDbSession = CtxPrefix + "TX"
 	CtxMqConn    = CtxPrefix + "MQConn"
 	CtxMqChannel = CtxPrefix + "MQChannel"
 	CtxMqQueue   = CtxPrefix + "MQQueue"
 	CtxPrimary   = CtxPrefix + "PRIMARY"
-	CtxCache     = CtxPrefix + "CACHE"
+	CtxCacheLock = CtxPrefix + "CACHELOCK"
 )
 
 // CtxGetServer get KlevrManager from context
@@ -43,4 +44,8 @@ func CtxGetDbSession(ctx *common.Context) *Tx {
 // CtxGetFromRequest get common.Context from request
 func CtxGetFromRequest(r *http.Request) *common.Context {
 	return context.Get(r, CtxRequestContext).(*common.Context)
+}
+
+func CtxGetCacheConn(ctx *common.Context) *AgentStorage {
+	return ctx.Get(CtxCacheConn).(*AgentStorage)
 }

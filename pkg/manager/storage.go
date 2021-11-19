@@ -4,31 +4,29 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
 )
 
 type AgentStorage struct {
-	agentCache ICache
+	agentCache *Cache
 }
 
-func NewAgentStorage() *AgentStorage {
-	manager := ctx.Get(CtxServer).(*KlevrManager)
-
+func NewAgentStorage(address string, port int, password string) *AgentStorage {
 	s := &AgentStorage{}
-	if manager.Config.DB.Cache == true {
-		s.agentCache = NewCache(manager.Config.Cache.Address,
-			manager.Config.Cache.Port,
-			manager.Config.Cache.Password)
+	lock := ctx.Get(CtxCacheLock)
+	if lock != nil {
+		s.agentCache = NewCache(address, port, password)
 	}
 
 	return s
 }
 
-func (a *AgentStorage) AddAgent(ctx *common.Context, tx *Tx, agent *Agents) error {
+func (a *AgentStorage) AddAgent(ctx *common.Context, tx *Tx, agent *model.Agents) error {
+	agent.CreatedAt = time.Now().UTC()
 	err := tx.addAgent(agent)
 
 	if err == nil && a.agentCache != nil {
-		_, agents := tx.getAgentsByGroupId(agent.GroupId)
-		a.agentCache.SyncAgent(ctx, agent.GroupId, agents)
+		a.agentCache.UpdateAgent(ctx, agent.GroupId, agent)
 	}
 
 	if err != nil {
@@ -38,16 +36,17 @@ func (a *AgentStorage) AddAgent(ctx *common.Context, tx *Tx, agent *Agents) erro
 	return nil
 }
 
-func (a *AgentStorage) UpdateAgent(ctx *common.Context, tx *Tx, agent *Agents) {
+func (a *AgentStorage) UpdateAgent(ctx *common.Context, tx *Tx, agent *model.Agents) {
+	agent.UpdatedAt = time.Now().UTC()
 	tx.updateAgent(agent)
 
 	if a.agentCache != nil {
-		_, agents := tx.getAgentsByGroupId(agent.GroupId)
-		a.agentCache.SyncAgent(ctx, agent.GroupId, agents)
+		//logger.Debugf("##### AgentStorage::UpdateAgent(grouID:%d", agent.GroupId)
+		a.agentCache.UpdateAgent(ctx, agent.GroupId, agent)
 	}
 }
 
-func (a *AgentStorage) UpdateZoneStatus(ctx *common.Context, tx *Tx, zoneID uint64, arrAgent []Agents) {
+func (a *AgentStorage) UpdateZoneStatus(ctx *common.Context, tx *Tx, zoneID uint64, arrAgent []model.Agents) {
 	if len(arrAgent) == 0 {
 		return
 	}
@@ -77,7 +76,7 @@ func (a *AgentStorage) UpdateAccessAgent(ctx *common.Context, tx *Tx, zoneID uin
 	return cnt
 }
 
-func (a *AgentStorage) UpdateAgentStatus(ctx *common.Context, tx *Tx, inactiveAgents *[]Agents, ids []uint64) {
+func (a *AgentStorage) UpdateAgentStatus(ctx *common.Context, tx *Tx, inactiveAgents *[]model.Agents, ids []uint64) {
 	if a.agentCache != nil {
 		a.agentCache.UpdateAgentDisabledStatus(ctx, inactiveAgents)
 	}
@@ -85,7 +84,7 @@ func (a *AgentStorage) UpdateAgentStatus(ctx *common.Context, tx *Tx, inactiveAg
 	tx.updateAgentStatus(ids)
 }
 
-func (a *AgentStorage) GetAgentsForInactive(ctx *common.Context, tx *Tx, before time.Time) (int64, *[]Agents) {
+func (a *AgentStorage) GetAgentsForInactive(ctx *common.Context, tx *Tx, before time.Time) (int64, *[]model.Agents) {
 	if a.agentCache != nil {
 		cnt, agents := a.agentCache.GetAgentsForInactive(ctx, before)
 		if cnt > 0 {
@@ -98,7 +97,7 @@ func (a *AgentStorage) GetAgentsForInactive(ctx *common.Context, tx *Tx, before 
 	return cnt, agents
 }
 
-func (a *AgentStorage) GetAgentsByZoneID(ctx *common.Context, tx *Tx, zoneID uint64) (int64, *[]Agents) {
+func (a *AgentStorage) GetAgentsByZoneID(ctx *common.Context, tx *Tx, zoneID uint64) (int64, *[]model.Agents) {
 	if a.agentCache != nil {
 		cnt, agents := a.agentCache.GetAgentsByZoneID(ctx, zoneID)
 		if cnt > 0 {
@@ -111,7 +110,7 @@ func (a *AgentStorage) GetAgentsByZoneID(ctx *common.Context, tx *Tx, zoneID uin
 	return cnt, agents
 }
 
-func (a *AgentStorage) GetAgentByID(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) *Agents {
+func (a *AgentStorage) GetAgentByID(ctx *common.Context, tx *Tx, zoneID uint64, agentID uint64) *model.Agents {
 	if a.agentCache != nil {
 		agent := a.agentCache.GetAgentByID(ctx, zoneID, agentID)
 		if agent != nil {
@@ -124,7 +123,7 @@ func (a *AgentStorage) GetAgentByID(ctx *common.Context, tx *Tx, zoneID uint64, 
 	return agent
 }
 
-func (a *AgentStorage) GetAgentByAgentKey(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *Agents {
+func (a *AgentStorage) GetAgentByAgentKey(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *model.Agents {
 	if a.agentCache != nil {
 		agent := a.agentCache.GetAgentByAgentKey(ctx, zoneID, agentKey)
 		if agent != nil {

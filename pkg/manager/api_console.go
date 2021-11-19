@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/model"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
@@ -22,7 +23,7 @@ func (api *API) InitConsole(console *mux.Router) {
 	if cnt == 0 {
 		encPassword, err := common.Encrypt(api.Manager.Config.Server.EncryptionKey, "admin")
 		if err == nil {
-			p := &PageMembers{UserId: "admin", UserPassword: encPassword}
+			p := &model.PageMembers{UserId: "admin", UserPassword: encPassword}
 			tx.insertConsoleMember(p)
 		} else {
 			logger.Error(err)
@@ -294,22 +295,22 @@ func (api *ConsoleAPI) ShutdownAgent(w http.ResponseWriter, r *http.Request) {
 	agentKey := vars["agentKey"]
 
 	// agent 삭제를 위한 task를 생성
-	t := common.KlevrTask{
+	t := model.KlevrTask{
 		ZoneID:             groupID,
 		Name:               "ShutdownAgent",
-		TaskType:           common.AtOnce,
+		TaskType:           model.AtOnce,
 		TotalStepCount:     1,
 		Parameter:          "",
 		AgentKey:           agentKey,
 		ExeAgentChangeable: false,
-		Steps: []*common.KlevrTaskStep{&common.KlevrTaskStep{
+		Steps: []*model.KlevrTaskStep{&model.KlevrTaskStep{
 			Seq:         1,
 			CommandName: "ShutdownAgent",
-			CommandType: common.RESERVED,
+			CommandType: model.RESERVED,
 			Command:     "ForceShutdownAgent",
 			IsRecover:   false,
 		}},
-		EventHookSendingType: common.EventHookWithAll,
+		EventHookSendingType: model.EventHookWithAll,
 	}
 
 	// Task 상태 설정

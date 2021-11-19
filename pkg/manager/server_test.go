@@ -5,7 +5,7 @@ import (
 )
 
 func TestSendBulkEventWebHook(t *testing.T) {
-	type args struct {
+	/*type args struct {
 		url    string
 		events *[]KlevrEvent
 	}
@@ -30,5 +30,5 @@ func TestSendBulkEventWebHook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sendBulkEventWebHook(tt.args.url, tt.args.events)
 		})
-	}
+	}*/
 }

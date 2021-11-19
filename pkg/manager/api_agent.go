@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/Klevry/klevr/pkg/common"
+	"github.com/Klevry/klevr/pkg/event"
+	"github.com/Klevry/klevr/pkg/model"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/NexClipper/logger"
 	"github.com/gorilla/mux"
 )
@@ -183,7 +186,7 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//agent := tx.getAgentByAgentKey(ch.AgentKey, ch.ZoneID)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	agent := txManager.GetAgentByAgentKey(ctx, tx, ch.AgentKey, ch.ZoneID)
 
 	// agent 생성 or 수정
@@ -192,7 +195,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	tx.updateRetryScheduledTask(ch.AgentKey)
 
 	tx.Commit()
-	txManager.Close()
 
 	// response 데이터 생성
 	rb := &common.Body{}
@@ -224,28 +226,28 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 
-	AddEvent(&KlevrEvent{
-		EventType: AgentConnect,
+	manager.Event.AddEvent(&event.KlevrEvent{
+		EventType: event.AgentConnect,
 		AgentKey:  agent.AgentKey,
 		GroupID:   agent.GroupId,
-		EventTime: &common.JSONTime{Time: time.Now().UTC()},
+		EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 	})
 
 	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryRetire,
+		manager.Event.AddEvent(&event.KlevrEvent{
+			EventType: event.PrimaryRetire,
 			AgentKey:  oldPrimaryAgentKey,
 			GroupID:   agent.GroupId,
-			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
+		manager.Event.AddEvent(&event.KlevrEvent{
+			EventType: event.PrimaryElected,
 			AgentKey:  agent.AgentKey,
 			GroupID:   agent.GroupId,
-			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 }
@@ -296,7 +298,7 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		// agent zone 상태 정보 업데이트
 		nodes := param.Agent.Nodes
 		nodeLength := len(nodes)
-		arrAgent := make([]Agents, nodeLength)
+		arrAgent := make([]model.Agents, nodeLength)
 
 		manager := ctx.Get(CtxServer).(*KlevrManager)
 
@@ -334,9 +336,8 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		//tx.updateZoneStatus(&arrAgent)
 		//logger.Debugf("########## %d, %v", len(arrAgent), arrAgent)
-		txManager := NewAgentStorage()
+		txManager := CtxGetCacheConn(ctx)
 		txManager.UpdateZoneStatus(ctx, tx, ch.ZoneID, arrAgent)
 		tx.updateShutdownTasks(taskIDs)
 		if len(inactiveAgentKeys) > 0 {
@@ -346,13 +347,12 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		RemoveShutdownTask(agentKeys)
 
 		tx.Commit()
-		txManager.Close()
 
 		// 수행한 task 상태 정보 업데이트
 		var taskLength = len(param.Task)
 
 		if taskLength > 0 {
-			var pTaskMap = make(map[uint64]Tasks)
+			var pTaskMap = make(map[uint64]model.Tasks)
 			var tIds = make([]uint64, len(param.Task))
 
 			for i, task := range param.Task {
@@ -373,9 +373,9 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 		nCredentials, cnt := tx.getCredentials(ch.ZoneID)
 
 		// 신규 task 할당
-		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(common.WaitPolling), string(common.HandOver)})
+		nTasks, cnt := tx.getTasksWithSteps(manager, ch.ZoneID, []string{string(model.WaitPolling), string(model.HandOver)})
 		if cnt > 0 {
-			var dtos []common.KlevrTask = make([]common.KlevrTask, len(*nTasks))
+			var dtos []model.KlevrTask = make([]model.KlevrTask, len(*nTasks))
 
 			for i, t := range *nTasks {
 				t = TaskMatchingCredential(manager, t, nCredentials)
@@ -402,9 +402,9 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 	logger.Debug(string(b))
 }
 
-func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]common.KlevrTask) {
+func updateTaskStatus(ctx *common.Context, oTasks map[uint64]model.Tasks, uTasks *[]model.KlevrTask) {
 	var length = len(*uTasks)
-	var events = make([]KlevrEvent, 0, length*2)
+	var events = make([]event.KlevrEvent, 0, length*2)
 
 	tx := GetDBConn(ctx)
 
@@ -417,17 +417,17 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 		logger.Debugf("updateTaskStatus : [%+v]", oTask)
 
 		// Task 상태 이상으로 오류 종료 처리
-		if t.Status == common.Scheduled || t.Status == common.WaitPolling || t.Status == common.HandOver {
-			if t.EventHookSendingType != common.EventHookWithSuccess {
-				oTask.Status = common.Failed
+		if t.Status == model.Scheduled || t.Status == model.WaitPolling || t.Status == model.HandOver {
+			if t.EventHookSendingType != model.EventHookWithSuccess {
+				oTask.Status = model.Failed
 				oTask.Logs.Logs = "Invalid Task Status Updated. - " + string(t.Status)
 
-				events = append(events, KlevrEvent{
-					EventType: TaskCallback,
+				events = append(events, event.KlevrEvent{
+					EventType: event.TaskCallback,
 					AgentKey:  oTask.AgentKey,
 					GroupID:   oTask.ZoneId,
-					Result:    NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
-					EventTime: &common.JSONTime{Time: time.Now().UTC()},
+					Result:    event.NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
+					EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 				})
 			}
 		} else {
@@ -438,23 +438,23 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 			var errorMessage string
 
 			switch t.Status {
-			case common.WaitExec:
-			case common.Started:
-				if t.EventHookSendingType == common.EventHookWithBothEnds {
+			case model.WaitExec:
+			case model.Started:
+				if t.EventHookSendingType == model.EventHookWithBothEnds {
 					sendEvent = true
 				}
-			case common.Running:
-				if t.EventHookSendingType == common.EventHookWithEachSteps {
+			case model.Running:
+				if t.EventHookSendingType == model.EventHookWithEachSteps {
 					sendEvent = true
 				}
-			case common.WaitInterationSchedule:
-				if t.EventHookSendingType == common.EventHookWithSuccess {
+			case model.WaitInterationSchedule:
+				if t.EventHookSendingType == model.EventHookWithSuccess {
 					sendEvent = true
 				}
 
 				success = true
-			case common.Recovering:
-				if t.EventHookSendingType == common.EventHookWithEachSteps {
+			case model.Recovering:
+				if t.EventHookSendingType == model.EventHookWithEachSteps {
 					sendEvent = true
 				}
 
@@ -463,29 +463,29 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 					errorMessage = "Error occurred during task step execution"
 				}
 				oTask.TaskDetail.FailedStep = t.FailedStep
-			case common.Complete:
-				if t.EventHookSendingType == common.EventHookWithConclusion ||
-					t.EventHookSendingType == common.EventHookWithBothEnds ||
-					t.EventHookSendingType == common.EventHookWithSuccess {
+			case model.Complete:
+				if t.EventHookSendingType == model.EventHookWithConclusion ||
+					t.EventHookSendingType == model.EventHookWithBothEnds ||
+					t.EventHookSendingType == model.EventHookWithSuccess {
 					sendEvent = true
 				}
 
 				complete = true
 				success = true
-			case common.FailedRecover:
-				if t.EventHookSendingType == common.EventHookWithConclusion ||
-					t.EventHookSendingType == common.EventHookWithBothEnds ||
-					t.EventHookSendingType == common.EventHookWithFailed {
+			case model.FailedRecover:
+				if t.EventHookSendingType == model.EventHookWithConclusion ||
+					t.EventHookSendingType == model.EventHookWithBothEnds ||
+					t.EventHookSendingType == model.EventHookWithFailed {
 					sendEvent = true
 				}
 
 				oTask.TaskDetail.IsFailedRecover = true
 				isCommandError = true
 				complete = true
-			case common.Failed:
-				if t.EventHookSendingType == common.EventHookWithConclusion ||
-					t.EventHookSendingType == common.EventHookWithBothEnds ||
-					t.EventHookSendingType == common.EventHookWithFailed {
+			case model.Failed:
+				if t.EventHookSendingType == model.EventHookWithConclusion ||
+					t.EventHookSendingType == model.EventHookWithBothEnds ||
+					t.EventHookSendingType == model.EventHookWithFailed {
 					sendEvent = true
 				}
 
@@ -494,16 +494,16 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 					errorMessage = "Error occurred during task step execution"
 				}
 				complete = true
-			case common.Canceled:
-				if t.EventHookSendingType == common.EventHookWithConclusion ||
-					t.EventHookSendingType == common.EventHookWithBothEnds {
+			case model.Canceled:
+				if t.EventHookSendingType == model.EventHookWithConclusion ||
+					t.EventHookSendingType == model.EventHookWithBothEnds {
 					sendEvent = true
 				}
 
 				complete = true
-			case common.Stopped:
-				if t.EventHookSendingType == common.EventHookWithConclusion ||
-					t.EventHookSendingType == common.EventHookWithBothEnds {
+			case model.Stopped:
+				if t.EventHookSendingType == model.EventHookWithConclusion ||
+					t.EventHookSendingType == model.EventHookWithBothEnds {
 					sendEvent = true
 				}
 
@@ -512,9 +512,9 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 				panic("invalid task status - " + t.Status)
 			}
 
-			if t.EventHookSendingType == common.EventHookWithAll || t.EventHookSendingType == "" {
+			if t.EventHookSendingType == model.EventHookWithAll || t.EventHookSendingType == "" {
 				sendEvent = true
-			} else if t.EventHookSendingType == common.EventHookWithChangedResult && t.IsChangedResult {
+			} else if t.EventHookSendingType == model.EventHookWithChangedResult && t.IsChangedResult {
 				sendEvent = true
 			}
 
@@ -524,12 +524,12 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 			oTask.TaskDetail.Result = t.Result
 
 			if sendEvent {
-				events = append(events, KlevrEvent{
-					EventType: TaskCallback,
+				events = append(events, event.KlevrEvent{
+					EventType: event.TaskCallback,
 					AgentKey:  oTask.AgentKey,
 					GroupID:   oTask.ZoneId,
-					Result:    NewKlevrEventTaskResultString(&oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
-					EventTime: &common.JSONTime{Time: time.Now().UTC()},
+					Result:    event.NewKlevrEventTaskResultString(&oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
+					EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 				})
 			}
 		}
@@ -538,7 +538,8 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]Tasks, uTasks *[]co
 		tx.Commit()
 	}
 
-	AddEvents(&events)
+	//AddEvents(&events)
+	manager.Event.AddEvents(&events)
 }
 
 // CheckPrimaryInfo godoc
@@ -564,11 +565,10 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	rb := &common.Body{}
 
 	// agent access에 대한 이벤트 발생
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	curTime := time.Now().UTC()
 	txManager.UpdateAccessAgent(ctx, tx, ch.ZoneID, ch.AgentKey, curTime)
 	tx.Commit()
-	txManager.Close()
 
 	agent := AccessAgentEvent(ctx, tx, ch.AgentKey, ch.ZoneID)
 
@@ -587,21 +587,22 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	fmt.Fprintf(w, "%s", b)
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryRetire,
+		manager.Event.AddEvent(&event.KlevrEvent{
+			EventType: event.PrimaryRetire,
 			AgentKey:  oldPrimaryAgentKey,
 			GroupID:   agent.GroupId,
-			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
-		AddEvent(&KlevrEvent{
-			EventType: PrimaryElected,
+		manager.Event.AddEvent(&event.KlevrEvent{
+			EventType: event.PrimaryElected,
 			AgentKey:  agent.AgentKey,
 			GroupID:   agent.GroupId,
-			EventTime: &common.JSONTime{Time: time.Now().UTC()},
+			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
 	}
 }
@@ -650,9 +651,8 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 
 func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	//cnt, agents := tx.getAgentsByGroupId(zoneID)
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 	cnt, agents := txManager.GetAgentsByZoneID(ctx, tx, zoneID)
-	txManager.Close()
 
 	nodes := make([]common.Agent, cnt)
 
@@ -666,7 +666,7 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 				Port:               a.Port,
 				Version:            a.Version,
 				IsActive:           byteToBool(a.IsActive),
-				LastAliveCheckTime: &common.JSONTime{Time: a.LastAliveCheckTime},
+				LastAliveCheckTime: &serialize.JSONTime{Time: a.LastAliveCheckTime},
 				Resource:           &common.Resource{},
 			}
 
@@ -689,27 +689,27 @@ func getNodes(ctx *common.Context, tx *Tx, zoneID uint64) []common.Agent {
 	return nil
 }
 
-func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *Agents {
-	txManager := NewAgentStorage()
+func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint64) *model.Agents {
+	txManager := CtxGetCacheConn(ctx)
 	agent := txManager.GetAgentByAgentKey(ctx, tx, agentKey, zoneID)
-	txManager.Close()
 
 	oldStatus := agent.IsActive
 	curTime := time.Now().UTC()
 
+	manager := ctx.Get(CtxServer).(*KlevrManager)
 	if oldStatus == 0 {
-		AddEvent(&KlevrEvent{
-			EventType: AgentConnect,
+		manager.Event.AddEvent(&event.KlevrEvent{
+			EventType: event.AgentConnect,
 			AgentKey:  agentKey,
 			GroupID:   zoneID,
-			EventTime: &common.JSONTime{Time: curTime},
+			EventTime: &serialize.JSONTime{Time: curTime},
 		})
 	}
 
 	return agent
 }
 
-func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (common.Primary, string) {
+func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *model.Agents) (common.Primary, string) {
 	primaryMutex := ctx.Get(CtxPrimary).(*sync.Mutex)
 
 	primaryMutex.Lock()
@@ -717,7 +717,7 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 
 	// primary agent 정보
 	groupPrimary, _ := tx.getPrimaryAgent(zoneID)
-	var primaryAgent *Agents
+	var primaryAgent *model.Agents
 	var oldPrimaryAgentKey string
 
 	if groupPrimary.AgentId == curAgent.Id {
@@ -726,9 +726,8 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 		primaryAgent = electPrimary(ctx, zoneID, curAgent.Id, false)
 	} else {
 		//primaryAgent = tx.getAgentByID(groupPrimary.AgentId)
-		txManager := NewAgentStorage()
+		txManager := CtxGetCacheConn(ctx)
 		primaryAgent = txManager.GetAgentByID(ctx, tx, zoneID, groupPrimary.AgentId)
-		txManager.Close()
 		oldPrimaryAgentKey = primaryAgent.AgentKey
 
 		logger.Debugf("primaryAgent : %+v", primaryAgent)
@@ -750,11 +749,11 @@ func getPrimary(ctx *common.Context, tx *Tx, zoneID uint64, curAgent *Agents) (c
 }
 
 // primary agent 선출
-func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel bool) *Agents {
+func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel bool) *model.Agents {
 	logger.Debugf("electPrimary for zone(%d), agent(%d)", zoneID, agentID)
 
 	var tx *Tx
-	var agent *Agents
+	var agent *model.Agents
 
 	common.Block{
 		Try: func() {
@@ -764,7 +763,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 				tx.deletePrimaryAgent(zoneID)
 			}
 
-			pa := &PrimaryAgents{
+			pa := &model.PrimaryAgents{
 				GroupId: zoneID,
 				AgentId: agentID,
 			}
@@ -784,7 +783,7 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			//agent = tx.getAgentByID(pa.AgentId)
-			txManager := NewAgentStorage()
+			txManager := CtxGetCacheConn(ctx)
 			agent = txManager.GetAgentByID(ctx, tx, zoneID, pa.AgentId)
 
 			if agent.Id == 0 {
@@ -793,7 +792,6 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 			}
 
 			tx.Commit()
-			txManager.Close()
 		},
 		Catch: func(e error) {
 			if tx != nil {
@@ -813,10 +811,10 @@ func electPrimary(ctx *common.Context, zoneID uint64, agentID uint64, oldDel boo
 	return agent
 }
 
-func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHeader, paramAgent *common.Me) {
+func upsertAgent(ctx *common.Context, tx *Tx, agent *model.Agents, ch *common.CustomHeader, paramAgent *common.Me) {
 	manager := ctx.Get(CtxServer).(*KlevrManager)
 
-	txManager := NewAgentStorage()
+	txManager := CtxGetCacheConn(ctx)
 
 	if agent.AgentKey == "" { // 처음 접속하는 에이전트일 경우 신규 등록
 		agent.AgentKey = ch.AgentKey
@@ -852,7 +850,6 @@ func upsertAgent(ctx *common.Context, tx *Tx, agent *Agents, ch *common.CustomHe
 		txManager.UpdateAgent(ctx, tx, agent)
 	}
 
-	txManager.Close()
 }
 
 func byteToBool(b byte) bool {

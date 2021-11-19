@@ -1,9 +1,7 @@
-package common
+package model
 
 import (
-	"time"
-
-	"github.com/NexClipper/logger"
+	"github.com/Klevry/klevr/pkg/serialize"
 )
 
 // TaskType for KlevrTask struct
@@ -72,12 +70,12 @@ type KlevrTask struct {
 	ZoneID               uint64               `json:"zoneId"`
 	Name                 string               `json:"name"`
 	TaskType             TaskType             `json:"taskType"`
-	Schedule             JSONTime             `json:"schedule"`
+	Schedule             serialize.JSONTime   `json:"schedule"`
 	AgentKey             string               `json:"agentKey"`
 	ExeAgentKey          string               `json:"exeAgentKey"`
 	Status               TaskStatus           `json:"status"`
 	Cron                 string               `json:"cron"`
-	UntilRun             JSONTime             `json:"untilRun"`
+	UntilRun             serialize.JSONTime   `json:"untilRun"`
 	Timeout              uint                 `json:"timeout"`
 	ExeAgentChangeable   bool                 `json:"exeAgentChangeable"`
 	TotalStepCount       uint                 `json:"totalStepCount"`
@@ -93,8 +91,8 @@ type KlevrTask struct {
 	Log                  string               `json:"log"`
 	EventHookSendingType EventHookSendingType `json:"eventHookSendingType"`
 	IsChangedResult      bool                 `json:"isChangedResult"`
-	CreatedAt            JSONTime             `json:"createdAt"`
-	UpdatedAt            JSONTime             `json:"updatedAt"`
+	CreatedAt            serialize.JSONTime   `json:"createdAt"`
+	UpdatedAt            serialize.JSONTime   `json:"updatedAt"`
 }
 
 type KlevrTaskStep struct {
@@ -114,30 +112,12 @@ type KlevrTaskCallback struct {
 }
 
 type KlevrTaskLog struct {
-	ID          uint64     `json:"id"`
-	ZoneID      uint64     `json:"zoneId"`
-	Name        string     `json:"name"`
-	ExeAgentKey string     `json:"exeAgentKey"`
-	Status      TaskStatus `json:"status"`
-	Log         string     `json:"log"`
-	CreatedAt   JSONTime   `json:"createdAt"`
-	UpdatedAt   JSONTime   `json:"updatedAt"`
-}
-
-func TaskStatusAdd(task *KlevrTask) *KlevrTask {
-	if task.Schedule.IsZero() {
-		task.Status = WaitPolling
-	} else {
-		compare := time.Now().UTC()
-
-		if task.Schedule.After(compare) {
-			task.Status = Scheduled
-		} else {
-			task.Status = WaitPolling
-		}
-
-		logger.Debugf("schedule : [%+v], current : [%+v], task status : [%+v]", task.Schedule, compare, task.Status)
-	}
-
-	return task
+	ID          uint64             `json:"id"`
+	ZoneID      uint64             `json:"zoneId"`
+	Name        string             `json:"name"`
+	ExeAgentKey string             `json:"exeAgentKey"`
+	Status      TaskStatus         `json:"status"`
+	Log         string             `json:"log"`
+	CreatedAt   serialize.JSONTime `json:"createdAt"`
+	UpdatedAt   serialize.JSONTime `json:"updatedAt"`
 }

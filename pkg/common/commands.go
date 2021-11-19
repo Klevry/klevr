@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Klevry/klevr/pkg/model"
+	"github.com/Klevry/klevr/pkg/serialize"
 	"github.com/NexClipper/logger"
 )
 
@@ -41,14 +43,14 @@ func testCommand() Command {
 
 func getAgentsRunningTasks() Command {
 	type RunningTask struct {
-		Id             uint64     `json:"id"`
-		Name           string     `json:"name"`
-		Status         TaskStatus `json:"status"`
-		TotalStepCount uint       `json:"totalStepCount"`
-		CurrentStep    uint       `json:"currentStep"`
-		CreatedAt      JSONTime   `json:"createdAt"`
-		UpdatedAt      JSONTime   `json:"updatedAt"`
-		IterationCount int64      `json:"iterationCount"`
+		Id             uint64             `json:"id"`
+		Name           string             `json:"name"`
+		Status         model.TaskStatus   `json:"status"`
+		TotalStepCount uint               `json:"totalStepCount"`
+		CurrentStep    uint               `json:"currentStep"`
+		CreatedAt      serialize.JSONTime `json:"createdAt"`
+		UpdatedAt      serialize.JSONTime `json:"updatedAt"`
+		IterationCount int64              `json:"iterationCount"`
 	}
 
 	type ResultModel struct {
@@ -368,7 +370,7 @@ func gracefulShutdownAgent() Command {
 				for _, e := range executor.runningTasks.Items() {
 					tw := e.(*TaskWrapper)
 
-					if AtOnce == tw.TaskType {
+					if model.AtOnce == tw.TaskType {
 						complete = false
 						break
 					}

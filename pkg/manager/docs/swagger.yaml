@@ -16,7 +16,7 @@ definitions:
       isActive:
         type: boolean
       lastAliveCheckTime:
-        $ref: '#/definitions/common.JSONTime'
+        $ref: '#/definitions/serialize.JSONTime'
       memory:
         type: integer
       port:
@@ -32,7 +32,7 @@ definitions:
         $ref: '#/definitions/common.Me'
       task:
         items:
-          $ref: '#/definitions/common.KlevrTask'
+          $ref: '#/definitions/model.KlevrTask'
         type: array
     type: object
   common.BodyAgent:
@@ -44,15 +44,10 @@ definitions:
       primary:
         $ref: '#/definitions/common.Primary'
     type: object
-  common.JSONTime:
-    properties:
-      time.Time:
-        type: string
-    type: object
   common.KlevrCredential:
     properties:
       createdAt:
-        $ref: '#/definitions/common.JSONTime'
+        $ref: '#/definitions/serialize.JSONTime'
       hash:
         type: string
       id:
@@ -60,103 +55,10 @@ definitions:
       key:
         type: string
       updatedAt:
-        $ref: '#/definitions/common.JSONTime'
+        $ref: '#/definitions/serialize.JSONTime'
       value:
         type: string
       zoneId:
-        type: integer
-    type: object
-  common.KlevrTask:
-    properties:
-      agentKey:
-        type: string
-      callbackUrl:
-        type: string
-      createdAt:
-        $ref: '#/definitions/common.JSONTime'
-      cron:
-        type: string
-      currentStep:
-        type: integer
-      eventHookSendingType:
-        type: string
-      exeAgentChangeable:
-        type: boolean
-      exeAgentKey:
-        type: string
-      failedStep:
-        type: integer
-      hasRecover:
-        type: boolean
-      id:
-        type: integer
-      isChangedResult:
-        type: boolean
-      isFailedRecover:
-        type: boolean
-      log:
-        type: string
-      name:
-        type: string
-      parameter:
-        type: string
-      result:
-        type: string
-      schedule:
-        $ref: '#/definitions/common.JSONTime'
-      showLog:
-        type: boolean
-      status:
-        type: string
-      steps:
-        items:
-          $ref: '#/definitions/common.KlevrTaskStep'
-        type: array
-      taskType:
-        type: string
-      timeout:
-        type: integer
-      totalStepCount:
-        type: integer
-      untilRun:
-        $ref: '#/definitions/common.JSONTime'
-      updatedAt:
-        $ref: '#/definitions/common.JSONTime'
-      zoneId:
-        type: integer
-    type: object
-  common.KlevrTaskLog:
-    properties:
-      createdAt:
-        $ref: '#/definitions/common.JSONTime'
-      exeAgentKey:
-        type: string
-      id:
-        type: integer
-      log:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-      updatedAt:
-        $ref: '#/definitions/common.JSONTime'
-      zoneId:
-        type: integer
-    type: object
-  common.KlevrTaskStep:
-    properties:
-      command:
-        type: string
-      commandName:
-        type: string
-      commandType:
-        type: string
-      id:
-        type: integer
-      isRecover:
-        type: boolean
-      seq:
         type: integer
     type: object
   common.Me:
@@ -199,23 +101,6 @@ definitions:
       lastAccessTime:
         type: integer
       port:
-        type: integer
-    type: object
-  manager.AgentGroups:
-    properties:
-      createdAt:
-        type: string
-      deletedAt:
-        type: string
-      groupName:
-        type: string
-      id:
-        type: integer
-      platform:
-        type: string
-      updatedAt:
-        type: string
-      userId:
         type: integer
     type: object
   manager.BootstrapCommand:
@@ -271,6 +156,121 @@ definitions:
       status:
         type: string
       taskid:
+        type: string
+    type: object
+  model.AgentGroups:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      groupName:
+        type: string
+      id:
+        type: integer
+      platform:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  model.KlevrTask:
+    properties:
+      agentKey:
+        type: string
+      callbackUrl:
+        type: string
+      createdAt:
+        $ref: '#/definitions/serialize.JSONTime'
+      cron:
+        type: string
+      currentStep:
+        type: integer
+      eventHookSendingType:
+        type: string
+      exeAgentChangeable:
+        type: boolean
+      exeAgentKey:
+        type: string
+      failedStep:
+        type: integer
+      hasRecover:
+        type: boolean
+      id:
+        type: integer
+      isChangedResult:
+        type: boolean
+      isFailedRecover:
+        type: boolean
+      log:
+        type: string
+      name:
+        type: string
+      parameter:
+        type: string
+      result:
+        type: string
+      schedule:
+        $ref: '#/definitions/serialize.JSONTime'
+      showLog:
+        type: boolean
+      status:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/model.KlevrTaskStep'
+        type: array
+      taskType:
+        type: string
+      timeout:
+        type: integer
+      totalStepCount:
+        type: integer
+      untilRun:
+        $ref: '#/definitions/serialize.JSONTime'
+      updatedAt:
+        $ref: '#/definitions/serialize.JSONTime'
+      zoneId:
+        type: integer
+    type: object
+  model.KlevrTaskLog:
+    properties:
+      createdAt:
+        $ref: '#/definitions/serialize.JSONTime'
+      exeAgentKey:
+        type: string
+      id:
+        type: integer
+      log:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        $ref: '#/definitions/serialize.JSONTime'
+      zoneId:
+        type: integer
+    type: object
+  model.KlevrTaskStep:
+    properties:
+      command:
+        type: string
+      commandName:
+        type: string
+      commandType:
+        type: string
+      id:
+        type: integer
+      isRecover:
+        type: boolean
+      seq:
+        type: integer
+    type: object
+  serialize.JSONTime:
+    properties:
+      time.Time:
         type: string
     type: object
 info:
@@ -658,7 +658,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/manager.AgentGroups'
+              $ref: '#/definitions/model.AgentGroups'
             type: array
       summary: ZONE 목록을 조회한다.
       tags:
@@ -673,14 +673,14 @@ paths:
         name: b
         required: true
         schema:
-          $ref: '#/definitions/manager.AgentGroups'
+          $ref: '#/definitions/model.AgentGroups'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/manager.AgentGroups'
+            $ref: '#/definitions/model.AgentGroups'
       summary: ZONE을 추가한다.
       tags:
       - servers
@@ -721,7 +721,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/manager.AgentGroups'
+            $ref: '#/definitions/model.AgentGroups'
       summary: ZONE을 조회한다.
       tags:
       - servers
@@ -950,7 +950,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/common.KlevrTask'
+              $ref: '#/definitions/model.KlevrTask'
             type: array
       summary: TASK 목록을 반환한다.
       tags:
@@ -965,14 +965,14 @@ paths:
         name: b
         required: true
         schema:
-          $ref: '#/definitions/common.KlevrTask'
+          $ref: '#/definitions/model.KlevrTask'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.KlevrTask'
+            $ref: '#/definitions/model.KlevrTask'
       summary: TASK를 등록한다.
       tags:
       - servers
@@ -999,7 +999,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.KlevrTask'
+            $ref: '#/definitions/model.KlevrTask'
       summary: inline simple TASK를 등록한다.
       tags:
       - servers
@@ -1026,7 +1026,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.KlevrTask'
+            $ref: '#/definitions/model.KlevrTask'
       summary: reserved simple TASK를 등록한다.
       tags:
       - servers
@@ -1067,7 +1067,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.KlevrTask'
+            $ref: '#/definitions/model.KlevrTask'
       summary: TASK를 조회한다.
       tags:
       - servers
@@ -1088,7 +1088,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/common.KlevrTaskLog'
+            $ref: '#/definitions/model.KlevrTaskLog'
       summary: Zone에서 실행된 TASK의 최종 로그를 조회한다.
       tags:
       - servers

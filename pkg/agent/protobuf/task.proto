@@ -6,6 +6,7 @@ package agent;
 service TaskSend{
   rpc SendTask(Message) returns (Message) {}
   rpc StatusCheck(Status) returns (Status) {}
+  rpc GetUpdatedTasks(Message) returns (Message) {}
 }
 
 message Message{

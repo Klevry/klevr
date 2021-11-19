@@ -599,7 +599,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/manager.AgentGroups"
+                                "$ref": "#/definitions/model.AgentGroups"
                             }
                         }
                     }
@@ -624,7 +624,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/manager.AgentGroups"
+                            "$ref": "#/definitions/model.AgentGroups"
                         }
                     }
                 ],
@@ -632,7 +632,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/manager.AgentGroups"
+                            "$ref": "#/definitions/model.AgentGroups"
                         }
                     }
                 }
@@ -664,7 +664,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/manager.AgentGroups"
+                            "$ref": "#/definitions/model.AgentGroups"
                         }
                     }
                 }
@@ -1042,7 +1042,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/common.KlevrTask"
+                                "$ref": "#/definitions/model.KlevrTask"
                             }
                         }
                     }
@@ -1067,7 +1067,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTask"
+                            "$ref": "#/definitions/model.KlevrTask"
                         }
                     }
                 ],
@@ -1075,7 +1075,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTask"
+                            "$ref": "#/definitions/model.KlevrTask"
                         }
                     }
                 }
@@ -1116,7 +1116,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTask"
+                            "$ref": "#/definitions/model.KlevrTask"
                         }
                     }
                 }
@@ -1157,7 +1157,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTask"
+                            "$ref": "#/definitions/model.KlevrTask"
                         }
                     }
                 }
@@ -1189,7 +1189,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTask"
+                            "$ref": "#/definitions/model.KlevrTask"
                         }
                     }
                 }
@@ -1251,7 +1251,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.KlevrTaskLog"
+                            "$ref": "#/definitions/model.KlevrTaskLog"
                         }
                     }
                 }
@@ -1370,7 +1370,7 @@ var doc = `{
                     "type": "boolean"
                 },
                 "lastAliveCheckTime": {
-                    "$ref": "#/definitions/common.JSONTime"
+                    "$ref": "#/definitions/serialize.JSONTime"
                 },
                 "memory": {
                     "type": "integer"
@@ -1395,7 +1395,7 @@ var doc = `{
                 "task": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/common.KlevrTask"
+                        "$ref": "#/definitions/model.KlevrTask"
                     }
                 }
             }
@@ -1414,19 +1414,11 @@ var doc = `{
                 }
             }
         },
-        "common.JSONTime": {
-            "type": "object",
-            "properties": {
-                "time.Time": {
-                    "type": "string"
-                }
-            }
-        },
         "common.KlevrCredential": {
             "type": "object",
             "properties": {
                 "createdAt": {
-                    "$ref": "#/definitions/common.JSONTime"
+                    "$ref": "#/definitions/serialize.JSONTime"
                 },
                 "hash": {
                     "type": "string"
@@ -1438,153 +1430,12 @@ var doc = `{
                     "type": "string"
                 },
                 "updatedAt": {
-                    "$ref": "#/definitions/common.JSONTime"
+                    "$ref": "#/definitions/serialize.JSONTime"
                 },
                 "value": {
                     "type": "string"
                 },
                 "zoneId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "common.KlevrTask": {
-            "type": "object",
-            "properties": {
-                "agentKey": {
-                    "type": "string"
-                },
-                "callbackUrl": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "cron": {
-                    "type": "string"
-                },
-                "currentStep": {
-                    "type": "integer"
-                },
-                "eventHookSendingType": {
-                    "type": "string"
-                },
-                "exeAgentChangeable": {
-                    "type": "boolean"
-                },
-                "exeAgentKey": {
-                    "type": "string"
-                },
-                "failedStep": {
-                    "type": "integer"
-                },
-                "hasRecover": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isChangedResult": {
-                    "type": "boolean"
-                },
-                "isFailedRecover": {
-                    "type": "boolean"
-                },
-                "log": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parameter": {
-                    "type": "string"
-                },
-                "result": {
-                    "type": "string"
-                },
-                "schedule": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "showLog": {
-                    "type": "boolean"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "steps": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/common.KlevrTaskStep"
-                    }
-                },
-                "taskType": {
-                    "type": "string"
-                },
-                "timeout": {
-                    "type": "integer"
-                },
-                "totalStepCount": {
-                    "type": "integer"
-                },
-                "untilRun": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "updatedAt": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "zoneId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "common.KlevrTaskLog": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "exeAgentKey": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "log": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "$ref": "#/definitions/common.JSONTime"
-                },
-                "zoneId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "common.KlevrTaskStep": {
-            "type": "object",
-            "properties": {
-                "command": {
-                    "type": "string"
-                },
-                "commandName": {
-                    "type": "string"
-                },
-                "commandType": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isRecover": {
-                    "type": "boolean"
-                },
-                "seq": {
                     "type": "integer"
                 }
             }
@@ -1649,32 +1500,6 @@ var doc = `{
                     "type": "integer"
                 },
                 "port": {
-                    "type": "integer"
-                }
-            }
-        },
-        "manager.AgentGroups": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "type": "string"
-                },
-                "groupName": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "platform": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userId": {
                     "type": "integer"
                 }
             }
@@ -1760,6 +1585,181 @@ var doc = `{
                     "type": "string"
                 },
                 "taskid": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AgentGroups": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "groupName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.KlevrTask": {
+            "type": "object",
+            "properties": {
+                "agentKey": {
+                    "type": "string"
+                },
+                "callbackUrl": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "cron": {
+                    "type": "string"
+                },
+                "currentStep": {
+                    "type": "integer"
+                },
+                "eventHookSendingType": {
+                    "type": "string"
+                },
+                "exeAgentChangeable": {
+                    "type": "boolean"
+                },
+                "exeAgentKey": {
+                    "type": "string"
+                },
+                "failedStep": {
+                    "type": "integer"
+                },
+                "hasRecover": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isChangedResult": {
+                    "type": "boolean"
+                },
+                "isFailedRecover": {
+                    "type": "boolean"
+                },
+                "log": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameter": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "showLog": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.KlevrTaskStep"
+                    }
+                },
+                "taskType": {
+                    "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
+                },
+                "totalStepCount": {
+                    "type": "integer"
+                },
+                "untilRun": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.KlevrTaskLog": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "exeAgentKey": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "log": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "$ref": "#/definitions/serialize.JSONTime"
+                },
+                "zoneId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.KlevrTaskStep": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "commandName": {
+                    "type": "string"
+                },
+                "commandType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isRecover": {
+                    "type": "boolean"
+                },
+                "seq": {
+                    "type": "integer"
+                }
+            }
+        },
+        "serialize.JSONTime": {
+            "type": "object",
+            "properties": {
+                "time.Time": {
                     "type": "string"
                 }
             }
