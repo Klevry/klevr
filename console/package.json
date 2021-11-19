@@ -31,7 +31,7 @@
     "@material-ui/styles": "^4.11.4",
     "@xstyled/emotion": "^2.5.0",
     "antd": "^4.16.8",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "dotenv": "^8.2.0",
     "chart.js": "^2.9.4",
     "clsx": "^1.1.1",
