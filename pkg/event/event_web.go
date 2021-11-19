@@ -19,6 +19,7 @@ type EventWeb struct {
 }
 
 func NewEventWeb(opt KlevrEventOption) EventManager {
+	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
 	event := &EventWeb{
 		eventQueue: queue.NewMutexQueue(),
 		url:        opt.URL,
@@ -99,11 +100,6 @@ func (e *EventWeb) Close() {}
 func (e *EventWeb) AddEvent(event *KlevrEvent) {
 	logger.Debugf("add event : [%+v]", *event)
 
-	//manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-	//hookConfig := manager.Config.Server.Webhook
-
-	//logger.Debugf("option(hookConfig) : [%+v]", option)
-
 	if e.url[0] == "" {
 		return
 	}
@@ -117,11 +113,6 @@ func (e *EventWeb) AddEvent(event *KlevrEvent) {
 }
 
 func (e *EventWeb) AddEvents(events *[]KlevrEvent) {
-	//manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-	//hookConfig := manager.Config.Server.Webhook
-
-	//logger.Debugf("option(hookConfig) : [%+v]", option)
-
 	if e.url[0] == "" {
 		return
 	}

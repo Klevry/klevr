@@ -117,8 +117,7 @@ func NewKlevrManager() (*KlevrManager, error) {
 	router := mux.NewRouter()
 
 	instance := &KlevrManager{
-		RootRouter: router,
-		//EventQueue:        queue.NewMutexQueue(),
+		RootRouter:        router,
 		HandOverTaskQueue: queue.NewMutexQueue(),
 		ShutdownTasks:     concurrent.New(),
 		HasLock:           false,
@@ -171,37 +170,6 @@ func (manager *KlevrManager) Run() error {
 
 	defer manager.Event.Close()
 
-	/*if serverConfig.EventHandler == "mq" {
-		mqConfig := serverConfig.Mq
-
-		mqConn, err := rabbitmq.DialCluster(mqConfig.Url)
-		if err != nil {
-			logger.Errorf("Failed to connect to MQ - %+v", errors.Cause(err))
-			panic(err)
-		}
-
-		defer mqConn.Close()
-
-		mqChannel, err := mqConn.Channel()
-		if err != nil {
-			logger.Errorf("Failed to open a channel to MQ - %+v", errors.Cause(err))
-			panic(err)
-		}
-
-		queue, err := mqChannel.QueueDeclare(mqConfig.Name, mqConfig.Durable, mqConfig.AutoDelete, false, false, nil)
-		if err != nil {
-			logger.Errorf("Failed to declare queue from MQ - %+v", errors.Cause(err))
-			panic(err)
-		}
-
-		mqChannel.Close()
-
-		manager.Mq = &ManagerMQ{
-			Connection: mqConn,
-			Queue:      &queue,
-		}
-	}*/
-
 	headerOk := handlers.AllowedHeaders([]string{"*"})
 	//originOk := handlers.AllowedOrigins([]string{"http://localhost:3000"})
 	originOk := handlers.AllowedOrigins([]string{"*"})
@@ -217,10 +185,6 @@ func (manager *KlevrManager) Run() error {
 	}
 
 	go manager.getLock(common.FromContext(ctx))
-	// klevr 이벤트 hook(발송) 고루틴 핸들러 시작(항상 동작 - 강제 종료시 이벤트 메모리 소실)
-	/*if serverConfig.EventHandler != "mq" {
-		go manager.startEventHandler()
-	}*/
 	// klevr 에이전트 상태 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
 	go manager.updateAgentStatus(common.FromContext(ctx), manager.Config.Server.StatusUpdateCycle)
 	// klevr task 스케쥴 체크 및 업데이트 고루틴 시작(서버 lock 획득 시에만 동작)
@@ -474,149 +438,6 @@ func RemoveShutdownTask(agentKeys []string) {
 	}
 }
 
-// AddEvent add klevr event for webhook
-/*func AddEvent(event *KlevrEvent) {
-	logger.Debugf("add event : [%+v]", *event)
-
-	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-
-	if manager.Mq != nil {
-		arr := []KlevrEvent{*event}
-
-		go sendBulkEventMQ(&arr)
-	} else {
-		hookConfig := manager.Config.Server.Webhook
-
-		logger.Debugf("hookConfig : [%+v]", hookConfig)
-
-		if hookConfig.Url == "" {
-			return
-		}
-
-		if hookConfig.HookCount <= 1 && hookConfig.HookTerm < 1 {
-			go sendSingleEventWebHook(hookConfig.Url, event)
-		} else {
-			q := manager.EventQueue
-			q.Push(event)
-		}
-	}
-}
-
-func AddEvents(events *[]KlevrEvent) {
-	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-
-	if manager.Mq != nil {
-		go sendBulkEventMQ(events)
-	} else {
-		hookConfig := manager.Config.Server.Webhook
-
-		logger.Debugf("hookConfig : [%+v]", hookConfig)
-
-		if hookConfig.Url == "" {
-			return
-		}
-
-		go sendBulkEventWebHook(hookConfig.Url, events)
-	}
-}
-
-func sendSingleEventWebHook(url string, event *KlevrEvent) {
-	var arr = []KlevrEvent{*event}
-
-	logger.Debugf("%+v", *event)
-	logger.Debugf("%d", len(arr))
-
-	sendBulkEventWebHook(url, &arr)
-}
-
-func sendBulkEventWebHook(url string, events *[]KlevrEvent) {
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Errorf("sendEvent recover from - %v", r)
-		}
-	}()
-
-	if events == nil {
-		logger.Debug("Klevr events is nil")
-		return
-	}
-
-	b, err := json.Marshal(*events)
-	if err != nil {
-		retryFailedEvent(events, false)
-		panic("klevr webhook event marshal error.")
-	}
-
-	logger.Debugf("%+v", *events)
-	logger.Debugf("%d", len(*events))
-	logger.Debugf("%s", string(b))
-
-	res, err := http.Post(url, "application/json", bytes.NewReader(b))
-
-	if err != nil {
-		logger.Warningf("Klevr event webhook send failed - %+v", err)
-		retryFailedEvent(events, true)
-	}
-
-	if res == nil {
-		return
-	}
-
-	defer func() {
-		if res != nil {
-			res.Body.Close()
-		}
-	}()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		logger.Warningf("Klevr event webhook send failed - read response body failed - %+v", err)
-		retryFailedEvent(events, true)
-	}
-
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		logger.Warningf("Klevr event webhook send failed - status code : [%d], response body : [%s]", res.StatusCode, body)
-		retryFailedEvent(events, true)
-	}
-
-	logger.Debugf("sendEventWebHook - statusCode : [%d], body : [%s]", res.StatusCode, body)
-}
-
-func sendBulkEventMQ(events *[]KlevrEvent) {
-	manager := common.BaseContext.Get(CtxServer).(*KlevrManager)
-	mq := manager.Mq
-
-	b, err := json.Marshal(*events)
-	if err != nil {
-		logger.Errorf("klevr event MQ publish marshal error - %+v", errors.Cause(err))
-		retryFailedEvent(events, false)
-	}
-
-	channel, err := manager.Mq.Connection.Channel()
-	if err != nil {
-		logger.Errorf("Failed to open a channel to MQ - %+v", errors.Cause(err))
-		retryFailedEvent(events, true)
-	}
-
-	defer channel.Close()
-
-	err = channel.Publish("", mq.Queue.Name, false, false, amqp.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Body:         b,
-	})
-
-	if err != nil {
-		logger.Errorf("Failed to publish to MQ - %+v", errors.Cause(err))
-		retryFailedEvent(events, true)
-	}
-}
-
-// TODO: event 발송 실패 재처리 구현
-func retryFailedEvent(events *[]KlevrEvent, retryable bool) {
-
-}*/
-
 func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 	st := cycle / 2
 	if st < 1 {
@@ -655,7 +476,6 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 						forceShutdownAgentKeys := make([]string, 0)
 						taskIDs := make([]uint64, 0)
 
-						//var events = make([]KlevrEvent, len)
 						var events = make([]event.KlevrEvent, len)
 						var eventTime = &serialize.JSONTime{Time: time.Now().UTC()}
 
@@ -670,13 +490,6 @@ func (manager *KlevrManager) updateAgentStatus(ctx *common.Context, cycle int) {
 								taskIDs = append(taskIDs, tid)
 							}
 
-							// events[i] = KlevrEvent{
-							// 	EventType: AgentDisconnect,
-							// 	AgentKey:  agent.AgentKey,
-							// 	GroupID:   agent.GroupId,
-							// 	Result:    "",
-							// 	EventTime: eventTime,
-							// }
 							events[i] = event.KlevrEvent{
 								EventType: event.AgentDisconnect,
 								AgentKey:  agent.AgentKey,

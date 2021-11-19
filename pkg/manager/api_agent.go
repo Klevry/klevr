@@ -232,12 +232,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 		GroupID:   agent.GroupId,
 		EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 	})
-	// AddEvent(&KlevrEvent{
-	// 	EventType: AgentConnect,
-	// 	AgentKey:  agent.AgentKey,
-	// 	GroupID:   agent.GroupId,
-	// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-	// })
 
 	if oldPrimaryAgentKey != "" && oldPrimaryAgentKey != rb.Agent.Primary.AgentKey {
 		manager.Event.AddEvent(&event.KlevrEvent{
@@ -246,12 +240,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 			GroupID:   agent.GroupId,
 			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
-		// AddEvent(&KlevrEvent{
-		// 	EventType: PrimaryRetire,
-		// 	AgentKey:  oldPrimaryAgentKey,
-		// 	GroupID:   agent.GroupId,
-		// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-		// })
 	}
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
@@ -261,12 +249,6 @@ func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 			GroupID:   agent.GroupId,
 			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
-		// AddEvent(&KlevrEvent{
-		// 	EventType: PrimaryElected,
-		// 	AgentKey:  agent.AgentKey,
-		// 	GroupID:   agent.GroupId,
-		// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-		// })
 	}
 }
 
@@ -422,7 +404,6 @@ func (api *agentAPI) receivePolling(w http.ResponseWriter, r *http.Request) {
 
 func updateTaskStatus(ctx *common.Context, oTasks map[uint64]model.Tasks, uTasks *[]model.KlevrTask) {
 	var length = len(*uTasks)
-	//var events = make([]KlevrEvent, 0, length*2)
 	var events = make([]event.KlevrEvent, 0, length*2)
 
 	tx := GetDBConn(ctx)
@@ -448,13 +429,6 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]model.Tasks, uTasks
 					Result:    event.NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
 					EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 				})
-				// events = append(events, KlevrEvent{
-				// 	EventType: TaskCallback,
-				// 	AgentKey:  oTask.AgentKey,
-				// 	GroupID:   oTask.ZoneId,
-				// 	Result:    NewKlevrEventTaskResultString(&oTask, true, false, false, t.Result, t.Log, "Invalid Task Status", string(t.Status)),
-				// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-				// })
 			}
 		} else {
 			var complete = false
@@ -550,13 +524,6 @@ func updateTaskStatus(ctx *common.Context, oTasks map[uint64]model.Tasks, uTasks
 			oTask.TaskDetail.Result = t.Result
 
 			if sendEvent {
-				// events = append(events, KlevrEvent{
-				// 	EventType: TaskCallback,
-				// 	AgentKey:  oTask.AgentKey,
-				// 	GroupID:   oTask.ZoneId,
-				// 	Result:    NewKlevrEventTaskResultString(&oTask, complete, success, isCommandError, t.Result, t.Log, errorMessage, t.Log),
-				// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-				// })
 				events = append(events, event.KlevrEvent{
 					EventType: event.TaskCallback,
 					AgentKey:  oTask.AgentKey,
@@ -628,12 +595,6 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 			GroupID:   agent.GroupId,
 			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
-		// AddEvent(&KlevrEvent{
-		// 	EventType: PrimaryRetire,
-		// 	AgentKey:  oldPrimaryAgentKey,
-		// 	GroupID:   agent.GroupId,
-		// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-		// })
 	}
 
 	if ch.AgentKey == rb.Agent.Primary.AgentKey {
@@ -643,12 +604,6 @@ func (api *agentAPI) checkPrimaryInfo(w http.ResponseWriter, r *http.Request) {
 			GroupID:   agent.GroupId,
 			EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
 		})
-		// AddEvent(&KlevrEvent{
-		// 	EventType: PrimaryElected,
-		// 	AgentKey:  agent.AgentKey,
-		// 	GroupID:   agent.GroupId,
-		// 	EventTime: &serialize.JSONTime{Time: time.Now().UTC()},
-		// })
 	}
 }
 
@@ -749,12 +704,6 @@ func AccessAgentEvent(ctx *common.Context, tx *Tx, agentKey string, zoneID uint6
 			GroupID:   zoneID,
 			EventTime: &serialize.JSONTime{Time: curTime},
 		})
-		// AddEvent(&KlevrEvent{
-		// 	EventType: AgentConnect,
-		// 	AgentKey:  agentKey,
-		// 	GroupID:   zoneID,
-		// 	EventTime: &serialize.JSONTime{Time: curTime},
-		// })
 	}
 
 	return agent
