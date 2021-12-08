@@ -160,7 +160,6 @@ func parseCustomHeader(r *http.Request) *common.CustomHeader {
 func (api *agentAPI) receiveHandshake(w http.ResponseWriter, r *http.Request) {
 	ctx := CtxGetFromRequest(r)
 	ch := ctx.Get(common.CustomHeaderName).(*common.CustomHeader)
-	// var cr = &common.Request{r}
 
 	tx := GetDBConn(ctx)
 	var requestBody common.Body
