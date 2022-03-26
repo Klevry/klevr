@@ -111,7 +111,6 @@ func (agent *KlevrAgent) updateScheduler() {
 	oldSchedulerInterval := interval
 
 	for {
-		//logger.Debugf("updateScheduler(interval): %d", agent.schedulerInterval)
 		if interval = agent.schedulerInterval; interval <= 0 {
 			interval = defaultSchedulerInterval
 		}
